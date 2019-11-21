@@ -77,7 +77,7 @@ namespace ChatBubble.Client
         {
             delegate void LogOutDelegate(bool condition);
 
-            public enum TabType { MainPage, Friends, Dialogues, Search, Settings, LogOut }
+            public enum TabType { MainPage, Friends, Dialogues, ActiveDialogue, Search, Settings, LogOut }
             public enum NotificationType { NewFriend, NewMessage }
 
             Label tabNameLabel;
@@ -137,9 +137,12 @@ namespace ChatBubble.Client
 
                 foreach(TabType tabType in Enum.GetValues(typeof(TabType)))
                 {
-                    menuButton = new MenuButton(this, this, tabType);
+                    if (tabType != TabType.ActiveDialogue)
+                    {
+                        menuButton = new MenuButton(this, this, tabType);
 
-                    Controls.Add(menuButton);
+                        Controls.Add(menuButton);
+                    }
                 }
             }
 
@@ -186,7 +189,20 @@ namespace ChatBubble.Client
                             Controls.Add(dialoguesTab);
                             dialoguesTab.BringToFront();
                             break;
-                        }                   
+                        }
+                    case TabType.ActiveDialogue:
+                        {
+                            ActiveDialogueTab activeDialogueTab = new ActiveDialogueTab();
+
+                            activeDialogueTab.Size = tabSize;
+                            activeDialogueTab.Location = tabLocation;
+                            activeDialogueTab.BackgroundImage = null;
+                            activeDialogueTab.Name = tabType.ToString();
+
+                            Controls.Add(activeDialogueTab);
+                            activeDialogueTab.BringToFront();
+                            break;
+                        }
                     case TabType.Search:
                         {
                             SearchTab searchTab = new SearchTab();
@@ -1514,7 +1530,80 @@ namespace ChatBubble.Client
 
             }
 
-            
+            private class ActiveDialogueTab : MainPage
+            {
+                TabHatImage tabHatImage;
+                ChatInputPanel chatInputPanel;
+                Button sendMessageButton;
+
+                public ActiveDialogueTab()
+                {
+                    Name = "Active Dialogue";
+
+                    chatInputPanel = new ChatInputPanel();
+                    tabHatImage = new TabHatImage(Name);
+
+                    Controls.Add(tabHatImage);
+                    Controls.Add(chatInputPanel);
+                }
+
+                private class ChatInputPanel : DoubleBufferPanel
+                {
+                    BackgroundPictureBox textBoxBackground;
+
+                    static int TextBoxHeightLines { get; set; } = 1;
+
+                    public ChatInputPanel()
+                    {
+                        Height = 10 + TextBoxHeightLines * 29;
+                        Width = tabSize.Width;
+                        Location = new Point(0, tabSize.Height - Height);
+
+                        textBoxBackground = new BackgroundPictureBox();
+                        textBoxBackground.Width = this.Width;
+
+                        Controls.Add(textBoxBackground);
+                    }
+
+                    private class BackgroundPictureBox : PictureBox
+                    {
+                        public BackgroundPictureBox()
+                        {
+
+
+                            //BackColor = Color.Red;
+                        }
+
+                        protected override void OnPaint(PaintEventArgs pe)
+                        {
+                            pe.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                            pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                            pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                            pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                            pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                            GraphicsPath path = new GraphicsPath();
+                            SolidBrush solidBrush = new SolidBrush(Color.FromArgb(255, 93, 143, 215));
+
+                            path.StartFigure();
+                            path.AddRectangle(new Rectangle(0, 0, Width, 10 + TextBoxHeightLines * 29));
+                            path.AddLine(new Point(7, 5), new Point(Right - 73, 5));
+                            path.AddArc(new Rectangle(Right - 73, 5, 8, 8), 270, 90);
+                            path.AddLine(new Point(Right - 65, 13), new Point(Right - 65, 26));
+                            path.AddArc(new Rectangle(Right - 73, 26, 8, 8), 0, 90);
+                            path.AddLine(new Point(Right - 73, 34), new Point(7, 34));
+                            path.AddArc(new Rectangle(0, 26, 8, 8), 90, 90);
+                            path.AddLine(new Point(0, 26), new Point(0, 13));
+                            path.AddArc(new Rectangle(0, 5, 8, 8), 180, 90);
+                            path.CloseFigure();
+
+                            pe.Graphics.FillPath(solidBrush, path);
+
+                            base.OnPaint(pe);
+                        }
+                    }
+                }
+            }
 
             private class SearchTab : MainPage
             {
