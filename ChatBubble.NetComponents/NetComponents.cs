@@ -533,7 +533,6 @@ namespace ChatBubble
         public static string ServerGetUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "reqid=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -857,14 +856,6 @@ namespace ChatBubble
             {
                 return (serverReplyString);
             }
-        }
-
-        public static void ServerPassPendingMessagesService(string clientRequest)
-        {
-            string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
-            string[] messageHandleSplitstrings = new string[3] { "chatid=", "sender=", "rcpnt=" };
-            FileIOStreamer fileIO = new FileIOStreamer(); 
-
         }
 
         /// <summary>

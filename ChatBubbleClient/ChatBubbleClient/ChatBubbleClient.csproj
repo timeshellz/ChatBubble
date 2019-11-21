@@ -101,6 +101,7 @@
     <None Include="Resources\WarningSign.gif" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\sendButtonImage.png" />
     <None Include="Resources\searchPanelBackground.png" />
     <None Include="Resources\settingsButtonIdle.png" />
     <None Include="Resources\searchButtonIdle.png" />

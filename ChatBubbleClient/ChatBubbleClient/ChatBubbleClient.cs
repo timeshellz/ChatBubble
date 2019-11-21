@@ -69,19 +69,13 @@ namespace ChatBubble.Client
 
             }
         }
-
-
-        
-                                            
+                                                 
         public class MainPage : Panel
         {
             delegate void LogOutDelegate(bool condition);
 
             public enum TabType { MainPage, Friends, Dialogues, ActiveDialogue, Search, Settings, LogOut }
             public enum NotificationType { NewFriend, NewMessage }
-
-            Label tabNameLabel;
-            PictureBox tabHatImage;
 
             Size mainPageSize = new Size(900, 480);
             Point mainPageLocation = new Point(0, 0);
@@ -317,68 +311,55 @@ namespace ChatBubble.Client
                 int notificationLiveTimeCurrent;
                 bool notificationPresent = false;
 
+                GraphicsPath path = new GraphicsPath();
+                Pen pen = new Pen(Color.FromArgb(255, 141, 179, 16), 6);
+
                 public Notification(NotificationType notificationType)
                 {
                     Size = notificationSize;
                     Location = notificationLocation;
-                    BackgroundImage = Properties.Resources.notificationBG;
+
+                    GetRegion();
 
                     currentNotificationType = notificationType; 
 
                     this.HandleCreated += new EventHandler(PrepareNotification);
                 }
 
-                protected override void OnPaint(PaintEventArgs e)
+                void GetRegion()
                 {
-                    Graphics newGraphics = e.Graphics;
-
-                    newGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    newGraphics.CompositingQuality = CompositingQuality.HighQuality;
-                    newGraphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                    newGraphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                    GraphicsPath path = new GraphicsPath();
-                    SolidBrush brush = new SolidBrush(Color.Transparent);
-
-                    int Edge = 21;
+                    int cornerRadius = 25;
 
                     path.StartFigure();
-                    path.AddArc(GetLeftUpper(Edge), 180, 90);
-                    path.AddLine(Edge, 0, Width - Edge, 0);
-                    path.AddArc(GetRightUpper(Edge), 270, 90);
-                    path.AddLine(Width, Edge, Width, Height - Edge);
-                    path.AddArc(GetRightLower(Edge), 0, 90);
-                    path.AddLine(Width - Edge, Height, Edge, Height);
-                    path.AddArc(GetLeftLower(Edge), 90, 90);
-                    path.AddLine(0, Height - Edge, 0, Edge);
+
+                    path.AddArc(new Rectangle(0, 0, cornerRadius, cornerRadius), 180, 90);
+                    path.AddLine(0, 0, Width, 0);
+
+                    path.AddArc(new Rectangle(Width - cornerRadius, 0, cornerRadius, cornerRadius), 270, 90);
+                    path.AddLine(Width, cornerRadius, Width, Height - cornerRadius);
+
+                    path.AddArc(new Rectangle(Width - cornerRadius, Height - cornerRadius, cornerRadius, cornerRadius), 0, 90);
+                    path.AddLine(Width - cornerRadius, Height, cornerRadius, Height);
+
+                    path.AddArc(new Rectangle(0, Height - cornerRadius, cornerRadius, cornerRadius), 90, 90);
+                    path.AddLine(0, Height - cornerRadius, 0, cornerRadius);
+
                     path.CloseFigure();
 
-                    newGraphics.FillPath(brush, path);
-
                     Region = new Region(path);
+                }
 
+                protected override void OnPaint(PaintEventArgs e)
+                {
+                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    e.Graphics.DrawPath(pen, path);
+                   
                     base.OnPaint(e);
-
-                    
-                    //DrawRoundedBorder(e.Graphics);
-                }
-
-                Rectangle GetLeftUpper(int e)
-                {
-                    return new Rectangle(0, 0, e, e);
-                }
-                Rectangle GetRightUpper(int e)
-                {
-                    return new Rectangle(Width - e, 0, e - 1, e - 1);
-                }
-                Rectangle GetRightLower(int e)
-                {
-                    return new Rectangle(Width - e, Height - e, e - 1, e - 1);
-                }
-                Rectangle GetLeftLower(int e)
-                {
-                    return new Rectangle(0, Height - e, e, e);
-                }
+                }              
 
                 private void PrepareNotification(object sender, EventArgs eventArgs)
                 {
@@ -548,11 +529,14 @@ namespace ChatBubble.Client
                 Font font = new Font("Verdana", 14, FontStyle.Regular);
 
                 SolidBrush SolidBrush = new SolidBrush(Color.FromArgb(255, 93, 143, 215));
-                
+                GraphicsPath GraphicsPath;
+
                 public TabHatImage(string tabName = "Unnamed Tab")
                 {
                     Size = tabSize;
                     Location = new Point(0, 0);
+
+                    GetRegion();
 
                     bubblePictureBox.Location = new Point(6, 7);
                     bubblePictureBox.Size = new Size(31, 29);
@@ -569,15 +553,9 @@ namespace ChatBubble.Client
                     Controls.Add(tabNameLabel);
                 }
 
-                protected override void OnPaint(PaintEventArgs pe)
+                void GetRegion()
                 {
-                    GraphicsPath GraphicsPath = new GraphicsPath();
-
-                    pe.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-                    pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                    pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    GraphicsPath = new GraphicsPath();
 
                     GraphicsPath.StartFigure();
                     GraphicsPath.AddLine(0, 0, this.Width, 0);
@@ -586,10 +564,19 @@ namespace ChatBubble.Client
                     GraphicsPath.AddArc(new RectangleF(0, 39f, 91, 91), 270, -90);
                     GraphicsPath.AddLine(0, 91, 0, 0);
                     GraphicsPath.CloseFigure();
-
-                    pe.Graphics.FillPath(SolidBrush, GraphicsPath);                   
-
+                   
                     Region = new Region(GraphicsPath);
+                }
+
+                protected override void OnPaint(PaintEventArgs pe)
+                {                  
+                    pe.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                    pe.Graphics.FillPath(SolidBrush, GraphicsPath);
 
                     base.OnPaint(pe);
                 }
@@ -1369,7 +1356,7 @@ namespace ChatBubble.Client
             }
             private class DialoguesTab : MainPage
             {
-                TabHatImage TabHatImage;
+                TabHatImage tabHatImage;
                 TextBox dialogueSearchQueryTextBox;
                 DialogueListPanel dialogueListPanel;
 
@@ -1534,7 +1521,7 @@ namespace ChatBubble.Client
             {
                 TabHatImage tabHatImage;
                 ChatInputPanel chatInputPanel;
-                Button sendMessageButton;
+                SendMessageButton sendMessageButton;
 
                 public ActiveDialogueTab()
                 {
@@ -1543,35 +1530,137 @@ namespace ChatBubble.Client
                     chatInputPanel = new ChatInputPanel();
                     tabHatImage = new TabHatImage(Name);
 
+                    sendMessageButton = new SendMessageButton();
+                    sendMessageButton.Location = new Point(779, 413);
+                    sendMessageButton.Size = new Size(70, 70);
+                    sendMessageButton.FlatStyle = FlatStyle.Flat;
+                    sendMessageButton.FlatAppearance.BorderSize = 0;
+                    sendMessageButton.BackColor = Color.Transparent;
+                    sendMessageButton.Image = Properties.Resources.sendButtonImage;
+                    sendMessageButton.GetRegon();
+
                     Controls.Add(tabHatImage);
                     Controls.Add(chatInputPanel);
+                    Controls.Add(sendMessageButton);
+                    sendMessageButton.BringToFront();
                 }
 
                 private class ChatInputPanel : DoubleBufferPanel
                 {
                     BackgroundPictureBox textBoxBackground;
+                    WaterMarkRichTextBox messageTextBox;
+                    System.Timers.Timer multilineTimer;
 
                     static int TextBoxHeightLines { get; set; } = 1;
+                    static int TextBoxHeight;
+
+                    delegate void MultilineCheckDelegate();
 
                     public ChatInputPanel()
                     {
-                        Height = 10 + TextBoxHeightLines * 29;
+                        Height = 39;
                         Width = tabSize.Width;
                         Location = new Point(0, tabSize.Height - Height);
 
                         textBoxBackground = new BackgroundPictureBox();
                         textBoxBackground.Width = this.Width;
+                        textBoxBackground.Height = this.Height;
 
+                        messageTextBox = new WaterMarkRichTextBox();
+                        messageTextBox.Width = this.Width - 70;                       
+                        messageTextBox.Multiline = true;
+                        messageTextBox.WordWrap = true;
+                        messageTextBox.ScrollBars = RichTextBoxScrollBars.None;
+                        messageTextBox.Location = new Point(2, 8);
+                        messageTextBox.BorderStyle = BorderStyle.None;
+                        messageTextBox.Watermark = "Type your message here...";
+                        messageTextBox.Font = new Font("Verdana", 10, FontStyle.Regular);
+                        messageTextBox.Height = messageTextBox.Font.Height;
+
+                        TextBoxHeight = messageTextBox.Font.Height * TextBoxHeightLines;
+
+                        //messageTextBox.TextChanged += new EventHandler(CheckMultiline);
+
+                        textBoxBackground.GetRegion();
                         Controls.Add(textBoxBackground);
+                        Controls.Add(messageTextBox);
+                        messageTextBox.BringToFront();
+
+                        
+                        multilineTimer = new System.Timers.Timer(50);
+                        multilineTimer.Elapsed += new ElapsedEventHandler(CheckMultiline);
+                        multilineTimer.Start();
+                    }
+
+                    void CheckMultiline(object sender, ElapsedEventArgs eventArgs)
+                    {
+                        MultilineCheckDelegate multilineCheck = new MultilineCheckDelegate(GetTextBoxHeight);
+
+                        if (!Parent.IsDisposed)
+                        {
+                            Parent.Invoke(multilineCheck);
+                        }
+                    }
+
+                    void GetTextBoxHeight()
+                    {
+                        int textWidthPixels = TextRenderer.MeasureText(messageTextBox.Text, messageTextBox.Font).Width;                     
+
+                        if (textWidthPixels / 769 + 1 != TextBoxHeightLines)
+                        {
+                            TextBoxHeightLines = textWidthPixels / 769 + 1;
+                            int oldSelection = messageTextBox.SelectionStart;
+
+                            if (TextBoxHeightLines + 1 < 6)
+                            {
+                                messageTextBox.ScrollBars = RichTextBoxScrollBars.None;
+                                messageTextBox.SelectionStart = oldSelection;
+
+                                messageTextBox.Height = messageTextBox.Font.Height * TextBoxHeightLines;
+
+                                Location = new Point(Location.X, tabSize.Height - messageTextBox.Height - 18);
+                                Height = 18 + messageTextBox.Height;
+
+                                TextBoxHeight = messageTextBox.Height;
+
+                                textBoxBackground.Height = Height;
+                                textBoxBackground.GetRegion();
+                            }
+                            else
+                            {
+                                messageTextBox.ScrollBars = RichTextBoxScrollBars.Vertical;
+                                messageTextBox.SelectionStart = oldSelection;
+                            }                          
+                        }
+                        
                     }
 
                     private class BackgroundPictureBox : PictureBox
                     {
-                        public BackgroundPictureBox()
+                        GraphicsPath path;
+                        SolidBrush solidBrush = new SolidBrush(Color.FromArgb(255, 93, 143, 215));
+
+                        public void GetRegion()
                         {
+                            path = new GraphicsPath();
 
+                            path.StartFigure();
+                            path.AddRectangle(new Rectangle(0, 0, Width, Height));
 
-                            //BackColor = Color.Red;
+                            // '
+                            path.AddLine(new Point(7, 5), new Point(Right - 73, 5));
+                            path.AddArc(new Rectangle(Right - 73, 5, 8, 8), 270, 90);
+                            // ,
+                            path.AddLine(new Point(Right - 65, 13), new Point(Right - 65, 5 + TextBoxHeight));
+                            path.AddArc(new Rectangle(Right - 73, 5 + TextBoxHeight, 8, 8), 0, 90);
+                            //,
+                            path.AddLine(new Point(Right - 73, 13 + TextBoxHeight), new Point(7, 13 + TextBoxHeight));
+                            path.AddArc(new Rectangle(0, 5 + TextBoxHeight, 8, 8), 90, 90);
+                            //'
+                            path.AddLine(new Point(0, 5 + TextBoxHeight), new Point(0, 13));
+                            path.AddArc(new Rectangle(0, 5, 8, 8), 180, 90);
+
+                            path.CloseFigure();
                         }
 
                         protected override void OnPaint(PaintEventArgs pe)
@@ -1580,29 +1669,42 @@ namespace ChatBubble.Client
                             pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
                             pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
                             pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                            pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-
-                            GraphicsPath path = new GraphicsPath();
-                            SolidBrush solidBrush = new SolidBrush(Color.FromArgb(255, 93, 143, 215));
-
-                            path.StartFigure();
-                            path.AddRectangle(new Rectangle(0, 0, Width, 10 + TextBoxHeightLines * 29));
-                            path.AddLine(new Point(7, 5), new Point(Right - 73, 5));
-                            path.AddArc(new Rectangle(Right - 73, 5, 8, 8), 270, 90);
-                            path.AddLine(new Point(Right - 65, 13), new Point(Right - 65, 26));
-                            path.AddArc(new Rectangle(Right - 73, 26, 8, 8), 0, 90);
-                            path.AddLine(new Point(Right - 73, 34), new Point(7, 34));
-                            path.AddArc(new Rectangle(0, 26, 8, 8), 90, 90);
-                            path.AddLine(new Point(0, 26), new Point(0, 13));
-                            path.AddArc(new Rectangle(0, 5, 8, 8), 180, 90);
-                            path.CloseFigure();
+                            pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;                          
 
                             pe.Graphics.FillPath(solidBrush, path);
 
-                            base.OnPaint(pe);
+                            base.OnPaint(pe);                          
                         }
+                    }                   
+                }
+
+                private class SendMessageButton : Button
+                {
+                    GraphicsPath path;
+
+                    public void GetRegon()
+                    {
+                        path = new GraphicsPath();
+
+                        path.StartFigure();
+                        path.AddEllipse(new Rectangle(0, 0, Width, Height));
+                        path.CloseFigure();
+
+                        Region = new Region(path);
+                    }
+
+                    protected override void OnPaint(PaintEventArgs pe)
+                    {
+                        pe.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                        pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                        pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                        pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                        base.OnPaint(pe);
                     }
                 }
+
             }
 
             private class SearchTab : MainPage
@@ -2346,7 +2448,7 @@ namespace ChatBubble.Client
                     MainPage mainPage = new MainPage();
                     Application.OpenForms[0].Controls.Add(mainPage);
                     mainPage.OpenMainPage();
-                    mainPage.OpenNewTab(MainPage.TabType.MainPage);
+                    mainPage.OpenNewTab(MainPage.TabType.ActiveDialogue);
 
                     string pendingMessagesString = NetComponents.ClientPendingMessageManager();
 
@@ -2902,6 +3004,152 @@ namespace ChatBubble.Client
             }
 
             if((eventArgs.KeyCode == Keys.Down))
+            {
+                eventArgs.Handled = true;
+
+                if (this.TabIndex < this.Parent.Controls.Count - 1)
+                {
+                    this.Parent.GetNextControl(this, true).Focus();
+                }
+            }
+
+            if ((eventArgs.KeyCode == Keys.Up))
+            {
+                eventArgs.Handled = true;
+
+                if (this.TabIndex > 0)
+                {
+                    this.Parent.GetNextControl(this, false).Focus();
+                }
+
+            }
+        }
+
+        private void ControlSelected(object sender, MouseEventArgs eventArgs)
+        {
+            if (watermarkApplied == true)
+            {
+                this.SelectionLength = 0;
+                this.SelectionStart = 0;
+            }
+        }
+    }
+
+    public class WaterMarkRichTextBox : RichTextBox
+    {
+        string customWatermark = "Watermark";
+        public bool watermarkApplied = false;
+        char specifiedPasswordChar;
+
+        int lengthOld;
+        int selectionStartOld;
+
+        Font font;
+
+
+        [Category("Appearance"), DefaultValue("Watermark"), Browsable(true)]
+        public string Watermark
+        {
+            get
+            {
+                return customWatermark;
+            }
+            set
+            {
+                Text = "";
+                customWatermark = value;
+                Text = customWatermark;
+            }
+        }
+
+        public WaterMarkRichTextBox()
+        {
+            font = new Font("Verdana", 10, FontStyle.Regular);
+            Font = font;
+            ForeColor = Color.Gray;
+
+            Text = customWatermark;
+            watermarkApplied = true;
+        }
+
+        protected override void OnCreateControl()
+        {
+            base.OnCreateControl();
+
+            TextChanged += new EventHandler(this.WatermarkSwitch);
+            KeyDown += new KeyEventHandler(this.SelectionMoved);
+            MouseMove += new MouseEventHandler(this.ControlSelected);
+            MouseDown += new MouseEventHandler(this.ControlSelected);
+
+            WatermarkSwitch(this, EventArgs.Empty);
+
+            this.SelectionStart = 0;
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            lengthOld = TextLength;
+            selectionStartOld = SelectionStart;
+
+            if(watermarkApplied == true)
+            {
+                lengthOld -= customWatermark.Length;
+            }
+
+            if (e.Modifiers == Keys.Control && e.KeyCode == Keys.V)
+            {
+                Paste(DataFormats.GetFormat("Text"));
+                e.Handled = true;
+            }
+
+            base.OnKeyDown(e);
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {                   
+            base.OnKeyUp(e);
+
+            if (e.Modifiers == Keys.Control && e.KeyCode == Keys.V)
+            {
+                SelectionStart = selectionStartOld + (TextLength - lengthOld);
+            }
+        }
+
+        private void WatermarkSwitch(object sender, EventArgs eventArgs)
+        {
+            if (Text.Length == 0 && watermarkApplied == false)
+            {
+                watermarkApplied = true;
+                ForeColor = Color.Gray;
+                Text = customWatermark;
+                SelectionStart = 0;
+            }
+
+            if ((watermarkApplied == true && this.Text != customWatermark))
+            {
+                watermarkApplied = false;
+                ForeColor = Color.Black;
+
+                try
+                {
+                    this.Text = Text.Replace(customWatermark, "");
+                }
+                catch
+                {
+
+                }
+                this.SelectionStart = 1;
+            }
+        }
+
+        private void SelectionMoved(object sender, KeyEventArgs eventArgs)
+        {
+            if ((eventArgs.KeyCode == Keys.Right || eventArgs.KeyCode == Keys.Left) && watermarkApplied == true)
+            {
+                eventArgs.Handled = true;
+            }
+
+            if ((eventArgs.KeyCode == Keys.Down))
             {
                 eventArgs.Handled = true;
 
