@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C58FFB9D-208F-425A-A68D-79268B3DDFA4}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ChatBubble.Client</RootNamespace>
+    <AssemblyName>ChatBubbleClient</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ChatBubble.NetComponents">
+      <HintPath>..\..\ChatBubble.NetComponents\bin\Debug\netstandard2.0\ChatBubble.NetComponents.dll</HintPath>
+    </Reference>
+    <Reference Include="ImageProcessor, Version=2.7.0.100, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\ImageProcessor.2.7.0.100\lib\net452\ImageProcessor.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ChatBubbleClient.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChatBubbleClient.Designer.cs">
+      <DependentUpon>ChatBubbleClient.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ChatBubbleClient.resx">
+      <DependentUpon>ChatBubbleClient.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj">
+      <Project>{3f6fa5fc-3111-4501-9127-227ca038c26f}</Project>
+      <Name>ChatBubble.FileIOStreamer</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\LoadingCog.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\WarningSign.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\searchPanelBackground.png" />
+    <None Include="Resources\settingsButtonIdle.png" />
+    <None Include="Resources\searchButtonIdle.png" />
+    <None Include="Resources\settingsButtonHover.png" />
+    <None Include="Resources\searchButtonHover.png" />
+    <None Include="Resources\settingsButtonClick.png" />
+    <None Include="Resources\searchButtonClick.png" />
+    <None Include="Resources\removeFriendButtonHover.png" />
+    <None Include="Resources\removeFriendButtonClick.png" />
+    <None Include="Resources\removeFriendButton.png" />
+    <None Include="Resources\searchResultSendFriendRequest.png" />
+    <None Include="Resources\searchResultSendMessage.png" />
+    <None Include="Resources\searchResultSendFriendRequestHover.png" />
+    <None Include="Resources\searchResultSendFriendRequestClick.png" />
+    <None Include="Resources\thumbnailFrameOnline.png" />
+    <None Include="Resources\thumbnailFrameOffline.png" />
+    <None Include="Resources\registrationPanelBackground.png" />
+    <None Include="Resources\tabBackgroundSettingsHat.png" />
+    <None Include="Resources\tabBackgroundSearchHat.png" />
+    <None Include="Resources\tabBackgroundDialoguesHat.png" />
+    <None Include="Resources\tabBackgroundMainPageHat.png" />
+    <None Include="Resources\tabBackgroundFriendsHat.png" />
+    <None Include="Resources\WarningSign1.gif" />
+    <None Include="Resources\tabBackgroundSettings1.png" />
+    <None Include="Resources\tabBackgroundSearch1.png" />
+    <None Include="Resources\tabBackgroundMainPage1.png" />
+    <None Include="Resources\tabBackgroundFriends1.png" />
+    <None Include="Resources\tabBackgroundDialogues1.png" />
+    <None Include="Resources\PlaceholderProfilePicture1.jpeg" />
+    <None Include="Resources\tabBackgroundSettings.png" />
+    <None Include="Resources\tabBackgroundSearch.png" />
+    <None Include="Resources\tabBackgroundMainPage.png" />
+    <None Include="Resources\tabBackgroundFriends.png" />
+    <None Include="Resources\tabBackgroundDialogues.png" />
+    <None Include="Resources\SettingsTabBackground.png" />
+    <None Include="Resources\SearchTabBackground.png" />
+    <None Include="Resources\buttonBackgroundMain1.png" />
+    <None Include="Resources\buttonBackgroundFriends1.png" />
+    <None Include="Resources\buttonBackgroundDialogue1.png" />
+    <None Include="Resources\buttonBackgroundSearch1.png" />
+    <None Include="Resources\buttonBackgroundSettings1.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\hover\buttonBackgroundDialogueHover.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\hover\buttonBackgroundFriendsHover.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\hover\buttonBackgroundMainHover.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\hover\buttonBackgroundSearchHover.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\hover\buttonBackgroundSettingsHover.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\idle\buttonBackgroundDialogue.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\idle\buttonBackgroundFriends.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\idle\buttonBackgroundMain.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\idle\buttonBackgroundSearch.png" />
+    <EmbeddedResource Include="Resources\mainPanelButtons\idle\buttonBackgroundSettings.png" />
+    <None Include="Resources\buttonBackgroundDialogueHover.png" />
+    <None Include="Resources\buttonBackgroundMainHover.png" />
+    <None Include="Resources\buttonBackgroundSearchHover.png" />
+    <None Include="Resources\buttonBackgroundSettingsHover.png" />
+    <None Include="Resources\buttonBackgroundFriendsHover.png" />
+    <None Include="Resources\buttonBackgroundDialogueClick.png" />
+    <None Include="Resources\buttonBackgroundFriendsClick.png" />
+    <None Include="Resources\buttonBackgroundMainClick.png" />
+    <None Include="Resources\buttonBackgroundSearchClick.png" />
+    <None Include="Resources\buttonBackgroundSettingsClick.png" />
+    <None Include="Resources\buttonBackgroundLogOut.png" />
+    <None Include="Resources\buttonBackgroundLogOutHover.png" />
+    <None Include="Resources\buttonBackgroundLogOutClick.png" />
+    <None Include="Resources\DialoguesTabBackground.png" />
+    <None Include="Resources\FriendsTabBackground.png" />
+    <None Include="Resources\MainPageTabBackground.png" />
+    <None Include="Resources\buttonBackgroundDialogue11.png" />
+    <None Include="Resources\buttonBackgroundDialogueClick1.png" />
+    <None Include="Resources\buttonBackgroundDialogueHover1.png" />
+    <None Include="Resources\buttonBackgroundFriends11.png" />
+    <None Include="Resources\buttonBackgroundFriendsClick1.png" />
+    <None Include="Resources\buttonBackgroundFriendsHover1.png" />
+    <None Include="Resources\buttonBackgroundLogOut1.png" />
+    <None Include="Resources\buttonBackgroundLogOutClick1.png" />
+    <None Include="Resources\buttonBackgroundLogOutHover1.png" />
+    <None Include="Resources\buttonBackgroundMain11.png" />
+    <None Include="Resources\buttonBackgroundMainClick1.png" />
+    <None Include="Resources\buttonBackgroundMainHover1.png" />
+    <None Include="Resources\buttonBackgroundSearch11.png" />
+    <None Include="Resources\buttonBackgroundSearchClick1.png" />
+    <None Include="Resources\buttonBackgroundSearchHover1.png" />
+    <None Include="Resources\buttonBackgroundSettings11.png" />
+    <None Include="Resources\buttonBackgroundSettingsClick1.png" />
+    <None Include="Resources\buttonBackgroundSettingsHover1.png" />
+    <None Include="Resources\LoadingCog1.gif" />
+    <None Include="Resources\mainPanelBGImage1.png" />
+    <None Include="Resources\loginPanelBackground.png" />
+    <None Include="Resources\frontDoorPanelBackground.png" />
+    <None Include="Resources\frontDoorTextBoxBorder.png" />
+    <None Include="Resources\frontDoorButton.png" />
+    <None Include="Resources\frontDoorButtonClick.png" />
+    <None Include="Resources\frontDoorButtonHover.png" />
+    <None Include="Resources\frontDoorTextBoxBorderError.png" />
+    <None Include="Resources\frontDoorButtonNarrow.png" />
+    <None Include="Resources\frontDoorButtonNarrowClick.png" />
+    <None Include="Resources\frontDoorButtonNarrowHover.png" />
+    <None Include="Resources\dialoguesButtonClick.png" />
+    <None Include="Resources\friendsButtonClick.png" />
+    <None Include="Resources\logOutButtonClick.png" />
+    <None Include="Resources\dialoguesButtonHover.png" />
+    <None Include="Resources\friendsButtonHover.png" />
+    <None Include="Resources\logOutButtonHover.png" />
+    <None Include="Resources\dialoguesButtonIdle.png" />
+    <None Include="Resources\friendsButtonIdle.png" />
+    <None Include="Resources\logOutButtonIdle.png" />
+    <None Include="Resources\mainTabBackground.png" />
+    <None Include="Resources\homeButtonIdle.png" />
+    <None Include="Resources\homeButtonHover.png" />
+    <None Include="Resources\homeButtonClick.png" />
+    <None Include="Resources\editDescriptionButtonIdle.png" />
+    <None Include="Resources\editDescriptionButtonHover.png" />
+    <None Include="Resources\editDescriptionButtonClick.png" />
+    <None Include="Resources\cancelEditButtonClick.png" />
+    <None Include="Resources\cancelEditButtonHover.png" />
+    <None Include="Resources\cancelEditButtonIdle.png" />
+    <None Include="Resources\confirmEditButtonIdle.png" />
+    <None Include="Resources\confirmEditButtonHover.png" />
+    <None Include="Resources\confirmEditButtonClick.png" />
+    <None Include="Resources\notificationBG.png" />
+    <None Include="Resources\friendsTabHat.png" />
+    <None Include="Resources\bubblesImage.png" />
+    <None Include="Resources\mainPanelBGImage.png" />
+    <Content Include="Resources\PlaceholderProfilePicture.jpeg" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
