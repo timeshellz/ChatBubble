@@ -19,7 +19,7 @@
     
     #### Server ####
     - Server console with UI.
-    - Initial, *simplified* iteration of a database, database keeping.
+    - Initial, *simplified*, *multiple flat file* implementation of a database, database keeping.
     - Cookie-like authentification keeping.
     - Traffic statistics keeping (currently connected clients, logged in users).
     - Log keeping *(needs updating, currently does not work)*
@@ -34,3 +34,5 @@
     causing usage problems, prompting app restart**
     - Some recently added buttons don't have any textures yet.
     - Erasing search query too fast may cause search results to fail updating.
+    - Any issues in the database may cause unexpected runtime errors and logic errors to appear, since none of them
+    get caught in any way yet.
