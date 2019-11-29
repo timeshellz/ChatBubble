@@ -121,9 +121,6 @@
   <data name="WarningSign" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\WarningSign1.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="PlaceholderProfilePicture" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\PlaceholderProfilePicture1.jpeg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="LoadingCog" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\LoadingCog1.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -283,7 +280,25 @@
   <data name="mainPanelBGImage" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\mainPanelBGImage.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="sendButtonImage" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\sendButtonImage.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="sendButtonClick" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\sendButtonClick.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="sendButtonHover" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\sendButtonHover.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="sendButtonIdle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\sendButtonIdle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PlaceholderProfilePicture" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PlaceholderProfilePicture.jpeg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="returnButtonClick" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\returnButtonClick.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="returnButtonHover" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\returnButtonHover.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="returnButtonIdle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\returnButtonIdle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

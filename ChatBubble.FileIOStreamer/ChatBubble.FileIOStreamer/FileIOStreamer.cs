@@ -83,11 +83,10 @@ namespace ChatBubble
         {
             FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             
-            byte[] byteStream = new byte[1028];
+            byte[] byteStream = new byte[fileStream.Length];
 
-            fileStream.Read(byteStream, 0, 1028);
+            fileStream.Read(byteStream, 0, byteStream.Length);
             string output = us_US.GetString(byteStream);
-            output = output.Substring(0, output.IndexOf('\0'));
             output = output.Replace("\n", "");
             output = output.Replace("\r", "");
 
