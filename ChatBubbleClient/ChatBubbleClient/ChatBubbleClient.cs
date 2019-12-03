@@ -1493,18 +1493,22 @@ namespace ChatBubble.Client
                         string[] dialogueFilenameArray = fileIO.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
                         string[] dialogueNameArray = new string[dialogueFilenameArray.Length];
 
+                        string[] senderDataSplitstrings = new string[] {"id=", "login=", "name=",
+                            "status=", "main=", "bubscore=" };
+
                         for (int i = 0; i < dialogueFilenameArray.Length; i++)
                         {
                             string senderID = dialogueFilenameArray[i].Substring(dialogueFilenameArray[i].IndexOf('=') + 1);
+                            string senderData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + senderID, true, true);
                             string dialogueContent = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
                             string[] dialogueMessages = dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
-
+                            string[] senderDataSubstrings = senderData.Split(senderDataSplitstrings, StringSplitOptions.RemoveEmptyEntries);
                             string[] lastMessageEntrySubstrings = dialogueMessages.Last().Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
                             //[0] - time, [1] - message status, [2] - last message content
 
-                            currentDialoguesList.Add("id=" + senderID + "name= " + NetComponents.GetUserData(senderID, true)[2] + 
+                            currentDialoguesList.Add("id=" + senderDataSubstrings[0] + "name= " + senderDataSubstrings[2] +
                                 "time=" + lastMessageEntrySubstrings[0] +
-                                "status=" + lastMessageEntrySubstrings[1] + 
+                                "status=" + lastMessageEntrySubstrings[1] +
                                 "lastmsg=" + lastMessageEntrySubstrings[2]);
                         }
 

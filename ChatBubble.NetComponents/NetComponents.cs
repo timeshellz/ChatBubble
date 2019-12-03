@@ -44,13 +44,10 @@ namespace ChatBubble
             string ipAddressString = "";
             IPHostEntry localMachineIP = Dns.GetHostByName(localMachineName);
             IPAddress[] ipAddressMass = localMachineIP.AddressList;
-            for (int i = 0; i < ipAddressMass.Length; i++)
-            {
-                ipAddressString = ipAddressString + ipAddressMass[i].ToString();
-            }
 
-            ipAddress = ipAddressString;
-            return (ipAddressString);
+            ipAddress = ipAddressMass[ipAddressMass.Length - 1].ToString();
+
+            return (ipAddress);
         }
 
         /// <summary>
