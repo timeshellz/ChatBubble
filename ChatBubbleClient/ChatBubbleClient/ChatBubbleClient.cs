@@ -2593,22 +2593,25 @@ namespace ChatBubble.Client
 
 
             public void OpenLoadingPage()
-            {             
+            {
                 loadingImageBox = new PictureBox();
-                loadingImageBox.Size = new Size(250, 250);
-                loadingImageBox.Location = new Point(loadingPageSize.Width / 2 - loadingImageBox.Width / 2, 75);
-                loadingImageBox.Image = Properties.Resources.LoadingCog;
-                
+                loadingImageBox.Size = new Size(903, 480);
+                loadingImageBox.Location = new Point(0, 0);
+                loadingImageBox.Image = Properties.Resources.loadingScreen20fps;
 
                 loadingMessageLabel = new Label();
-                loadingMessageLabel.Size = new Size(400, 21);
-                loadingMessageLabel.Location = new Point(loadingPageSize.Width / 2 - loadingMessageLabel.Width / 2, 349);
-                loadingMessageLabel.Font = titleFont;
+                loadingMessageLabel.Size = new Size(600, 26);
+                loadingMessageLabel.Location = new Point(loadingPageSize.Width / 2 - loadingMessageLabel.Width / 2, 379);
+                loadingMessageLabel.Font = new Font("Verdana", 11, FontStyle.Italic);
                 loadingMessageLabel.TextAlign = ContentAlignment.MiddleCenter;
+                loadingMessageLabel.BackColor = Color.Transparent;
+                loadingMessageLabel.ForeColor = Color.White;
 
                 this.Controls.Add(loadingImageBox);
-                this.Controls.Add(loadingMessageLabel);
-                
+                loadingImageBox.Controls.Add(loadingMessageLabel);
+
+                loadingMessageLabel.BringToFront();
+
                 Thread initialHandshakeThread = new Thread(ClientStartUp);
                 initialHandshakeThread.Start();
             }
@@ -2650,17 +2653,35 @@ namespace ChatBubble.Client
                         Thread.Sleep(1000);
 
                         FrontDoorPage frontDoorPage = new FrontDoorPage();
-
                         PageAddDelegate pageAddDelegate = new PageAddDelegate(ActiveForm.Controls.Add);
                         BringToFrontDelegate bringToFrontDelegate = new BringToFrontDelegate(frontDoorPage.BringToFront);
                         PanelSetupDelegate panelSetupDelegate = new PanelSetupDelegate(frontDoorPage.PrepareCredentialPanels);
                         ControlDisposeDelegate controlDisposeDelegate = new ControlDisposeDelegate(this.Dispose);
 
                         Invoke(pageAddDelegate, frontDoorPage);
+
+                        Invoke(new Action(
+                            () =>
+                            {
+                                ActiveForm.ControlBox = true;
+                                ActiveForm.Text = "ChatBubble";
+                                ActiveForm.Size = ActiveForm.MaximumSize;
+                            }));
+
                         Invoke(bringToFrontDelegate);
 
                         Thread.Sleep(200);
+
                         Invoke(panelSetupDelegate);
+
+                        Invoke(new Action(
+                            () =>
+                            {
+                                loadingImageBox.Image = null;
+                                loadingImageBox.Dispose();
+                                this.Dispose();
+                            }
+                            ));
 
                         return;
                     }
@@ -2673,23 +2694,37 @@ namespace ChatBubble.Client
                         MainPage mainPage = new MainPage();
                         FrontDoorPage frontDoorPage = new FrontDoorPage();
 
-                        MainPageAddDelegate mainPageAddDelegate = new MainPageAddDelegate(Application.OpenForms[0].Controls.Add);
-                        OpenPanelDelegate openPanelDelegate = new OpenPanelDelegate(mainPage.OpenMainPage);
-                        OpenTabDelegate openTabDelegate = new OpenTabDelegate(mainPage.OpenNewTab);
                         CookieLoginDelegate cookieLoginDelegate = new CookieLoginDelegate(frontDoorPage.LogInHandler);
                         BringToFrontDelegate bringToFrontDelegate = new BringToFrontDelegate(mainPage.BringToFront);
-                        ControlDisposeDelegate controlDisposeDelegate = new ControlDisposeDelegate(this.Dispose);
 
-                        Invoke(cookieLoginDelegate, handshakeResult);                        
+                        Invoke(cookieLoginDelegate, handshakeResult);
+
+                        Invoke(new Action(
+                            () =>
+                            {
+                                ActiveForm.ControlBox = true;
+                                ActiveForm.Text = "ChatBubble";
+                                ActiveForm.Size = ActiveForm.MaximumSize;
+                            }));
+
                         Invoke(bringToFrontDelegate);
-                        
+
+                        Invoke(new Action(
+                            () =>
+                            {
+                                loadingImageBox.Image = null;
+                                loadingImageBox.Dispose();
+                                this.Dispose();
+                            }
+                            ));
+
                         connectedCheckTimer.Start();
                         return;
                     }
                     else
                     {
                         attemptNumber++;
-                        Invoke(messageChangeDelegate, "Connection failure. Retrying, attempt " + attemptNumber + "...");
+                        Invoke(messageChangeDelegate, "Connecting, attempt " + attemptNumber + "...");
                     }
                 }
             }
