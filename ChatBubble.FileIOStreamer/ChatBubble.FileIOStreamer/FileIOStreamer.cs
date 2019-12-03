@@ -8,8 +8,13 @@ namespace ChatBubble
     public class FileIOStreamer
     {
         Encoding us_US = Encoding.GetEncoding(20127);
+
         public static string defaultLogDirectory = "D:\\log.txt";
+
+        public static string defaultRegisteredUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
         public static string defaultActiveUsersDirectory = "D:\\ChatBubbleActiveSessions\\";
+        public static string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
+
         public static string defaultLocalUserCookiesDirectory = "D:\\ChatBubbleClient\\User_Files\\Cookies\\";
         public static string defaultLocalUserDialoguesDirectory = "D:\\ChatBubbleClient\\User_Files\\Dialogues\\";
 
@@ -35,7 +40,11 @@ namespace ChatBubble
                 if (inputStream[i] == '\n')
                 {
                     inputStream = inputStream.Insert(i, Environment.NewLine);
-                    inputStream = inputStream.Remove(i + 2, 1);
+
+                    if (Environment.OSVersion.Platform != PlatformID.Unix)
+                    {
+                        inputStream = inputStream.Remove(i + 2, 1);
+                    }
                     i++;
                 }
             }

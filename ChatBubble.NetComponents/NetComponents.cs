@@ -45,16 +45,14 @@ namespace ChatBubble
         public static string ScanIP()
         {
             string localMachineName = Dns.GetHostName();
-            string ipAddressString = "";
+
             IPHostEntry localMachineIP = Dns.GetHostByName(localMachineName);
             IPAddress[] ipAddressMass = localMachineIP.AddressList;
-            for (int i = 0; i < ipAddressMass.Length; i++)
-            {
-                ipAddressString = ipAddressString + ipAddressMass[i].ToString();
-            }
 
-            ipAddress = ipAddressString;
-            return (ipAddressString);
+            ipAddress = ipAddressMass[ipAddressMass.Length - 1].ToString();
+
+            //ipAddress = "192.168.1.113";
+            return (ipAddress);
         }
 
         /// <summary>
@@ -219,9 +217,9 @@ namespace ChatBubble
         public static string[] GetUserData(string searchParameter, bool fastSearch = false)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
-            string[] registeredUserFilesSplitStrings = new string[15] 
+            string[] registeredUserFilesSplitStrings = new string[15]
             {
                 "login=",                       //[1]
                 "name=",                        //[2]
@@ -291,7 +289,7 @@ namespace ChatBubble
         public static int GetMaxUserID()
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
             string[] registeredUserFilesSplitStrings = new string[3] { "name=", "login=", "password=" };
             string[] registeredUserFiles = fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false);
@@ -304,7 +302,7 @@ namespace ChatBubble
                 {
                     string[] registeredIDUsername = registeredUserFile.Split(registeredUserFilesSplitStrings, StringSplitOptions.RemoveEmptyEntries);
 
-                    if(Convert.ToInt32(registeredIDUsername[0]) >= maxUserID)
+                    if (Convert.ToInt32(registeredIDUsername[0]) >= maxUserID)
                     {
                         maxUserID = Convert.ToInt32(registeredIDUsername[0]);
                     }
@@ -334,11 +332,11 @@ namespace ChatBubble
             return (userData1Substrings[2].CompareTo(userData2Substrings[2]));
         }
 
-                /// <summary>
-                /// Serverside method. <para />
-                /// Receives incoming client requests and dispatches them to their respective destinations.
-                /// </summary>
-                /// <param name="pendingClientSocket">Pending client socket.</param>
+        /// <summary>
+        /// Serverside method. <para />
+        /// Receives incoming client requests and dispatches them to their respective destinations.
+        /// </summary>
+        /// <param name="pendingClientSocket">Pending client socket.</param>
         public static void ServersideRequestReceiver(Socket pendingClientSocket)
         {
             while (pendingClientSocket.Connected == true)
@@ -459,7 +457,7 @@ namespace ChatBubble
 
                     ClientSessionHandler(userData[0], randomHashSeed);
 
-                    loggedInUsersBlockingCollection.TryAdd(loggedInUsersBlockingCollection.Count + 1,"id=" + userData[0] + "ip=" + clientIP.ToString());
+                    loggedInUsersBlockingCollection.TryAdd(loggedInUsersBlockingCollection.Count + 1, "id=" + userData[0] + "ip=" + clientIP.ToString());
                     return ("login_success" + "id=" + userData[0] + "hash=" + randomHashSeed.ToString());
                     //Passes user ID and persistence cookie key back for session update purposes
                 }
@@ -480,7 +478,7 @@ namespace ChatBubble
 
             string[] clientRequestSubstrings;
             string[] clientRequestSplitStrings = new string[3] { "name=", "login=", "password=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             string[] userData;
             //FOR SAFETY AND AGILITY REASONS, MAKE IT SO THAT DEFAULT USERS LOCATION WOULD BE READ FROM SETTINGS FILE IN THE FUTURE
 
@@ -495,7 +493,7 @@ namespace ChatBubble
                 return ("sign_up_failure_2");
             }
 
-            if(userData[0] == "User_not_found")
+            if (userData[0] == "User_not_found")
             {
                 FileIOStreamer fileIO = new FileIOStreamer();
                 int maxID = GetMaxUserID();
@@ -517,7 +515,7 @@ namespace ChatBubble
 
                 return ("sign_up_success");
             }
-            else if(userData[0] != "Error")
+            else if (userData[0] != "Error")
             {
                 return ("sign_up_failure_1"); //Returns if a user with this name already exists
             }
@@ -533,7 +531,6 @@ namespace ChatBubble
         public static string ServerGetUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "reqid=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -545,14 +542,14 @@ namespace ChatBubble
                 return ("authsn_not_passed");
             }
 
-            if(clientRequestSubstrings[2] == "self")
+            if (clientRequestSubstrings[2] == "self")
             {
                 //If no ID given, return requesting user data
                 clientRequestSubstrings[2] = clientRequestSubstrings[0];
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[2]);
-            
+
             if (userData[0] != "User_not_found" && userData[0] != "Error" && userData[6].Length > 0)
             {
                 string[] summarySubstrings = userData[6].Split(new string[] { "status=", "main=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -575,7 +572,7 @@ namespace ChatBubble
         public static string ServerEditUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "newsummary=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -594,7 +591,7 @@ namespace ChatBubble
             string clientNewSummaryStatusSubstring = clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("status=") + 7);
             clientNewSummaryStatusSubstring = clientNewSummaryStatusSubstring.Substring(0, clientNewSummaryStatusSubstring.IndexOf("main=")).Replace("=", "[eqlsgn]");
             string clientNewSummaryMainSubstring = clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("main=") + 5).Replace("=", "[eqlsgn]");
-            
+
             clientRequestSubstrings[2] = "\nstatus=" + clientNewSummaryStatusSubstring + "\nmain=" + clientNewSummaryMainSubstring + "\n";
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
@@ -603,15 +600,15 @@ namespace ChatBubble
             {
                 fileIO.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "summary==", userData[6], true, true);
 
-                if(clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("status=") + 7, clientRequestSubstrings[2].IndexOf("main=") - (clientRequestSubstrings[2].IndexOf("status=") + 7)) == "\n")
+                if (clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("status=") + 7, clientRequestSubstrings[2].IndexOf("main=") - (clientRequestSubstrings[2].IndexOf("status=") + 7)) == "\n")
                 {
                     clientRequestSubstrings[2] = clientRequestSubstrings[2].Insert(clientRequestSubstrings[2].IndexOf("status=") + 7, "null");
                 }
-                
+
                 if (clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("main=") + 5, clientRequestSubstrings[2].Length - (clientRequestSubstrings[2].IndexOf("main=") + 5)) == "\n")
                 {
                     clientRequestSubstrings[2] = clientRequestSubstrings[2].Insert(clientRequestSubstrings[2].IndexOf("main=") + 5, "null");
-                }               
+                }
 
                 fileIO.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", clientRequestSubstrings[2], false, "summary==");
                 return ("descript_chng_suc");
@@ -630,12 +627,12 @@ namespace ChatBubble
         /// <returns></returns>
         public static string ServerSearchService(string searchParameter)
         {
-            if(searchParameter == "")
+            if (searchParameter == "")
             {
                 return ("=no_match=");
             }
 
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
             FileIOStreamer fileIO = new FileIOStreamer();
 
@@ -648,12 +645,13 @@ namespace ChatBubble
                 string[] registeredUserSubstrings = registeredUser.Split(new string[] { "login=" }, StringSplitOptions.RemoveEmptyEntries);
 
                 //Gets all infromation about every found user, using ID as searchParameter
+
                 registeredUsersData.Add(GetUserData(registeredUserSubstrings[0], true));
             }
 
-            foreach(string[] userData in registeredUsersData)
+            foreach (string[] userData in registeredUsersData)
             {
-                for(int i=1;i<=2;i++)
+                for (int i = 1; i <= 2; i++)
                 {
                     //Compares the searchQuery to every entry found for every user. Data of any closest matching users is added to list
                     //Results depend on queryLength, which is used to widen or shorten the range of possible outcomes.
@@ -670,7 +668,7 @@ namespace ChatBubble
 
             string matchingUsersDataString = String.Join("user=", matchingUsersData);
 
-            if(matchingUsersDataString == "")
+            if (matchingUsersDataString == "")
             {
                 matchingUsersDataString = "=no_match=";
             }
@@ -686,8 +684,8 @@ namespace ChatBubble
         /// <returns></returns>
         public static string ServerAddFriendService(string clientRequest)
         {
-            string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "addid=" };            
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "addid=" };
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -701,14 +699,14 @@ namespace ChatBubble
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if(userData[0] != "User_not_found" && userData[0] != "Error")
+            if (userData[0] != "User_not_found" && userData[0] != "Error")
             {
                 //Check if user already has this friend (probably going to be made redundant in the future)
                 string[] fIDSubstrings = userData[8].Split(new string[] { "fid=" }, StringSplitOptions.RemoveEmptyEntries);
 
-                foreach(string fid in fIDSubstrings)
+                foreach (string fid in fIDSubstrings)
                 {
-                    if(fid == clientRequestSubstrings[2])
+                    if (fid == clientRequestSubstrings[2])
                     {
                         return ("friend_already_added");
                     }
@@ -720,7 +718,7 @@ namespace ChatBubble
             else
             {
                 return ("database__error__");
-            }      
+            }
         }
 
         /// <summary>
@@ -750,7 +748,7 @@ namespace ChatBubble
                 userData[8] = userData[8].Replace("=", "");
                 friendsListArray = userData[8].Split(new string[] { "fid" }, StringSplitOptions.RemoveEmptyEntries);
 
-                List<string> friendUserDataList = new List<string>();          
+                List<string> friendUserDataList = new List<string>();
 
                 foreach (string friend in friendsListArray)
                 {
@@ -781,7 +779,7 @@ namespace ChatBubble
         public static string ServerRemoveFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "fid=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -815,7 +813,7 @@ namespace ChatBubble
         public static string ServerGetPendingMessagesService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[2] { "id=", "confirmation=" };
-            string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
+            string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory; //TEMPORARY
             string[] messageHandleSplitstrings = new string[3] { "msgid=", "sender=", "rcpnt=" };
             FileIOStreamer fileIO = new FileIOStreamer();
 
@@ -829,13 +827,13 @@ namespace ChatBubble
             }
 
             string[] allPendingMessages = fileIO.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false);
-            string serverReplyString = "";                    
+            string serverReplyString = "";
 
             foreach (string pendingMessage in allPendingMessages)
             {
                 string[] pendingMessageSubstrings = pendingMessage.Split(messageHandleSplitstrings, StringSplitOptions.RemoveEmptyEntries);
                 //For message handle splits, [0] - server msgid, [1] = sender id, [2] = recipient id
-       
+
                 if (pendingMessageSubstrings[2] == clientRequestSubstrings[0])
                 {
                     string messageContent = fileIO.ReadFromFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
@@ -845,7 +843,7 @@ namespace ChatBubble
                     serverReplyString += "msg=" + "sender=" + pendingMessageSubstrings[1] + "time=" + messageContentSubstrings[0] +
                         "message=" + messageContentSubstrings[1];
 
-                    //fileIO.RemoveFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
+                    fileIO.RemoveFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
                 }
             }
 

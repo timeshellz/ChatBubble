@@ -39,9 +39,6 @@ namespace ChatBubble.Server
         public static string currentTimeFull;
         public static string currentDateFull;
 
-        //FileIOStreamer
-        public static string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\regusers.txt";
-
         //Server Console Commands-----------------------Server Console Commands---------------------------Server Console Commands-----------------------------Server Console Commands
         public class ConsoleCommands
         {
@@ -193,15 +190,22 @@ namespace ChatBubble.Server
             public string ConsoleSessionStart()
             {
                 CommandLogger("[" + localDate.ToLongDateString() + ", " + localDate.ToLongTimeString() + "] New Server session started.\n\n");
-                
+
+                if (Environment.OSVersion.Platform == PlatformID.Unix) //Changes defaults for unix os
+                {
+                    FileIOStreamer.defaultRegisteredUsersDirectory = "/var/chat-bubble/users/regusers/";
+                    FileIOStreamer.defaultActiveUsersDirectory = "/var/chat-bubble/active-sessions/";
+                    FileIOStreamer.defaultPendingMessagesDirectory = "/var/chat-bubble/pending-messages/";
+                }
+
                 return ("ChatBubble Server Console v" + assemblyVersion + "\n\n");
             }
 
             //Command Logger
             public void CommandLogger(string input)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
-                fileIO.WriteToFile(FileIOStreamer.defaultLogDirectory, input, true);
+                //FileIOStreamer fileIO = new FileIOStreamer();
+                //fileIO.WriteToFile(FileIOStreamer.defaultLogDirectory, input, true);
             }
         }
         
