@@ -46,6 +46,7 @@
             // 
             // logTextbox
             // 
+            this.logTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.logTextbox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.logTextbox.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.logTextbox.ForeColor = System.Drawing.SystemColors.WindowText;
@@ -60,6 +61,7 @@
             // 
             // commandTextbox
             // 
+            this.commandTextbox.BackColor = System.Drawing.Color.White;
             this.commandTextbox.Location = new System.Drawing.Point(337, 652);
             this.commandTextbox.Margin = new System.Windows.Forms.Padding(4);
             this.commandTextbox.Name = "commandTextbox";
@@ -70,6 +72,7 @@
             // 
             // currentIPTextbox
             // 
+            this.currentIPTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentIPTextbox.Location = new System.Drawing.Point(13, 62);
             this.currentIPTextbox.Margin = new System.Windows.Forms.Padding(4);
             this.currentIPTextbox.Name = "currentIPTextbox";
@@ -79,6 +82,7 @@
             // 
             // currentSocketTextbox
             // 
+            this.currentSocketTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentSocketTextbox.Location = new System.Drawing.Point(13, 84);
             this.currentSocketTextbox.Margin = new System.Windows.Forms.Padding(4);
             this.currentSocketTextbox.Name = "currentSocketTextbox";
@@ -104,6 +108,7 @@
             // 
             // currentState1Textbox
             // 
+            this.currentState1Textbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentState1Textbox.Location = new System.Drawing.Point(13, 106);
             this.currentState1Textbox.Margin = new System.Windows.Forms.Padding(4);
             this.currentState1Textbox.Name = "currentState1Textbox";
@@ -113,6 +118,7 @@
             // 
             // currentState2Textbox
             // 
+            this.currentState2Textbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentState2Textbox.Location = new System.Drawing.Point(13, 128);
             this.currentState2Textbox.Margin = new System.Windows.Forms.Padding(4);
             this.currentState2Textbox.Name = "currentState2Textbox";
@@ -122,6 +128,7 @@
             // 
             // clientCountTextbox
             // 
+            this.clientCountTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.clientCountTextbox.Location = new System.Drawing.Point(13, 185);
             this.clientCountTextbox.Margin = new System.Windows.Forms.Padding(4);
             this.clientCountTextbox.Name = "clientCountTextbox";
@@ -132,7 +139,7 @@
             // 
             // currentTimeTextbox
             // 
-            this.currentTimeTextbox.BackColor = System.Drawing.SystemColors.Control;
+            this.currentTimeTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentTimeTextbox.Location = new System.Drawing.Point(13, 652);
             this.currentTimeTextbox.Name = "currentTimeTextbox";
             this.currentTimeTextbox.ReadOnly = true;
@@ -142,7 +149,7 @@
             // 
             // currentDateTextbox
             // 
-            this.currentDateTextbox.BackColor = System.Drawing.SystemColors.Control;
+            this.currentDateTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.currentDateTextbox.Location = new System.Drawing.Point(135, 652);
             this.currentDateTextbox.Name = "currentDateTextbox";
             this.currentDateTextbox.ReadOnly = true;
@@ -157,6 +164,7 @@
             // 
             // loggedInCountTextbox
             // 
+            this.loggedInCountTextbox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.loggedInCountTextbox.Location = new System.Drawing.Point(13, 215);
             this.loggedInCountTextbox.Margin = new System.Windows.Forms.Padding(4);
             this.loggedInCountTextbox.Name = "loggedInCountTextbox";
@@ -169,6 +177,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(787, 682);
             this.Controls.Add(this.loggedInCountTextbox);
             this.Controls.Add(this.currentDateTextbox);
@@ -182,10 +191,10 @@
             this.Controls.Add(this.commandTextbox);
             this.Controls.Add(this.logTextbox);
             this.Margin = new System.Windows.Forms.Padding(4);
-            this.MaximumSize = new System.Drawing.Size(805, 729);
+            this.MaximumSize = new System.Drawing.Size(805, 780);
             this.MinimumSize = new System.Drawing.Size(805, 729);
             this.Name = "Server";
-            this.Text = "Form1";
+            this.Text = "ChatBubbleServer";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();

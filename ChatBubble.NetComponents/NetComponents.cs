@@ -41,7 +41,7 @@ namespace ChatBubble
         public static string ScanIP()
         {
             string localMachineName = Dns.GetHostName();
-            string ipAddressString = "";
+
             IPHostEntry localMachineIP = Dns.GetHostByName(localMachineName);
             IPAddress[] ipAddressMass = localMachineIP.AddressList;
 
@@ -211,7 +211,7 @@ namespace ChatBubble
         public static string[] GetUserData(string searchParameter, bool fastSearch = false)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
             string[] registeredUserFilesSplitStrings = new string[15]
             {
@@ -283,7 +283,7 @@ namespace ChatBubble
         public static int GetMaxUserID()
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
             string[] registeredUserFilesSplitStrings = new string[3] { "name=", "login=", "password=" };
             string[] registeredUserFiles = fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false);
@@ -476,7 +476,7 @@ namespace ChatBubble
 
             string[] clientRequestSubstrings;
             string[] clientRequestSplitStrings = new string[3] { "name=", "login=", "password=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             string[] userData;
             //FOR SAFETY AND AGILITY REASONS, MAKE IT SO THAT DEFAULT USERS LOCATION WOULD BE READ FROM SETTINGS FILE IN THE FUTURE
 
@@ -570,7 +570,7 @@ namespace ChatBubble
         public static string ServerEditUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "newsummary=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -630,7 +630,7 @@ namespace ChatBubble
                 return ("=no_match=");
             }
 
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
             FileIOStreamer fileIO = new FileIOStreamer();
 
@@ -683,7 +683,7 @@ namespace ChatBubble
         public static string ServerAddFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "addid=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -777,7 +777,7 @@ namespace ChatBubble
         public static string ServerRemoveFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "fid=" };
-            string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -811,7 +811,7 @@ namespace ChatBubble
         public static string ServerGetPendingMessagesService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[2] { "id=", "confirmation=" };
-            string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
+            string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory; //TEMPORARY
             string[] messageHandleSplitstrings = new string[3] { "msgid=", "sender=", "rcpnt=" };
             FileIOStreamer fileIO = new FileIOStreamer();
 
@@ -985,7 +985,7 @@ namespace ChatBubble
         {
             FileIOStreamer fileIO = new FileIOStreamer();
             string handshakeReplyString;
-            string localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt");
+            string localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
 
             if (String.IsNullOrEmpty(localCookieContents) == true)
             {
@@ -1106,7 +1106,7 @@ namespace ChatBubble
             if (sendConfirmation == true)
             {
                 FileIOStreamer fileIO = new FileIOStreamer();
-                localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt");
+                localCookieContents= fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
             }
 
             string clientRequestRaw = flag + localCookieContents + request;
@@ -1245,17 +1245,15 @@ namespace ChatBubble
         {
             if (serverIPEndPoint != null)
             {
-                return ("Can't change IP while the server is already bound\n");
+                return ("Can't change IP while server is already bound\n");
             }
 
-            try
-            {
-                ipAddress = input.Substring(6);
-            }
-            catch
+            if (input == "")
             {
                 return ("Wrong argument. Please try again.\n");
             }
+
+            ipAddress = input;
 
             return("New server IP address set on " + ipAddress + "\n");
         }
@@ -1275,12 +1273,13 @@ namespace ChatBubble
 
             try
             {
-                socketAddress = Convert.ToInt32(socketNumber.Substring(10));
+                socketAddress = Convert.ToInt32(socketNumber);
             }
             catch
             {
                 return ("Wrong argument. Please try again.\n");
             }
+
             return("New socket address has been set at " + socketAddress + "\n");
         }
 

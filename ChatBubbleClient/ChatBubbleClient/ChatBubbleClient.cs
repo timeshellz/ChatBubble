@@ -40,6 +40,7 @@ namespace ChatBubble.Client
         public Form1()
         {           
             InitializeComponent();
+
             LoadingPage loadingPage = new LoadingPage();
             loadingPage.ActiveForm = this;
 
@@ -306,7 +307,7 @@ namespace ChatBubble.Client
                 NetComponents.BreakBind(true);
 
                 FileIOStreamer fileIO = new FileIOStreamer();
-                fileIO.WriteToFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt", "invalid_", true);
+                fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_", true);
 
                 Form1 currentForm = (Form1)Application.OpenForms[0];
                 MainPage mainPage = currentForm.Controls.OfType<MainPage>().First();
@@ -3073,15 +3074,18 @@ namespace ChatBubble.Client
             public string LogInHandler(string serverReply)
             {
                 //For serverReplySubstrings, index 0 is server flag, index 1 is ID, index 2 is hash
-
                 string[] serverReplySubstrings = serverReply.Split(serverReplySplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
+
                 if (serverReplySubstrings[0] == "login_success")
                 {
+                    //Set local user directory for logged in user
+                    FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
+
                     //Create a cookie in local client directory to keep user logged in
                     FileIOStreamer fileIO = new FileIOStreamer();
 
-                    fileIO.ClearFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt");
-                    fileIO.WriteToFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt", "id=" +
+                    fileIO.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+                    fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
                         serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], true);
 
                     MainPage mainPage = new MainPage();
@@ -3526,7 +3530,6 @@ namespace ChatBubble.Client
             {
                 loadingMessageLabel.Text = message;
             }
-
         }
     }
 
@@ -3539,8 +3542,6 @@ namespace ChatBubble.Client
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
         }
-       
-
     }
   
     public class WaterMarkTextBox : TextBox
