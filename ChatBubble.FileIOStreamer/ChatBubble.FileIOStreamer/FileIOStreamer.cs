@@ -9,14 +9,17 @@ namespace ChatBubble
     {
         Encoding us_US = Encoding.GetEncoding(20127);
 
-        public static string defaultLogDirectory = "D:\\log.txt";
+        public static string defaultDirectoryRoot { get; private set; }
 
-        public static string defaultRegisteredUsersDirectory = "D:\\ChatBubbleUsersFolder\\";
-        public static string defaultActiveUsersDirectory = "D:\\ChatBubbleActiveSessions\\";
-        public static string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
+        public static string defaultLogDirectory { get; private set; }
 
-        public static string defaultLocalUserCookiesDirectory = "D:\\ChatBubbleClient\\User_Files\\Cookies\\";
-        public static string defaultLocalUserDialoguesDirectory = "D:\\ChatBubbleClient\\User_Files\\Dialogues\\";
+        public static string defaultRegisteredUsersDirectory { get; private set; }
+        public static string defaultActiveUsersDirectory { get; private set; }
+        public static string defaultPendingMessagesDirectory { get; private set; }
+
+        public static string defaultLocalCookiesDirectory { get; private set; }
+        public static string defaultLocalUserDataDirectory { get; private set; }
+        public static string defaultLocalUserDialoguesDirectory { get; private set; }
 
         public string inputStream;
 
@@ -264,6 +267,28 @@ namespace ChatBubble
                 return true;
             }
             return false;
+        }
+
+        public static void SetServerDirectories(string[] directoryData)
+        {
+            defaultDirectoryRoot = directoryData[0];
+            defaultRegisteredUsersDirectory = directoryData[0] + directoryData[1];
+            defaultActiveUsersDirectory = directoryData[0] + directoryData[2];
+            defaultPendingMessagesDirectory = directoryData[0] + directoryData[3];          
+        }
+
+        public static void SetClientRootDirectory(string mainDirectory)
+        {
+            defaultDirectoryRoot = mainDirectory;
+
+            defaultLocalCookiesDirectory = defaultDirectoryRoot + @"\Cookies\";
+        }
+
+        public static void SetLocalUserDirectory(string userID)
+        {
+            defaultLocalUserDataDirectory = defaultDirectoryRoot + @"\UserData" + @"\user" + userID;
+
+            defaultLocalUserDialoguesDirectory = defaultLocalUserDataDirectory + @"\Dialogues\";
         }
     }
 }

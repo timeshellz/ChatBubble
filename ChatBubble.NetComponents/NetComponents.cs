@@ -51,7 +51,6 @@ namespace ChatBubble
 
             ipAddress = ipAddressMass[ipAddressMass.Length - 1].ToString();
 
-            //ipAddress = "192.168.1.113";
             return (ipAddress);
         }
 
@@ -937,7 +936,7 @@ namespace ChatBubble
         {
             FileIOStreamer fileIO = new FileIOStreamer();
             string handshakeReplyString;
-            string localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt");
+            string localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
 
             if(String.IsNullOrEmpty(localCookieContents) == true)
             {
@@ -1056,7 +1055,7 @@ namespace ChatBubble
             if (sendConfirmation == true)
             {
                 FileIOStreamer fileIO = new FileIOStreamer();
-                localCookieContents= fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserCookiesDirectory + "persistenceCookie.txt");
+                localCookieContents= fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
             }
 
             string clientRequestRaw = flag + localCookieContents + request;
@@ -1178,17 +1177,15 @@ namespace ChatBubble
         {
             if (serverIPEndPoint != null)
             {
-                return ("Can't change IP while the server is already bound\n");
+                return ("Can't change IP while server is already bound\n");
             }
 
-            try
-            {
-                ipAddress = input.Substring(6);
-            }
-            catch
+            if (input == "")
             {
                 return ("Wrong argument. Please try again.\n");
             }
+
+            ipAddress = input;
 
             return("New server IP address set on " + ipAddress + "\n");
         }
@@ -1208,12 +1205,13 @@ namespace ChatBubble
 
             try
             {
-                socketAddress = Convert.ToInt32(socketNumber.Substring(10));
+                socketAddress = Convert.ToInt32(socketNumber);
             }
             catch
             {
                 return ("Wrong argument. Please try again.\n");
             }
+
             return("New socket address has been set at " + socketAddress + "\n");
         }
 
