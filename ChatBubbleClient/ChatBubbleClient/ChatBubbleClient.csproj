@@ -41,6 +41,7 @@
       <HintPath>..\..\packages\ImageProcessor.2.7.0.100\lib\net452\ImageProcessor.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -86,7 +87,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="ChatBubbleClient.exe.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj">

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.Reflection;
+using System.Configuration;
 using ChatBubble;
 
 namespace ChatBubble.Server
@@ -39,9 +40,6 @@ namespace ChatBubble.Server
         public static string currentTimeFull;
         public static string currentDateFull;
 
-        //FileIOStreamer
-        public static string defaultUsersDirectory = "D:\\ChatBubbleUsersFolder\\regusers.txt";
-
         //Server Console Commands-----------------------Server Console Commands---------------------------Server Console Commands-----------------------------Server Console Commands
         public class ConsoleCommands
         {
@@ -49,10 +47,8 @@ namespace ChatBubble.Server
 
             //Sets Server IP address
             public string SetIP(string input)
-            {
-                string output;
-                
-                output = "[" + currentTimeFull + "] " + NetComponents.ServerSetIPAddress(input); ;
+            {              
+                string output = "[" + currentTimeFull + "] " + NetComponents.ServerSetIPAddress(input); ;
 
                 CommandLogger(output);
                 return (output);
@@ -60,10 +56,8 @@ namespace ChatBubble.Server
 
             //Sets Server socket address
             public string SetSocket(string input)
-            {
-                string output;
-                
-                output = "[" + currentTimeFull + "] " + NetComponents.ServerSetSocket(input);
+            {              
+                string output = "[" + currentTimeFull + "] " + NetComponents.ServerSetSocket(input);
 
                 CommandLogger(output);
                 return (output);
@@ -71,11 +65,8 @@ namespace ChatBubble.Server
 
             //Autosets Server IP
             public string AutoIP()
-            {
- 
-                string output;
-                    
-                output = "[" + currentTimeFull + "]" + " New Server IP address auto-set at " + NetComponents.ScanIP() + "\n";
+            {  
+                string output = "[" + currentTimeFull + "]" + " New Server IP address auto-set at " + NetComponents.ScanIP() + "\n";
 
                 CommandLogger(output);
                 return (output);
@@ -84,9 +75,7 @@ namespace ChatBubble.Server
             //Binds Server IP to socket
             public string Bind()
             {
-                string output;
-
-                output = "[" + currentTimeFull + "] " + NetComponents.ServerBind(NetComponents.ipAddress);
+                string output = "[" + currentTimeFull + "] " + NetComponents.ServerBind(NetComponents.ipAddress);
 
                 CommandLogger(output);
                 return (output);               
@@ -95,8 +84,6 @@ namespace ChatBubble.Server
             //Unbinds Server IP from socket
             public string Unbind()
             {
-                string output;
-
                 //State Availability Check
                 if (ServerListening == true)
                 {
@@ -106,7 +93,7 @@ namespace ChatBubble.Server
 
                 NetComponents.BreakBind(true);
 
-                output = "[" + currentTimeFull + "]" + " Server has been unbound.\n";
+                string output = "[" + currentTimeFull + "]" + " Server has been unbound.\n";
 
                 CommandLogger(output);
                 return (output);             
@@ -115,8 +102,6 @@ namespace ChatBubble.Server
             //Starts listening for connections
             public string Listen()
             {
-                string output;
-
                 if (NetComponents.ServerSocketBoundCheck() != "")
                 {
                     return (NetComponents.ServerSocketBoundCheck());
@@ -130,9 +115,7 @@ namespace ChatBubble.Server
                 Thread sessionCheckerThread = new Thread(NetComponents.SessionTimeOutCheck);
                 sessionCheckerThread.Start();
 
-                //Thread notificationManagerThread = new Thread();
-
-                output = "[" + currentTimeFull + "] Started listening for connections on port " + NetComponents.socketAddress + "\n";
+                string output = "[" + currentTimeFull + "] Started listening for connections on port " + NetComponents.socketAddress + "\n";
 
                 ServerListening = true;
 
@@ -157,27 +140,98 @@ namespace ChatBubble.Server
             //Returns the hat part of console text
             public string Clear()
             {
-                string output = "ChatBubble Server Console v0.2\n\n";
-
-                return (output);
+                return ("ChatBubble Server Console v" + assemblyVersion + "\n\n");
             }
 
             //Clears the logfile
             public string ClearLog()
             {
-                FileStream fileClearer = new FileStream(FileIOStreamer.defaultLogDirectory, FileMode.Truncate);
-                fileClearer.Close();
+                FileIOStreamer fileIO = new FileIOStreamer();
+                fileIO.ClearFile(FileIOStreamer.defaultLogDirectory);
 
                 return ("[" + currentTimeFull + "] Log file '" + FileIOStreamer.defaultLogDirectory + "' cleared.\n");
+            }
+
+            public string SetDirectories(string path = "")
+            {
+                string[] directoryData = new string[4];
+
+                Configuration configFile = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
+
+                directoryData[0] = configFile.AppSettings.Settings["databaseDirectory"].Value;
+                directoryData[1] = configFile.AppSettings.Settings["usersFolder"].Value;
+                directoryData[2] = configFile.AppSettings.Settings["sessionsFolder"].Value;
+                directoryData[3] = configFile.AppSettings.Settings["pendingMessagesFolder"].Value;
+
+                if (directoryData[0] == "")
+                {
+                    directoryData[0] = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                }
+                else if(path != "")
+                {
+                    directoryData[0] = path;
+                }
+
+                configFile.AppSettings.Settings["databaseDirectory"].Value = directoryData[0];
+
+                if (directoryData[1] == "")
+                {
+                    if(Environment.OSVersion.Platform == PlatformID.Unix)
+                    {
+                        directoryData[1] = "/regusers/";
+                    }
+                    else
+                    {
+                        directoryData[1] = @"\Users\";
+                    }
+
+                    configFile.AppSettings.Settings["usersFolder"].Value = directoryData[1];
+                }
+
+                if(directoryData[2] == "")
+                {
+                    if(Environment.OSVersion.Platform == PlatformID.Unix)
+                    {
+                        directoryData[2] = "/active-sessions/";
+                    }
+                    else
+                    {
+                        directoryData[2] = @"\Active Sessions\";
+                    }
+
+                    configFile.AppSettings.Settings["sessionsFolder"].Value = directoryData[2];
+                }
+
+                if(directoryData[3] == "")
+                {
+                    if(Environment.OSVersion.Platform == PlatformID.Unix)
+                    {
+                        directoryData[3] = "/pending-messages/";
+                    }
+                    else
+                    {
+                        directoryData[3] = @"\Pending Messages\";
+                    }
+
+                    configFile.AppSettings.Settings["pendingMessagesFolder"].Value = directoryData[3];
+                }
+
+                configFile.Save();
+                ConfigurationManager.RefreshSection("appSettings");
+
+                FileIOStreamer.SetServerDirectories(directoryData);
+
+                return ("[" + currentTimeFull + "] Database directory set to \"" + directoryData[0] + "\"\n");
             }
 
             public string Help()
             {
                 //Returns the Help text
 
-                string output = "Available commands:\n\nsetip [IPAddress] -- sets Server IPAddress\n\nsetsocket [socketaddress] -- sets Server socket address\n\n";
-                output += "autoip -- auto IP detection (doesn't always work)\n\nbind -- bind current IP to current socket\n\nunbind -- unbinds current socket\n\n";
-                output += "listen -- start port listening\n\nstoplisten -- stop port listening\n\nclear -- clear log window text\n\nclearlog -- clear log file\n\nhelp -- help\n\nshutdown - full Server stop\n";
+                string output = "Available commands:\n\nsetip [IPAddress] -- sets Server IPAddress\n\nsetsocket [socketaddress] -- sets Server socket address\n\n" +
+                    "autoip -- auto-detect local IP\n\nbind -- bind current IP to current socket\n\nunbind -- unbinds current socket\n\n" +
+                    "listen -- start port listening\n\nstoplisten -- stop port listening\n\nclear -- clear log window text\n\nclearlog -- clear log file\n\n" +
+                    "setdir [directory] -- set database directory\n\nhelp -- help\n\nshutdown - full Server stop\n";
 
                 return (output);
             }
@@ -193,15 +247,17 @@ namespace ChatBubble.Server
             public string ConsoleSessionStart()
             {
                 CommandLogger("[" + localDate.ToLongDateString() + ", " + localDate.ToLongTimeString() + "] New Server session started.\n\n");
-                
+
+                SetDirectories();
+
                 return ("ChatBubble Server Console v" + assemblyVersion + "\n\n");
             }
 
             //Command Logger
             public void CommandLogger(string input)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
-                fileIO.WriteToFile(FileIOStreamer.defaultLogDirectory, input, true);
+                //FileIOStreamer fileIO = new FileIOStreamer();
+                //fileIO.WriteToFile(FileIOStreamer.defaultLogDirectory, input, true);
             }
         }
         
@@ -227,76 +283,71 @@ namespace ChatBubble.Server
         {
             if (e.KeyCode.Equals(Keys.Enter) && logCommandText != "")
             {
-                ConsoleCommands consoleCommand = new ConsoleCommands();
+                ConsoleCommands ConsoleCommands = new ConsoleCommands();
 
-                string appendableText = "";
-                mainCommandPart = "";                
+                string commandOutput = "";
+                string commandArgument;
 
                 logTextbox.Text = logTextbox.Text + ">" + logCommandText;
                 logTextbox.AppendText("\n");
                 logTextbox.ScrollToCaret();
 
-                for (int i = 0; i < logCommandText.Length; i++)
+                string[] commandSubstrings = logCommandText.Split(new char[] { ' ' });     
+                //[0] - command, [1] - conditions
+
+                if(commandSubstrings.Length > 1)
                 {
-                    if (logCommandText[i] != ' ' && i < logCommandText.Length)
-                    {
-                        mainCommandPart += logCommandText[i];
-                    }
-                    else
-                    {
+                    commandArgument = commandSubstrings[1];
+                }
+                else
+                {
+                    commandArgument = "";
+                }
+
+                switch(commandSubstrings[0])
+                {
+                    case "help":
+                        commandOutput = ConsoleCommands.Help();
                         break;
-                    }
-                }             
-                
-                //Checking for specific command string to cast a command
-
-                if (mainCommandPart == "help")
-                {
-                    appendableText = consoleCommand.Help();                   
-                }
-                if (mainCommandPart == "clear")
-                {
-                    logTextbox.Text = consoleCommand.Clear();
-                }              
-                if (mainCommandPart == "clearlog")
-                {
-                    appendableText = consoleCommand.ClearLog();
-                }
-                if (mainCommandPart == "setip")
-                {
-                    appendableText = consoleCommand.SetIP(logCommandText);
-                }              
-                if (mainCommandPart == "setsocket")
-                {
-                    appendableText = consoleCommand.SetSocket(logCommandText);
-                }            
-                if (mainCommandPart == "autoip")
-                {
-                    appendableText = consoleCommand.AutoIP();
-                }               
-                if (mainCommandPart == "unbind")
-                {
-                    appendableText = consoleCommand.Unbind();
-                }            
-                if (mainCommandPart == "bind")
-                {
-                    appendableText = consoleCommand.Bind();
-                }               
-                if (mainCommandPart == "listen")
-                {
-                    appendableText = consoleCommand.Listen();                    
-                }               
-                if (mainCommandPart == "shutdown")
-                {
-                    consoleCommand.Shutdown();
-                }    
-                if (mainCommandPart == "stoplisten")
-                {
-                    appendableText = consoleCommand.StopListen();
+                    case "clear":
+                        commandOutput = ConsoleCommands.Clear();
+                        break;
+                    case "clearlog":
+                        commandOutput = ConsoleCommands.ClearLog();
+                        break;
+                    case "setip":
+                        commandOutput = ConsoleCommands.SetIP(commandArgument);
+                        break;
+                    case "setsocket":
+                        commandOutput = ConsoleCommands.SetSocket(commandArgument);
+                        break;
+                    case "autoip":
+                        commandOutput = ConsoleCommands.AutoIP();
+                        break;
+                    case "unbind":
+                        commandOutput = ConsoleCommands.Unbind();
+                        break;
+                    case "bind":
+                        commandOutput = ConsoleCommands.Bind();
+                        break;
+                    case "listen":
+                        commandOutput = ConsoleCommands.Listen();
+                        break;
+                    case "shutdown":
+                        ConsoleCommands.Shutdown();
+                        break;
+                    case "stoplisten":
+                        commandOutput = ConsoleCommands.StopListen();
+                        break;
+                    case "setdir":
+                        commandOutput = ConsoleCommands.SetDirectories(commandArgument);
+                        break;
+                    default:
+                        commandOutput = "[" + currentTimeFull + "] Unknown command.\n";
+                        break;
                 }
 
-                logTextbox.AppendText(appendableText);
-               
+                logTextbox.AppendText(commandOutput);             
                 
                 commandTextbox.Text = "";
                 logCommandText = "";
