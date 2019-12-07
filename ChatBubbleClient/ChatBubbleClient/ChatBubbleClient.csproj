@@ -104,6 +104,13 @@
     <None Include="Resources\WarningSign.gif" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\returnButtonIdle.png" />
+    <None Include="Resources\returnButtonHover.png" />
+    <None Include="Resources\returnButtonClick.png" />
+    <None Include="Resources\sendButtonIdle.png" />
+    <None Include="Resources\sendButtonHover.png" />
+    <None Include="Resources\sendButtonClick.png" />
+    <None Include="Resources\sendButtonImage.png" />
     <None Include="Resources\searchPanelBackground.png" />
     <None Include="Resources\settingsButtonIdle.png" />
     <None Include="Resources\searchButtonIdle.png" />
@@ -227,9 +234,10 @@
     <None Include="Resources\friendsTabHat.png" />
     <None Include="Resources\bubblesImage.png" />
     <None Include="Resources\mainPanelBGImage.png" />
-    <Content Include="Resources\PlaceholderProfilePicture.jpeg" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Resources\PlaceholderProfilePicture.jpeg" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
