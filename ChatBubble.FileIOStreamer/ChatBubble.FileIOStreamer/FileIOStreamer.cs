@@ -32,6 +32,11 @@ namespace ChatBubble
         /// <param name="beginFromString">String from which to start when writeFromStart is true.</param>
         public void WriteToFile(string filePath, string input, bool writeFromStart = true, string beginFromString = "")
         {
+            if (!Directory.Exists(filePath.Substring(0, filePath.LastIndexOf(@"\"))))
+            {
+                Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf(@"\")));
+            }
+
             FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
 
             byte[] byteStream = new byte[4096];
@@ -93,8 +98,17 @@ namespace ChatBubble
         /// <returns></returns>
         public string ReadFromFile(string filePath, string beginFromString = "", string endOnString = "")
         {
-            FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            FileStream fileStream;
             
+            if(FileExists(filePath))
+            {
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            }
+            else
+            {
+                fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+            }
+
             byte[] byteStream = new byte[fileStream.Length];
 
             fileStream.Read(byteStream, 0, byteStream.Length);
@@ -195,6 +209,7 @@ namespace ChatBubble
             {
                 Directory.CreateDirectory(directory);
             }
+
             string[] output = Directory.GetFiles(directory);
 
             if (includeDirectoryPrefix == false)

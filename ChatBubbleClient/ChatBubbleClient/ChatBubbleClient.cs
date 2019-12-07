@@ -336,11 +336,12 @@ namespace ChatBubble.Client
                         string[] pendingMessageSubstrings = pendingMessages[pendingMessages.Length - 1].Split(new string[] { "sender=", "time=", "message=" }, StringSplitOptions.RemoveEmptyEntries);
                         //[0] = sender id, [1] - message time, [2] = message text
 
-                        string messageSender = NetComponents.GetUserData(pendingMessageSubstrings[0], true)[2];
+                        string messageSenderData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + pendingMessageSubstrings[0], true, true);
+                        string[] messageDataSubstrings = messageSenderData.Split(new string[] { "id=", "login=", "name=", "status=", "main=", "bubscore=" }, StringSplitOptions.RemoveEmptyEntries);
 
                         Notification notification = new Notification(notificationType);
 
-                        notification.notificationContentTitle = messageSender;
+                        notification.notificationContentTitle = messageDataSubstrings[2];
                         notification.notificationContentSubtitle = pendingMessageSubstrings[2];
                         notification.notificationCounter = totalMessages;
 
@@ -1157,7 +1158,6 @@ namespace ChatBubble.Client
             }
             private class FriendsTab : MainPage
             {
-                WaterMarkTextBox friendSearchQueryTextBox;
                 TabHatImage tabHatPictureBox;
                 FriendPanel friendPanel;
               
@@ -1470,7 +1470,7 @@ namespace ChatBubble.Client
 
                     List<string> currentDialoguesList = new List<string>();
 
-                    delegate void ControlCreationDelegate(DoubleBufferPanel dialogueBox, Control thumbnail, Control title, Control subtitle);
+                    delegate void ControlCreationDelegate(DoubleBufferPanel dialogueBox, Control thumbnail, Control title, Control subtitle, Button button);
 
                     public DialogueListPanel()
                     {
@@ -1492,7 +1492,6 @@ namespace ChatBubble.Client
                         FileIOStreamer fileIO = new FileIOStreamer();
 
                         string[] dialogueFilenameArray = fileIO.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
-                        string[] dialogueNameArray = new string[dialogueFilenameArray.Length];
 
                         string[] senderDataSplitstrings = new string[] {"id=", "login=", "name=",
                             "status=", "main=", "bubscore=" };
@@ -1502,15 +1501,19 @@ namespace ChatBubble.Client
                             string senderID = dialogueFilenameArray[i].Substring(dialogueFilenameArray[i].IndexOf('=') + 1);
                             string senderData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + senderID, true, true);
                             string dialogueContent = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
-                            string[] dialogueMessages = dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
-                            string[] senderDataSubstrings = senderData.Split(senderDataSplitstrings, StringSplitOptions.RemoveEmptyEntries);
-                            string[] lastMessageEntrySubstrings = dialogueMessages.Last().Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
-                            //[0] - time, [1] - message status, [2] - last message content
 
-                            currentDialoguesList.Add("id=" + senderDataSubstrings[0] + "name= " + senderDataSubstrings[2] +
-                                "time=" + lastMessageEntrySubstrings[0] +
-                                "status=" + lastMessageEntrySubstrings[1] +
-                                "lastmsg=" + lastMessageEntrySubstrings[2]);
+                            if (!String.IsNullOrEmpty(dialogueContent))
+                            {
+                                string[] dialogueMessages = dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
+                                string[] senderDataSubstrings = senderData.Split(senderDataSplitstrings, StringSplitOptions.RemoveEmptyEntries);
+                                string[] lastMessageEntrySubstrings = dialogueMessages.Last().Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
+                                //[0] - time, [1] - message status, [2] - last message content
+
+                                currentDialoguesList.Add("id=" + senderDataSubstrings[0] + "name= " + senderDataSubstrings[2] +
+                                    "time=" + lastMessageEntrySubstrings[0] +
+                                    "status=" + lastMessageEntrySubstrings[1] +
+                                    "lastmsg=" + lastMessageEntrySubstrings[2]);
+                            }
                         }
 
                         DisplayCurrentDialogues(this, eventArgs);
@@ -1518,6 +1521,8 @@ namespace ChatBubble.Client
 
                     void DisplayCurrentDialogues(object sender, EventArgs eventArgs)
                     {
+                        Controls.Clear();
+
                         List<DoubleBufferPanel> dialogueBoxesList = new List<DoubleBufferPanel>();
                                            
                         for(int i = 0; i < currentDialoguesList.Count; i++)
@@ -1530,6 +1535,8 @@ namespace ChatBubble.Client
                             Label dialogueTitleLabel = new Label();
                             Label dialogueSubtitleLabel = new Label();
                             PictureBox dialogueThumbnail = new PictureBox();
+                            Button closeDialogueButton = new Button();
+
                             System.IO.MemoryStream thumbnailStream = new System.IO.MemoryStream();
 
                             dialogueBoxesList.Add(new DoubleBufferPanel());
@@ -1560,6 +1567,12 @@ namespace ChatBubble.Client
                             dialogueSubtitleLabel.Font = subtitleFont;
                             dialogueSubtitleLabel.ForeColor = Color.Gray;
 
+                            closeDialogueButton.Size = new Size(24, 24);
+                            closeDialogueButton.Location = new Point(dialogueBoxesList[i].Width - closeDialogueButton.Width - 6, 3);
+                            closeDialogueButton.FlatAppearance.BorderSize = 0;
+                            closeDialogueButton.FlatStyle = FlatStyle.Flat;
+                            closeDialogueButton.BackgroundImage = Properties.Resources.removeFriendButton;
+
                             //The statement below arranges every dialogue box one after another on y axis
                             if (i >= 1)
                             {
@@ -1574,25 +1587,47 @@ namespace ChatBubble.Client
                             dialogueThumbnail.Image = Image.FromStream(thumbnailStream);
 
                             dialogueThumbnail.Click += new EventHandler(ShowUserProfile);
-
                             dialogueBoxesList[i].Click += new EventHandler(ShowUserDialogue);
+                            closeDialogueButton.Click += new EventHandler(RemoveDialogue);
 
                             dialogueTitleLabel.Text = dialogueDataSubstrings[1]; //Name is written in title
                             dialogueSubtitleLabel.Text = dialogueDataSubstrings[4]; //Last message text is written in subtitle
 
                             ControlCreationDelegate controlCreationDelegate = new ControlCreationDelegate(AddDialogueBox);
                             BeginInvoke(controlCreationDelegate, dialogueBoxesList[i], dialogueThumbnail,
-                                        dialogueTitleLabel, dialogueSubtitleLabel);
+                                        dialogueTitleLabel, dialogueSubtitleLabel, closeDialogueButton);
                         }
-
                     }
 
-                    void AddDialogueBox(DoubleBufferPanel dialogueBox, Control thumbnail, Control title, Control subtitle)
+                    void AddDialogueBox(DoubleBufferPanel dialogueBox, Control thumbnail, Control title, Control subtitle, Button button)
                     {
                         Controls.Add(dialogueBox);
                         dialogueBox.Controls.Add(thumbnail);
                         dialogueBox.Controls.Add(title);
                         dialogueBox.Controls.Add(subtitle);
+                        dialogueBox.Controls.Add(button);
+                        button.BringToFront();
+                    }
+
+                    void RemoveDialogue(object sender, EventArgs eventArgs)
+                    {
+                        FileIOStreamer fileIO = new FileIOStreamer();
+                        Button button = (Button)sender;
+
+                        string currentChatID = button.Parent.Name.Substring(button.Parent.Name.IndexOf('_') + 1);
+
+                        string[] dialogueFilenameArray = fileIO.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
+
+                        for (int i = 0; i < dialogueFilenameArray.Length; i++)
+                        {
+                            if(dialogueFilenameArray[i] == "chatid=" + currentChatID)
+                            {
+                                fileIO.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
+                                currentDialoguesList.RemoveAt(i);
+                            }
+                        }
+
+                        GetCurrentDialogues(Parent, eventArgs);
                     }
                 }
 
@@ -1614,9 +1649,12 @@ namespace ChatBubble.Client
                     Name = "ActiveDialogue";
 
                     ChatID = id;
+                    string recepientData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + ChatID, true, true);
+                    string chatName = recepientData.Split(new string[] {
+                        "id=", "login=", "name=", "status=", "main=", "bubscore=" }, StringSplitOptions.RemoveEmptyEntries)[2];
 
                     chatMessagesPanel = new ChatMessagesPanel();
-                    tabHatImage = new TabHatImage(TabType.ActiveDialogue, NetComponents.GetUserData(ChatID)[2]);
+                    tabHatImage = new TabHatImage(TabType.ActiveDialogue, chatName);
                     lastTabButton = new LastTabButton();
                     
                     lastTabButton.MouseUp += new MouseEventHandler(GoToLastTab);
@@ -1804,6 +1842,8 @@ namespace ChatBubble.Client
                     {
                         int totalMessagesHeight = 0;
 
+                        Controls.Clear();
+
                         foreach(MessageBox message in messageBoxList)
                         {
                             totalMessagesHeight += message.Height + 6;
@@ -1819,7 +1859,7 @@ namespace ChatBubble.Client
                                 }
                                 else
                                 {
-                                    messageBoxList[i].Top = Height - messageBoxList[i].Height + (totalMessagesHeight - Height);                                 
+                                    messageBoxList[i].Top = totalMessagesHeight - messageBoxList[i].Height;                                 
                                 }
                             }
                             else
@@ -1842,7 +1882,10 @@ namespace ChatBubble.Client
                             }                      
                         }
 
-                        ScrollControlIntoView(messageBoxList[0]);
+                        if (messageBoxList.Count() > 0)
+                        {
+                            ScrollControlIntoView(messageBoxList[0]);
+                        }
                     }
 
                     private class MessageTimeLabel : Label
@@ -2312,8 +2355,6 @@ namespace ChatBubble.Client
 
                         public void GetRegion()
                         {
-                            int borderMargin = 4;
-
                             regionPath = new GraphicsPath();
 
                             regionPath.StartFigure();
@@ -3677,7 +3718,6 @@ namespace ChatBubble.Client
     {
         string customWatermark = "Watermark";
         public bool watermarkApplied = false;
-        char specifiedPasswordChar;
 
         int lengthOld;
         int selectionStartOld;

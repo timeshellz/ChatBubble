@@ -858,7 +858,7 @@ namespace ChatBubble
         public static void ServerMakeMessagePending(string sender, string recepient, string content)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultPendingMessagesDirectory = "D:\\ChatBubblePendingMessagesFolder\\";
+            string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory;
             DateTime currentServerTime = DateTime.Now.ToUniversalTime();
 
             int chatID = fileIO.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false).Length + 1;
@@ -1182,8 +1182,6 @@ namespace ChatBubble
                 string[] messageSubstrings = message.Split(messageSplitstrings, StringSplitOptions.RemoveEmptyEntries);
                 //[0] - senderid, [1] - message time, [2] - message contents
 
-                string currentDialogueContents = "";
-                
                 //ChatID is same as senderID
                 fileIO.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + messageSubstrings[0] + ".txt",
                     "message==" + "\ntime=" + messageSubstrings[1] + "\nstatus=unread" + 
