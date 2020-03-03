@@ -224,6 +224,9 @@
     <None Include="Resources\friendsTabHat.png" />
     <None Include="Resources\bubblesImage.png" />
     <None Include="Resources\mainPanelBGImage.png" />
+    <None Include="Resources\Loading-Screen.gif" />
+    <None Include="Resources\loadingScreen20fps.gif" />
+    <None Include="Resources\Loading-Screen-Fast.gif" />
     <Content Include="Resources\PlaceholderProfilePicture.jpeg" />
   </ItemGroup>
   <ItemGroup />

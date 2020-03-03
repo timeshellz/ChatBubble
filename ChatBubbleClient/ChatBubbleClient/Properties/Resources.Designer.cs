@@ -343,9 +343,39 @@ namespace ChatBubble.Client.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Loading_Screen {
+            get {
+                object obj = ResourceManager.GetObject("Loading_Screen", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Loading_Screen_Fast {
+            get {
+                object obj = ResourceManager.GetObject("Loading_Screen_Fast", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap LoadingCog {
             get {
                 object obj = ResourceManager.GetObject("LoadingCog", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap loadingScreen20fps {
+            get {
+                object obj = ResourceManager.GetObject("loadingScreen20fps", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
