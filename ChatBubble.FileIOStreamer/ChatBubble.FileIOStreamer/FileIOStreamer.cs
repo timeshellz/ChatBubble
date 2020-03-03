@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 
 namespace ChatBubble
@@ -23,6 +24,8 @@ namespace ChatBubble
 
         public string inputStream;
 
+        static Object streamLock = new Object();
+
         /// <summary>
         /// Writes a defined string to a defined file at filepath with specified conditions.
         /// </summary>
@@ -32,63 +35,76 @@ namespace ChatBubble
         /// <param name="beginFromString">String from which to start when writeFromStart is true.</param>
         public void WriteToFile(string filePath, string input, bool writeFromStart = true, string beginFromString = "")
         {
-            if (!Directory.Exists(filePath.Substring(0, filePath.LastIndexOf(@"\"))))
+            lock (streamLock)
             {
-                Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf(@"\")));
-            }
-
-            FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
-
-            byte[] byteStream = new byte[4096];
-
-            inputStream = input;
-
-            for (int i = 0; i < inputStream.Length; i++)
-            {
-                if (inputStream[i] == '\n')
+                if (!Directory.Exists(filePath.Substring(0, filePath.LastIndexOf(@"\"))))
                 {
-                    inputStream = inputStream.Insert(i, Environment.NewLine);
+                    Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf(@"\")));
+                }
 
-                    if (Environment.OSVersion.Platform != PlatformID.Unix)
+                FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+
+                byte[] byteStream = new byte[fileStream.Length];
+
+                inputStream = input;
+
+                for (int i = 0; i < inputStream.Length; i++)
+                {
+                    if (inputStream[i] == '\n')
                     {
-                        inputStream = inputStream.Remove(i + 2, 1);
+                        inputStream = inputStream.Insert(i, Environment.NewLine);
+
+                        if (Environment.OSVersion.Platform != PlatformID.Unix)
+                        {
+                            inputStream = inputStream.Remove(i + 2, 1);
+                        }
+                        i++;
                     }
-                    i++;
                 }
-            }
-          
-            if(beginFromString != "")       //Reads all data from file and rewrites it in a new form
-            {
-                fileStream.Read(byteStream, 0, Convert.ToInt32(fileStream.Length));
-                string fileContents = us_US.GetString(byteStream);
 
-                int beginInsertFromIndex = fileContents.IndexOf(beginFromString) + beginFromString.Length;  //Makes sure to remove null entry flag
-                int endInsertOnIndex = fileContents.Substring(beginInsertFromIndex).IndexOf("==");
-
-                if(fileContents.Substring(beginInsertFromIndex, endInsertOnIndex).Contains("null") == true)
+                if (beginFromString != "")       //Reads all data from file and rewrites it in a new form
                 {
-                    fileContents = fileContents.Remove(beginInsertFromIndex, endInsertOnIndex);
+                    fileStream.Read(byteStream, 0, byteStream.Length);
+
+                    string fileContents = us_US.GetString(byteStream);
+
+                    int beginInsertFromIndex = fileContents.IndexOf(beginFromString) + beginFromString.Length;  //Makes sure to remove null entry flag
+                    int endInsertOnIndex = fileContents.Substring(beginInsertFromIndex).IndexOf("==");
+
+                    if (fileContents.Substring(beginInsertFromIndex, endInsertOnIndex).Contains("null") == true)
+                    {
+                        fileContents = fileContents.Remove(beginInsertFromIndex, endInsertOnIndex);
+                    }
+
+                    fileContents = fileContents.Insert(beginInsertFromIndex, input);
+
+                    try
+                    {
+                        inputStream = fileContents.Substring(0, fileContents.IndexOf('\0'));
+                    }
+                    catch
+                    {
+                        inputStream = fileContents;
+                    }
+
+                    writeFromStart = true;
                 }
 
-                fileContents = fileContents.Insert(beginInsertFromIndex, input);
+                if (writeFromStart == false)
+                {
+                    fileStream.Seek(fileStream.Length, 0);
+                }
+                else
+                {
+                    fileStream.Seek(0, 0);
+                }
 
-                inputStream = fileContents.Substring(0, fileContents.IndexOf('\0'));
-                writeFromStart = true;
+                byteStream = us_US.GetBytes(inputStream);
+
+                fileStream.Write(byteStream, 0, inputStream.Length);
+
+                fileStream.Close();
             }
-
-            if (writeFromStart == false)
-            {
-                fileStream.Seek(fileStream.Length, 0);
-            }
-            else
-            {
-                fileStream.Seek(0, 0);
-            }
-
-            byteStream = us_US.GetBytes(inputStream);
-            fileStream.Write(byteStream, 0, inputStream.Length);
-
-            fileStream.Close();
         }
 
         /// <summary>
@@ -98,35 +114,39 @@ namespace ChatBubble
         /// <returns></returns>
         public string ReadFromFile(string filePath, string beginFromString = "", string endOnString = "")
         {
-            FileStream fileStream;
-            
-            if(FileExists(filePath))
+            lock (streamLock)
             {
-                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            }
-            else
-            {
-                fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
-            }
+                FileStream fileStream;
 
-            byte[] byteStream = new byte[fileStream.Length];
+                if (FileExists(filePath))
+                {
+                    fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                }
+                else
+                {
+                    fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+                }
 
-            fileStream.Read(byteStream, 0, byteStream.Length);
-            string output = us_US.GetString(byteStream);
-            output = output.Replace("\n", "");
-            output = output.Replace("\r", "");
+                byte[] byteStream = new byte[fileStream.Length];
 
-            if (endOnString != "")
-            {
-                output = output.Substring(0, output.IndexOf(endOnString));
+                fileStream.Read(byteStream, 0, byteStream.Length);
+
+                string output = us_US.GetString(byteStream);
+                output = output.Replace("\n", "");
+                output = output.Replace("\r", "");
+
+                if (endOnString != "")
+                {
+                    output = output.Substring(0, output.IndexOf(endOnString));
+                }
+                if (beginFromString != "")
+                {
+                    output = output.Substring(output.IndexOf(beginFromString));
+                }
+
+                fileStream.Close();
+                return output;
             }
-            if(beginFromString != "")
-            {
-                output = output.Substring(output.IndexOf(beginFromString));
-            }
-
-            fileStream.Close();
-            return output;
         }
 
         /// <summary>
@@ -146,54 +166,123 @@ namespace ChatBubble
             File.Delete(filePath);
         }
 
+        public void SwapFileEntry(string filePath, string beginFromString, string oldEntry, string newEntry, bool isLongEntry = true, bool swapFullEntry = false)
+        {
+            lock (streamLock)
+            {
+                ReaderWriterLockSlim readerWriterLock = new ReaderWriterLockSlim();
+
+                FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+                byte[] byteStream = new byte[fileStream.Length];
+
+                fileStream.Read(byteStream, 0, byteStream.Length);
+
+                string rawContents = us_US.GetString(byteStream);
+
+                try
+                {
+                    rawContents = rawContents.Substring(0, rawContents.IndexOf('\0'));
+                }
+                catch { }
+
+                int beginIndex = rawContents.IndexOf(beginFromString) + beginFromString.Length;
+                int endIndex;
+
+                if (isLongEntry == true)
+                {
+                    endIndex = rawContents.Substring(beginIndex).IndexOf("==" + beginFromString.Substring(0, beginFromString.Length - 2));
+                }
+                else
+                {
+                    endIndex = rawContents.Substring(beginIndex).IndexOf(Environment.NewLine);
+                }
+
+                string midContents = rawContents.Substring(beginIndex, endIndex);
+
+                if (swapFullEntry == false)
+                {
+                    midContents = midContents.Replace(oldEntry, "");
+                }
+                else
+                {
+                    midContents = "";
+                }
+
+                midContents = newEntry;
+
+                rawContents = rawContents.Remove(beginIndex, endIndex);
+                rawContents = rawContents.Insert(beginIndex, midContents);
+
+                Array.Clear(byteStream, 0, byteStream.Length);
+                byteStream = us_US.GetBytes(rawContents);
+
+                fileStream.Seek(0, 0);
+                fileStream.Write(byteStream, 0, rawContents.Length);
+
+                fileStream.SetLength(rawContents.Length);
+                fileStream.Close();
+            }
+        }
+
         public void RemoveFileEntry(string filePath, string beginFromString, string entry, bool isLongEntry = true, bool removeFullEntry = false)
         {
-            FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
-            byte[] byteStream = new byte[1028];
-
-            fileStream.Read(byteStream, 0, 1028);
-            string rawContents = us_US.GetString(byteStream);
-            rawContents = rawContents.Substring(0, rawContents.IndexOf('\0'));
-
-            int beginIndex = rawContents.IndexOf(beginFromString) + beginFromString.Length;
-            int endIndex;
-
-            if(isLongEntry == true)
+            lock (streamLock)
             {
-                endIndex = rawContents.Substring(beginIndex).IndexOf("==" + beginFromString.Substring(0, beginFromString.Length - 2));
+                ReaderWriterLockSlim readerWriterLock = new ReaderWriterLockSlim();
+
+                FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+                byte[] byteStream = new byte[fileStream.Length];
+
+                fileStream.Read(byteStream, 0, byteStream.Length);
+
+                string rawContents = us_US.GetString(byteStream);
+
+                try
+                {
+                    rawContents = rawContents.Substring(0, rawContents.IndexOf('\0'));
+                }
+                catch { }
+
+                int beginIndex = rawContents.IndexOf(beginFromString) + beginFromString.Length;
+                int endIndex;
+
+                if (isLongEntry == true)
+                {
+                    endIndex = rawContents.Substring(beginIndex).IndexOf("==" + beginFromString.Substring(0, beginFromString.Length - 2));
+                }
+                else
+                {
+                    endIndex = rawContents.Substring(beginIndex).IndexOf(Environment.NewLine);
+                }
+
+                string midContents = rawContents.Substring(beginIndex, endIndex);
+
+                if (removeFullEntry != true)
+                {
+                    midContents = midContents.Replace(entry, "");
+                }
+                else
+                {
+                    midContents = "";
+                }
+
+                if (midContents == "")
+                {
+                    midContents = "null\n";
+                }
+
+                rawContents = rawContents.Remove(beginIndex, endIndex);
+                rawContents = rawContents.Insert(beginIndex, midContents);
+
+                Array.Clear(byteStream, 0, byteStream.Length);
+                byteStream = us_US.GetBytes(rawContents);
+
+                fileStream.Seek(0, 0);
+                fileStream.Write(byteStream, 0, rawContents.Length);
+
+                fileStream.SetLength(rawContents.Length);
+                fileStream.Close();
             }
-            else
-            {
-                endIndex = rawContents.Substring(beginIndex).IndexOf(Environment.NewLine);
-            }
-
-            string midContents = rawContents.Substring(beginIndex, endIndex);
-
-            if (removeFullEntry != true)
-            {
-                midContents = midContents.Replace(entry, "");
-            }
-            else
-            {
-                midContents = "";
-            }
-
-            if(midContents == "")
-            {
-                midContents = "null\n";
-            }
-
-            rawContents = rawContents.Remove(beginIndex, endIndex);
-            rawContents = rawContents.Insert(beginIndex, midContents);
-
-            Array.Clear(byteStream, 0, byteStream.Length);
-            byteStream = us_US.GetBytes(rawContents);
-
-            fileStream.Seek(0, 0);
-            fileStream.Write(byteStream, 0, rawContents.Length);
-
-            fileStream.SetLength(rawContents.Length);
-            fileStream.Close();
         }
 
         /// <summary>

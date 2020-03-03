@@ -1787,10 +1787,16 @@ namespace ChatBubble.Client
                     SolidColorBrush graySolidBrush;
 
                     List<MessageBox> messageBoxList;
-                    //List<MessageDecorBox> messageDecorBoxList;
+
+                    bool isRenderingAnimation = false;
+                    bool areAllMessagesPrepared;
+
+                    long messagesPreparedTimeMs;
+
+                    static Object renderLock = new Object();
 
                     enum MessageType { Read, Unread, Self };
-                    enum DecorTier { Small, Medium, Big }
+                    enum DecorTier { Small, Medium, Big };
 
                     private const int WM_HSCROLL = 0x114;
                     private const int WM_VSCROLL = 0x115;
@@ -1844,7 +1850,7 @@ namespace ChatBubble.Client
                         HorizontalScroll.Maximum = 0;
                         AutoScroll = false;
                         VerticalScroll.Visible = true;
-                        AutoScrollMargin = new Size(0, 6);
+                        AutoScrollMargin = new Size(0, 9);
                         AutoScroll = true;
 
                         this.HandleCreated += new EventHandler(InitializeRendering);
@@ -1930,14 +1936,18 @@ namespace ChatBubble.Client
                             {
                                 messageBoxList[0].Left = tabSize.Width - messageBoxList[0].Width - 60;
                             }
-                            else
+                            if(messageBoxList[0].MessageType == MessageType.Unread)
                             {
                                 messageBoxList[0].Left = 45;
+                            }
+                            if(messageBoxList[0].MessageType == MessageType.Read)
+                            {
+                                messageBoxList[0].Left = 9;
                             }
                         }
 
                         PrepareMessages();
-                        PresentMessages();
+                        RenderMessages();
                     }
 
                     int MessageSortByTime(string message1, string message2)
@@ -1953,6 +1963,9 @@ namespace ChatBubble.Client
 
                     void PrepareMessages()
                     {
+                        EventHandler messageStatusChanged = new EventHandler(OnMessageStatusChanged);
+
+                        areAllMessagesPrepared = false;
                         int totalMessagesHeight = 0;
 
                         Controls.Clear();
@@ -1984,21 +1997,27 @@ namespace ChatBubble.Client
                             }
 
                             Controls.Add(messageBoxList[i]);
-
+                            
                             if (messageBoxList.Count() > 0)
                             {
                                 ScrollControlIntoView(messageBoxList[0]);
                             }
 
-                            DrawMessage(messageBoxList[i]);                           
+                            if (messageBoxList[i].Bottom >= -50 && messageBoxList[i].Top <= tabSize.Height + 50)
+                            {                                
+                                DrawMessage(messageBoxList[i]);                        
+                            }
+
+                            messageBoxList[i].StatusChanged += messageStatusChanged;
                         }
 
                         deviceContext.EndDraw();
+                        areAllMessagesPrepared = true;
+                        messagesPreparedTimeMs = DateTime.Now.Millisecond;
                     }
 
                     void DrawMessage(MessageBox messageBox)
                     {
-
                         //---------------Drawing Message-----------------
 
                         RoundedRectangle roundedRectangle = new RoundedRectangle()
@@ -2019,7 +2038,7 @@ namespace ChatBubble.Client
                             deviceContext.DrawTextLayout(new SharpDX.Mathematics.Interop.RawVector2(messageBox.Left + 8, messageBox.Top + 8),
                             messageBox.TextLayout, whiteSolidBrush, DrawTextOptions.Clip);
                         }
-                        if (messageBox.MessageType == MessageType.Unread)
+                        if (messageBox.MessageType == MessageType.Unread || messageBox.MessageType == MessageType.Read)
                         {
                             deviceContext.DrawRoundedRectangle(roundedRectangle, blueSolidBrush, 4);
 
@@ -2061,33 +2080,75 @@ namespace ChatBubble.Client
                         }
                     }
 
-                    void PresentMessages()
+                    void RenderMessages()
                     {
-                        swapChain.Present(0, PresentFlags.None);
-                    }                  
-
-                    public void OnScroll(object sender, MouseEventArgs eventArgs)
-                    {
-                        DoubleBufferPanel panel = (DoubleBufferPanel)sender;
-
-                        if (panel.VerticalScroll.Value >= panel.VerticalScroll.Minimum && panel.VerticalScroll.Value <= panel.VerticalScroll.Maximum)
+                        lock (renderLock)
                         {
                             deviceContext.BeginDraw();
                             deviceContext.Clear(SharpDX.Color.White);
 
                             foreach (MessageBox message in messageBoxList)
                             {
-                                DrawMessage(message);
+                                if (message.Bottom >= -50 && message.Top <= tabSize.Height + 50)
+                                {
+                                    DrawMessage(message);
+                                }
                             }
 
                             deviceContext.EndDraw();
 
-                            PresentMessages();
+                            swapChain.Present(0, PresentFlags.None);
+                        }
+                    }    
+                   
+
+                    void OnScroll(object sender, MouseEventArgs eventArgs)
+                    {
+                        DoubleBufferPanel panel = (DoubleBufferPanel)sender;
+
+                        if (panel.VerticalScroll.Value >= panel.VerticalScroll.Minimum && panel.VerticalScroll.Value <= panel.VerticalScroll.Maximum && !isRenderingAnimation)
+                        {
+                            RenderMessages();
+                        }
+                    }
+
+                    void OnMessageStatusChanged(object sender, EventArgs eventArgs)
+                    {
+                        lock (renderLock)
+                        {
+                            if (!isRenderingAnimation)
+                            {
+                                isRenderingAnimation = true;
+
+                                int animationTicks = 0;
+
+                                System.Timers.Timer animationTimer = new System.Timers.Timer(1);
+                                animationTimer.Elapsed += new ElapsedEventHandler((object s, ElapsedEventArgs elAr) =>
+                                {
+                                    RenderMessages();
+                                    animationTicks++;
+
+                                    if (animationTicks > 12)
+                                    {
+                                        animationTimer.Stop();
+                                        animationTimer.Dispose();
+
+                                        isRenderingAnimation = false;
+                                    }
+
+                                });
+
+                                animationTimer.Start();
+                            }
                         }
                     }
 
                     private class MessageBox : DoubleBufferPanel
                     {
+                        delegate void MessageSwipeDelegate();
+
+                        public event EventHandler StatusChanged;
+
                         public SharpDX.DirectWrite.TextLayout TextLayout { get; set; }
 
                         public string MessageContent { get; set; }
@@ -2134,6 +2195,68 @@ namespace ChatBubble.Client
 
                             TextLayout.MaxWidth = Size.Width;
                             TextLayout.MaxHeight = Size.Height;
+
+                            if(MessageType == MessageType.Unread)
+                            {
+                                System.Timers.Timer unreadDisplayWaitTimer = new System.Timers.Timer(900);
+                                unreadDisplayWaitTimer.Elapsed += new ElapsedEventHandler(MakeMessageRead);
+                                unreadDisplayWaitTimer.Start();
+                            }
+                        }
+
+                        void MakeMessageRead(object sender, ElapsedEventArgs eventArgs)
+                        {
+                            System.Timers.Timer originalTimer = (System.Timers.Timer)sender;
+                            originalTimer.Stop();
+                            originalTimer.Dispose();
+
+                            FileIOStreamer fileIO = new FileIOStreamer();
+
+                            fileIO.SwapFileEntry(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt",
+                                UniversalMessageTime.ToString("dddd, dd MMMM yyyy HH: mm:ss") + Environment.NewLine + "status=", "unread", "read", false, true);
+
+                            MessageType = MessageType.Read;
+
+                            ChatMessagesPanel parentMessagesPanel = (ChatMessagesPanel)Parent;
+
+                            while (true)
+                            {
+                                if (parentMessagesPanel.areAllMessagesPrepared && DateTime.Now.Millisecond == parentMessagesPanel.messagesPreparedTimeMs + 100)
+                                {
+                                    System.Timers.Timer animationTimer = new System.Timers.Timer(1);
+
+                                    int animationTicks = 0;
+
+                                    animationTimer.Elapsed += new ElapsedEventHandler((object s, ElapsedEventArgs elAr) =>
+                                    {
+                                        animationTicks++;
+
+                                        MessageSwipeDelegate messageSwipe = new MessageSwipeDelegate(ChangeMessageLocation);
+                                        Invoke(messageSwipe);
+
+                                        if(animationTicks >= 12)
+                                        {
+                                            animationTimer.Stop();
+                                            animationTimer.Dispose();
+                                        }
+                                    });
+
+                                    animationTimer.Start();
+
+                                    OnStatusChanged(EventArgs.Empty);
+                                    break;
+                                }
+                            }
+                        }
+
+                        protected virtual void OnStatusChanged(EventArgs e)
+                        {
+                            StatusChanged.Invoke(this, e);
+                        }
+
+                        void ChangeMessageLocation()
+                        {
+                            Left -= 3;
                         }
 
                         string ContentWordWrap(string content)
