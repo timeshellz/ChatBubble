@@ -335,7 +335,7 @@ namespace ChatBubble
         {
             while (pendingClientSocket.Connected == true)
             {
-                byte[] streamBytes = new byte[512];
+                byte[] streamBytes = new byte[1024];
 
                 if (pendingClientSocket.Poll(10, SelectMode.SelectRead) == true) //Ensures that data is available to be read from the socket
                 {
