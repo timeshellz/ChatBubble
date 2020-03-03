@@ -2,7 +2,7 @@
 
 
 
-### 11.16.2019 - v0.3 - *"Breadcrums"* ###
+### 11.16.2019 - v0.3 - *"Breadcrumbs"* ###
 
   - Changelogging started. List of main features added prior to v0.3:
     #### Client ####
