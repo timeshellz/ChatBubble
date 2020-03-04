@@ -55,6 +55,8 @@ namespace ChatBubble.Client
         {           
             InitializeComponent();
 
+            GetDevices();
+
             this.ControlBox = false;
             this.Text = "";
 
