@@ -1,20 +1,19 @@
 ﻿using ImageProcessor;
+using SharpDX.Direct2D1;
+using SharpDX.Direct3D11;
+using SharpDX.DXGI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Drawing.Drawing2D;
-using SharpDX.Direct3D11;
-using SharpDX.DXGI;
-using SharpDX.Direct2D1;
-
 using Direct2D1 = SharpDX.Direct2D1;
 using Direct3D11 = SharpDX.Direct3D11;
 using DXGI = SharpDX.DXGI;
@@ -52,7 +51,7 @@ namespace ChatBubble.Client
         }
 
         public Form1()
-        {           
+        {
             InitializeComponent();
 
             GetDevices();
@@ -103,7 +102,7 @@ namespace ChatBubble.Client
             dxgiDevice.Dispose();
             d2dDevice.Dispose();
         }
-                                                 
+
         public class MainPage : Panel
         {
             DXGI.Device dxgiDevice { get; set; }
@@ -123,7 +122,7 @@ namespace ChatBubble.Client
             public static Size tabSize = new Size(840, 473);
 
             System.Timers.Timer notificationDetectionTimer = new System.Timers.Timer(200);
-                
+
             public MainPage()
             {
                 dxgiDevice = Form1.dxgiDevice;
@@ -131,11 +130,11 @@ namespace ChatBubble.Client
 
                 Size = mainPageSize;
                 Location = mainPageLocation;
-                BackgroundImage = Properties.Resources.mainPanelBGImage;               
+                BackgroundImage = Properties.Resources.mainPanelBGImage;
             }
 
             public void OpenMainPage()
-            {              
+            {
                 CreateButtons();
 
                 notificationDetectionTimer.Elapsed += new ElapsedEventHandler(TryDetectNotification);
@@ -154,7 +153,7 @@ namespace ChatBubble.Client
 
             public void ClearAll()
             {
-                foreach(Control panel in Controls.OfType<Control>())
+                foreach (Control panel in Controls.OfType<Control>())
                 {
                     if (panel.GetType() != typeof(MenuButton) && panel.GetType() != typeof(PictureBox))
                     {
@@ -180,7 +179,7 @@ namespace ChatBubble.Client
             {
                 Button menuButton;
 
-                foreach(TabType tabType in Enum.GetValues(typeof(TabType)))
+                foreach (TabType tabType in Enum.GetValues(typeof(TabType)))
                 {
                     if (tabType != TabType.ActiveDialogue)
                     {
@@ -193,7 +192,7 @@ namespace ChatBubble.Client
 
             private void TryDetectNotification(object sender, ElapsedEventArgs e)
             {
-                if(!NetComponents.receivedMessagesCollection.IsEmpty)
+                if (!NetComponents.receivedMessagesCollection.IsEmpty)
                 {
                     TriggerNotificationDelegate notificationDelegate = new TriggerNotificationDelegate(TriggerNotifications);
 
@@ -211,7 +210,7 @@ namespace ChatBubble.Client
 
                 string userID = userThumbnail.Name.Substring(userThumbnail.Name.IndexOf('_') + 1);
 
-                mainPage.OpenNewTab(TabType.MainPage, userID);               
+                mainPage.OpenNewTab(TabType.MainPage, userID);
             }
 
             public static void ShowUserDialogue(object sender, EventArgs eventArgs)
@@ -224,12 +223,29 @@ namespace ChatBubble.Client
                 mainPage.OpenNewTab(TabType.ActiveDialogue, chatID);
             }
 
-            public void OpenNewTab(TabType tabType, string tabArgument = "")
+            public void OpenNewTabArbitrary(Panel tab, string tabName, string tabArgument = "")
             {
-                if (Controls.OfType < Panel>().Count() == 0)
+                if (Controls.OfType<Panel>().Count() == 0)
                 {
                     TabHistory = new List<Panel>();
-                }                  
+                }
+
+                tab.Size = tabSize;
+                tab.Location = tabLocation;
+                tab.Name = tabName;
+
+                TabHistory.Add(tab);
+                Controls.Add(tab);
+
+                tab.BringToFront();
+            }
+
+            public void OpenNewTab(TabType tabType, string tabArgument = "")
+            {
+                if (Controls.OfType<Panel>().Count() == 0)
+                {
+                    TabHistory = new List<Panel>();
+                }
 
                 switch (tabType)
                 {
@@ -333,7 +349,7 @@ namespace ChatBubble.Client
                         }
                 }
 
-                if(TabHistory.Count > 1)
+                if (TabHistory.Count > 1)
                 {
                     TabHistory[TabHistory.Count - 2].Enabled = false;
                 }
@@ -366,12 +382,12 @@ namespace ChatBubble.Client
                 currentForm.Controls.Add(loadingPage);
                 loadingPage.BringToFront();
 
-                loadingPage.OpenLoadingPage();              
+                loadingPage.OpenLoadingPage();
             }
 
             public void TriggerNotifications(NotificationType notificationType, string notificationContent)
-            {      
-                switch(notificationType)
+            {
+                switch (notificationType)
                 {
                     case NotificationType.NewMessage:
                         string[] pendingMessages = notificationContent.Split(new string[] { "msg=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -391,10 +407,201 @@ namespace ChatBubble.Client
 
                         Controls.Add(notification);
                         notification.BringToFront();
-                        
+
                         break;
-                }              
+                }
             }
+
+            private class ResultPanel : DoubleBufferPanel
+            {
+                public enum ResultType { Success, Failure, ServerFailure };
+                public enum AppearanceType { LeftBorder, RightBorder };
+
+                private enum MovementState { Open, Closed, Moving };
+
+                Point InitialLocation;
+
+                MovementState CurrentPos;
+                AppearanceType AppearType;
+
+                delegate void LocationChangeDelegate(Point newLocation);
+
+                Label informationLabel;
+
+                public ResultPanel(AppearanceType appearancePoint, Size panelSize, int panelTop)
+                {
+                    AppearType = appearancePoint;
+                    CurrentPos = MovementState.Closed;
+
+                    Size = panelSize;
+                    Location = new Point(0 - Width, 0);
+
+                    informationLabel = new Label();
+                    informationLabel.Font = new Font("Verdana", 12, FontStyle.Regular);
+                    informationLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                    informationLabel.Size = new Size(340, 80);
+                    informationLabel.TextAlign = ContentAlignment.MiddleCenter;
+                    informationLabel.Location = new Point(Width / 2 - informationLabel.Width / 2, Height / 2 - informationLabel.Height / 2 - 30);
+
+                    this.HandleCreated += (o, e) =>
+                    {
+                        if (appearancePoint == AppearanceType.RightBorder)
+                        {
+                            InitialLocation = new Point(Parent.Width, panelTop);
+                        }
+                        else
+                        {
+                            InitialLocation = new Point(Parent.Left, panelTop);
+                        }
+
+                        Location = InitialLocation;
+
+                        Controls.Add(informationLabel);
+                    };
+
+                    this.LostFocus += (o, e) =>
+                    {
+                        if (CurrentPos == MovementState.Open )
+                        {
+                            RunSlideAnimation();
+                        }
+                    };
+                }
+
+                public void CreateResult(ResultType resultType, string resultMessage = "")
+                {
+                    if (CurrentPos == MovementState.Open || CurrentPos == MovementState.Moving)
+                    {
+                        return;
+                    }
+
+                    if (resultMessage != "")
+                    {
+                        informationLabel.Text = resultMessage;
+                    }
+                    else
+                    {
+                        switch (resultType)
+                        {
+                            case ResultType.Success:
+                                informationLabel.Text = "Success!";
+                                break;
+                            case ResultType.Failure:
+                                informationLabel.Text = "Something went wrong!";
+                                break;
+                            case ResultType.ServerFailure:
+                                informationLabel.Text = "Server encountered an error.\nPlease contact support.";
+                                break;
+                        }
+                    }
+
+                    RunSlideAnimation();
+                }
+
+                public void RunSlideAnimation()
+                {
+                    System.Timers.Timer animationTimer = new System.Timers.Timer(1);
+                    float animationTime = 0;
+                    float animationModifier = 0;
+                    float animationStep = 0.02f;
+
+                    MovementState previousPosition = MovementState.Closed;
+
+                    int animationDirectionModifier = 1;
+
+                    if (CurrentPos == MovementState.Closed)
+                    {
+                        if (AppearType == AppearanceType.LeftBorder)
+                        {
+                            animationDirectionModifier = -1;
+                        }
+                        else
+                        {
+                            animationDirectionModifier = 1;                            
+                        }
+
+                        previousPosition = MovementState.Closed;
+                    }
+                    else
+                    {
+                        if (AppearType == AppearanceType.LeftBorder)
+                        {
+                            animationDirectionModifier = 1;
+                        }
+                        else
+                        {                          
+                            animationDirectionModifier = -1;
+                        }
+
+                        previousPosition = MovementState.Open;
+                    }
+
+                    LocationChangeDelegate locationChange = new LocationChangeDelegate(x => Location = x);
+
+                    animationTimer.Elapsed += (o, e) =>
+                    {
+                        if (Disposing || IsDisposed || !IsHandleCreated)
+                        {
+                            animationTimer.Dispose();
+                            return;
+                        }
+
+                        if (animationTime < 1)
+                        {
+                            int newX = 0; ;
+
+                            if (animationTime < 0.5f)
+                            {
+                                animationModifier = 2 * animationTime * animationTime * Width;
+
+                                newX = (int)(InitialLocation.X - animationModifier * animationDirectionModifier);
+                                animationTime += animationStep;
+                            }
+
+                            if (animationTime > 0.5f)
+                            {
+                                animationModifier = (2 * (animationTime - 0.5f) - 2 * (animationTime - 0.5f) * (animationTime - 0.5f) + 0.5f) * Width;
+
+                                newX = (int)(InitialLocation.X - animationModifier * animationDirectionModifier);
+                                animationTime += animationStep;
+                            }
+
+                            try
+                            {
+                                Invoke(locationChange, new Point(newX, Location.Y));
+                            }
+                            catch { }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                Invoke(locationChange, new Point(InitialLocation.X - Width * animationDirectionModifier, InitialLocation.Y));
+                            }
+                            catch { }
+
+                            animationTimer.Dispose();
+
+                            InitialLocation = Location;
+
+                            if (previousPosition == MovementState.Closed)
+                            {
+                                CurrentPos = MovementState.Open;
+                            }
+                            else
+                            {
+                                CurrentPos = MovementState.Closed;
+                            }
+
+                            previousPosition = MovementState.Moving;
+                        }
+                    };
+
+                    CurrentPos = MovementState.Moving;
+                    animationTimer.Start();
+                }
+            }
+
 
             private class Notification : DoubleBufferPanel //Class for notification panels that appear on top of the screen
             {
@@ -424,7 +631,7 @@ namespace ChatBubble.Client
 
                     GetRegion();
 
-                    currentNotificationType = notificationType; 
+                    currentNotificationType = notificationType;
 
                     this.HandleCreated += new EventHandler(PrepareNotification);
                 }
@@ -479,16 +686,16 @@ namespace ChatBubble.Client
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
                     e.Graphics.DrawPath(pen, borderPath);
-                   
+
                     base.OnPaint(e);
-                }              
+                }
 
                 private void PrepareNotification(object sender, EventArgs eventArgs)
                 {
                     System.Timers.Timer animationTimer = new System.Timers.Timer(1);
                     animationTimer.Elapsed += new ElapsedEventHandler(OnAnimationTimerTick);
 
-                    PictureBox notificationThumbnail = new PictureBox();                    
+                    PictureBox notificationThumbnail = new PictureBox();
                     Label notificationLabelTitle = new Label();
                     Label notificationLabelSubtitle = new Label();
                     Button dismissNotification = new Button();
@@ -507,7 +714,7 @@ namespace ChatBubble.Client
                     imageEditor.Save(profilePictureStream);
 
                     notificationThumbnail.BackgroundImage = System.Drawing.Image.FromStream(profilePictureStream);
-                    notificationThumbnail.BackColor = Color.Transparent;          
+                    notificationThumbnail.BackColor = Color.Transparent;
 
                     notificationLabelTitle.AutoSize = false;
                     notificationLabelTitle.Size = new Size(Width - notificationThumbnail.Width - 30 - Width / 4, 22);
@@ -519,7 +726,7 @@ namespace ChatBubble.Client
                     dismissNotification.FlatStyle = FlatStyle.Flat;
                     dismissNotification.FlatAppearance.BorderSize = 0;
                     dismissNotification.BackgroundImage = Properties.Resources.removeFriendButton;
-                    
+
                     notificationLabelSubtitle.AutoSize = false;
                     notificationLabelSubtitle.Size = new Size(Width - notificationThumbnail.Width - 20, notificationThumbnail.Height - notificationLabelTitle.Height);
                     notificationLabelSubtitle.Location = new Point(notificationThumbnail.Location.X + notificationThumbnail.Width + 6, notificationThumbnail.Location.Y + notificationLabelTitle.Height);
@@ -530,7 +737,7 @@ namespace ChatBubble.Client
                     {
                         case NotificationType.NewFriend:
                             break;
-                        case NotificationType.NewMessage:                           
+                        case NotificationType.NewMessage:
                             notificationLabelTitle.Text = notificationContentTitle;
                             notificationLabelSubtitle.Text = notificationContentSubtitle;
 
@@ -544,7 +751,7 @@ namespace ChatBubble.Client
                                 otherMessagesCounter.Font = new Font("Verdana", 8, FontStyle.Italic);
                                 otherMessagesCounter.ForeColor = Color.Gray;
 
-                                if((notificationCounter - 1) % 10 == 1)
+                                if ((notificationCounter - 1) % 10 == 1)
                                 {
                                     otherMessagesCounter.Text = "And " + (notificationCounter - 1) + " other message";
                                 }
@@ -559,7 +766,7 @@ namespace ChatBubble.Client
                     }
 
                     Controls.Add(notificationThumbnail);
-                    Controls.Add(notificationLabelTitle);                   
+                    Controls.Add(notificationLabelTitle);
                     Controls.Add(notificationLabelSubtitle);
                     Controls.Add(dismissNotification);
 
@@ -575,7 +782,7 @@ namespace ChatBubble.Client
                 {
                     notificationLiveTimeCurrent--;
 
-                    switch(notificationPresent)
+                    switch (notificationPresent)
                     {
                         case false:
                             if (notificationLocation.Y < 4 + notificationLocation.Y % 6 && Parent != null && Parent.IsHandleCreated == true)
@@ -587,7 +794,7 @@ namespace ChatBubble.Client
                             }
                             else
                             {
-                                notificationPresent = true;                          
+                                notificationPresent = true;
                             }
                             break;
                         case true:
@@ -656,13 +863,17 @@ namespace ChatBubble.Client
                 GraphicsPath GraphicsPath;
                 GraphicsPath AuxillaryPath;
 
+                bool renderOverride;
+
                 TabType ParentTabType { get; set; }
 
-                public TabHatImage(TabType parentTabType, string tabName = "Unnamed Tab")
+                public TabHatImage(TabType parentTabType, string tabName = "Unnamed Tab", bool renderReturnButtonBackground = false)
                 {
                     Size = tabSize;
                     Location = new Point(0, 0);
                     ParentTabType = parentTabType;
+
+                    renderOverride = renderReturnButtonBackground;
 
                     GetRegion();
 
@@ -695,10 +906,10 @@ namespace ChatBubble.Client
                     GraphicsPath.AddArc(new RectangleF(0, 39f, 91, 91), 270, -90);
                     GraphicsPath.AddLine(0, 91, 0, 0);
                     GraphicsPath.CloseFigure();
-                   
+
                     Region = new Region(GraphicsPath);
 
-                    if(ParentTabType == TabType.ActiveDialogue)
+                    if (ParentTabType == TabType.ActiveDialogue || renderOverride == true)
                     {
                         AuxillaryPath = new GraphicsPath();
 
@@ -709,7 +920,7 @@ namespace ChatBubble.Client
                 }
 
                 protected override void OnPaint(PaintEventArgs pe)
-                {                  
+                {
                     pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
                     pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
                     pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
@@ -720,10 +931,62 @@ namespace ChatBubble.Client
 
                     base.OnPaint(pe);
 
-                    if (ParentTabType == TabType.ActiveDialogue)
+                    if (ParentTabType == TabType.ActiveDialogue || renderOverride == true)
                     {
                         pe.Graphics.FillPath(WhiteBrush, AuxillaryPath);
                     }
+                }
+            }
+
+            private class LastTabButton : Button
+            {
+                GraphicsPath RegionPath;
+
+                public LastTabButton()
+                {
+                    Size = new Size(22, 22);
+                    Location = new Point(0, 25);
+                    FlatAppearance.BorderSize = 0;
+                    FlatStyle = FlatStyle.Flat;
+                    Image = Properties.Resources.returnButtonIdle;
+                    ImageAlign = ContentAlignment.MiddleCenter;
+
+                    MouseEnter += new EventHandler(OnMouseEnter);
+                    MouseLeave += new EventHandler(OnMouseLeave);
+                    MouseDown += new MouseEventHandler(OnMouseDown);
+                    MouseUp += new MouseEventHandler(OnMouseUp);
+
+                    RegionPath = new GraphicsPath();
+
+                    RegionPath.StartFigure();
+                    RegionPath.AddEllipse(0, 0, Width, Height);
+                    RegionPath.CloseFigure();
+
+                    Region = new Region(RegionPath);
+                }
+
+                void OnMouseEnter(object sender, EventArgs e)
+                {
+                    Image = Properties.Resources.returnButtonHover;
+                }
+
+                void OnMouseLeave(object sender, EventArgs e)
+                {
+                    Image = Properties.Resources.returnButtonIdle;
+                }
+
+                void OnMouseDown(object sender, MouseEventArgs e)
+                {
+                    Image = Properties.Resources.returnButtonClick;
+                }
+
+                void OnMouseUp(object sender, MouseEventArgs e)
+                {
+                    Image = Properties.Resources.returnButtonIdle;
+
+                    MainPage mainPage = Form.ActiveForm.Controls.OfType<MainPage>().First();
+
+                    mainPage.TabClose(TabHistory[TabHistory.Count - 1]);
                 }
             }
 
@@ -738,7 +1001,7 @@ namespace ChatBubble.Client
 
                     profileInfoPanel = new ProfileInfoPanel();
 
-                    if(UserPageID != "")
+                    if (UserPageID != "")
                     {
                         profileInfoPanel.userID = UserPageID;
                     }
@@ -837,7 +1100,7 @@ namespace ChatBubble.Client
                         string[] allProfileData = profileInfoString.Split(profileInfoSplitstrings, StringSplitOptions.RemoveEmptyEntries);
                         //[0] = id, [1] = login, [2] = name, [3] = status summary, [4] = main summary, [5] = bubscore
 
-                        for(int i = 0; i < allProfileData.Length; i++)
+                        for (int i = 0; i < allProfileData.Length; i++)
                         {
                             allProfileData[i] = allProfileData[i].Replace("[eqlsgn]", "=");
                         }
@@ -847,13 +1110,13 @@ namespace ChatBubble.Client
                         Label usernameLabel = new Label();
                         Label bubScoreLabel = new Label();
                         Label statusLabel = new Label();
-                        Label summaryLabel = new Label();                     
+                        Label summaryLabel = new Label();
 
                         System.IO.MemoryStream profilePictureStream = new System.IO.MemoryStream();
 
                         profilePicture.Size = new Size(200, 200);
                         profilePicture.Location = new Point(12, 12);
-                        
+
                         System.Drawing.Bitmap thumbnailImage = new System.Drawing.Bitmap(Properties.Resources.PlaceholderProfilePicture, profilePicture.Size);
                         ImageFactory imageEditor = new ImageFactory();
                         imageEditor.Load(thumbnailImage);
@@ -902,7 +1165,7 @@ namespace ChatBubble.Client
                         summaryLabel.Font = generalFont;
                         summaryLabel.Text = allProfileData[4];
                         summaryLabel.TextAlign = ContentAlignment.MiddleLeft;
-                        summaryLabel.Name = "summaryLabel";                
+                        summaryLabel.Name = "summaryLabel";
                         summaryLabel.BackColor = Color.Transparent;
 
                         ProfileInfoAddDelegate profileInfoAddDelegate = new ProfileInfoAddDelegate(AddProfileInfo);
@@ -914,7 +1177,7 @@ namespace ChatBubble.Client
                             editDescriptionButton.MouseEnter += new EventHandler(EditControlOnMouseEnter);
                             editDescriptionButton.MouseLeave += new EventHandler(EditControlOnMouseLeave);
                             editDescriptionButton.MouseUp += new MouseEventHandler(EditProfileDescription);
-                            
+
                             Button editDescriptionButtonConfirm = new Button();
                             editDescriptionButtonConfirm.MouseEnter += new EventHandler(EditControlOnMouseEnter);
                             editDescriptionButtonConfirm.MouseLeave += new EventHandler(EditControlOnMouseLeave);
@@ -927,14 +1190,14 @@ namespace ChatBubble.Client
                             editDescriptionButton.Location = new Point(Parent.Width - editDescriptionButton.Width - 8, statusLabel.Location.Y - 3);
                             editDescriptionButton.FlatStyle = FlatStyle.Flat;
                             editDescriptionButton.BackgroundImage = Properties.Resources.editDescriptionButtonIdle;
-                            editDescriptionButton.Name = "buttonEdit";                          
+                            editDescriptionButton.Name = "buttonEdit";
                             editDescriptionButton.FlatAppearance.BorderSize = 0;
 
                             editDescriptionButtonConfirm.Size = new Size(24, 24);
                             editDescriptionButtonConfirm.Location = new Point(editDescriptionButton.Location.X + 4, statusLabel.Location.Y + editDescriptionButton.Height + 1);
                             editDescriptionButtonConfirm.FlatStyle = FlatStyle.Flat;
                             editDescriptionButtonConfirm.BackgroundImage = Properties.Resources.confirmEditButtonIdle;
-                            editDescriptionButtonConfirm.Name = "buttonConfirm";                            
+                            editDescriptionButtonConfirm.Name = "buttonConfirm";
                             editDescriptionButtonConfirm.FlatAppearance.BorderSize = 0;
                             editDescriptionButtonConfirm.Visible = false;
                             editDescriptionButtonConfirm.Enabled = false;
@@ -943,14 +1206,14 @@ namespace ChatBubble.Client
                             editDescriptionButtonCancel.Location = new Point(editDescriptionButton.Location.X + 4, editDescriptionButton.Location.Y + 4);
                             editDescriptionButtonCancel.FlatStyle = FlatStyle.Flat;
                             editDescriptionButtonCancel.BackgroundImage = Properties.Resources.cancelEditButtonIdle;
-                            editDescriptionButtonCancel.Name = "buttonCancel";                            
+                            editDescriptionButtonCancel.Name = "buttonCancel";
                             editDescriptionButtonCancel.FlatAppearance.BorderSize = 0;
                             editDescriptionButtonCancel.Visible = false;
                             editDescriptionButtonCancel.Enabled = false;
 
                             ProfileEditingControlsAddDelegate profileEditingControlsD = new ProfileEditingControlsAddDelegate(AddProfileEditingControls);
                             Invoke(profileEditingControlsD, editDescriptionButton, editDescriptionButtonCancel, editDescriptionButtonConfirm);
-                        }             
+                        }
                         else
                         {
                             Button returnToLastPageButton = new Button();
@@ -993,7 +1256,7 @@ namespace ChatBubble.Client
                         Controls.Add(usernameLabel);
                         Controls.Add(bubScoreLabel);
                         Controls.Add(statusLabel);
-                        Controls.Add(summaryLabel);         
+                        Controls.Add(summaryLabel);
                     }
 
                     private void AddProfileEditingControls(Button editDescriptionButton, Button editDescriptionButtonConfirm, Button editDescriptionButtonCancel)
@@ -1025,7 +1288,7 @@ namespace ChatBubble.Client
 
                         foreach (Label label in controlLabels)
                         {
-                            if(label.Name == "statusLabel")
+                            if (label.Name == "statusLabel")
                             {
                                 statusTextBox.Location = new Point(label.Location.X, label.Location.Y - 3);
                                 statusTextBox.Size = label.Size;
@@ -1035,7 +1298,7 @@ namespace ChatBubble.Client
                                 statusTextBox.MaxLength = 50;
                                 statusTextBox.Name = "statusTextBox";
                             }
-                            if(label.Name == "summaryLabel")
+                            if (label.Name == "summaryLabel")
                             {
                                 summaryTextBox.Location = new Point(label.Location.X, label.Location.Y - 5);
                                 summaryTextBox.Size = label.Size;
@@ -1049,23 +1312,23 @@ namespace ChatBubble.Client
                             }
                         }
 
-                        for(int i = 0; i < controlButtons.Length; i++)
+                        for (int i = 0; i < controlButtons.Length; i++)
                         {
-                            if(controlButtons[i].Name == "buttonEdit")
+                            if (controlButtons[i].Name == "buttonEdit")
                             {
                                 controlButtons[i].Visible = false;
                                 controlButtons[i].Enabled = false;
 
                                 controlButtons[i].MouseUp -= EditProfileDescription;
                             }
-                            if(controlButtons[i].Name == "buttonCancel")
+                            if (controlButtons[i].Name == "buttonCancel")
                             {
                                 controlButtons[i].Visible = true;
                                 controlButtons[i].Enabled = true;
 
                                 controlButtons[i].MouseUp += CancelEdit;
                             }
-                            if(controlButtons[i].Name == "buttonConfirm")
+                            if (controlButtons[i].Name == "buttonConfirm")
                             {
                                 controlButtons[i].Visible = true;
                                 controlButtons[i].Enabled = true;
@@ -1127,7 +1390,7 @@ namespace ChatBubble.Client
                             if (textBox.Name == "statusTextBox")
                             {
                                 descriptionChangeRequest += "\nstatus=" + textBox.Text;
-                            }          
+                            }
                         }
                         foreach (TextBox textBox in controlTextBoxes)
                         {
@@ -1204,23 +1467,23 @@ namespace ChatBubble.Client
             {
                 TabHatImage tabHatPictureBox;
                 FriendPanel friendPanel;
-              
+
                 public FriendsTab()
                 {
                     Name = "Friends";
 
                     friendPanel = new FriendPanel();
-                    tabHatPictureBox = new TabHatImage(TabType.Friends, Name);                  
+                    tabHatPictureBox = new TabHatImage(TabType.Friends, Name);
 
                     Font = hatFont;
-                    
+
                     Controls.Add(friendPanel);
                     Controls.Add(tabHatPictureBox);
                     tabHatPictureBox.BringToFront();
-                }              
+                }
 
                 private class FriendPanel : DoubleBufferPanel
-                {                  
+                {
                     Point FriendPanelLocation { get; set; } = new Point(7, 29);
                     Size FriendPanelSize { get; set; } = new Size(833, 444);
 
@@ -1264,7 +1527,7 @@ namespace ChatBubble.Client
                         string[] allFriendsData = friendListResultString.Split(new string[] { "user=" }, StringSplitOptions.RemoveEmptyEntries);
                         int isLastPageFilled = 0;
 
-                        if(allFriendsData.Length % 12 > 0)
+                        if (allFriendsData.Length % 12 > 0)
                         {
                             isLastPageFilled = 1;
                         }
@@ -1272,9 +1535,9 @@ namespace ChatBubble.Client
                         allFriendsDataByPage = new string[12, allFriendsData.Length / 12 + isLastPageFilled];
 
                         int currentFriend = 0;
-                        for(int pageNum = 0; pageNum < allFriendsDataByPage.GetLength(1); pageNum++)
+                        for (int pageNum = 0; pageNum < allFriendsDataByPage.GetLength(1); pageNum++)
                         {
-                            for(int friendNum = 0; friendNum < 12; friendNum++)
+                            for (int friendNum = 0; friendNum < 12; friendNum++)
                             {
                                 if (currentFriend == allFriendsData.Length)
                                 {
@@ -1282,16 +1545,16 @@ namespace ChatBubble.Client
                                 }
 
                                 allFriendsDataByPage[friendNum, pageNum] = allFriendsData[currentFriend];
-                                
-                                currentFriend++;                          
+
+                                currentFriend++;
                             }
                         }
                     }
 
                     void ShowFriendList(object sender, EventArgs eventArgs)
                     {
-                        string[] friendListSplitstrings = { "id=", "login=", "name="};
-                        
+                        string[] friendListSplitstrings = { "id=", "login=", "name=" };
+
                         List<DoubleBufferPanel> friendBoxList = new List<DoubleBufferPanel>();
 
                         Button previousPageButton = new Button();
@@ -1317,7 +1580,7 @@ namespace ChatBubble.Client
                             previousPageButton.Text = "<";
 
                             Invoke(previousPageAddControlDelegate, previousPageButton);
-                            previousPageButton.Click += new EventHandler(ShowPreviousPage);               
+                            previousPageButton.Click += new EventHandler(ShowPreviousPage);
                         }
                         if (allFriendsDataByPage.GetLength(1) != pageNumber + 1)
                         {
@@ -1331,7 +1594,7 @@ namespace ChatBubble.Client
 
                         int friendBoxRow = 0;
                         int friendBoxColumn = 0;
-                        for (int i = 0; i < 12;i++)
+                        for (int i = 0; i < 12; i++)
                         {
                             System.IO.MemoryStream thumbnailStream = new System.IO.MemoryStream();
 
@@ -1339,9 +1602,9 @@ namespace ChatBubble.Client
                             PictureBox friendThumbnail = new PictureBox();
                             Label friendUsername = new Label();
                             Label friendName = new Label();
-                            WaterMarkTextBox friendSearchQuery = new WaterMarkTextBox();                                                                                                                                                               
+                            WaterMarkTextBox friendSearchQuery = new WaterMarkTextBox();
 
-                            if(allFriendsDataByPage[i, pageNumber] == null)
+                            if (allFriendsDataByPage[i, pageNumber] == null)
                             {
                                 break;
                             }
@@ -1352,7 +1615,7 @@ namespace ChatBubble.Client
                             friendBoxList.Add(new DoubleBufferPanel());
                             friendBoxList[i].Size = new Size((FriendPanelSize.Width - 6) / 6, (FriendPanelSize.Height - 30) / 2);
                             friendBoxList[i].Name = "friend_" + friendData[0];
-                           
+
                             removeFriendButton.Size = new Size(24, 24);
                             removeFriendButton.Location = new Point(friendBoxList[i].Size.Width - removeFriendButton.Width, 0);
                             removeFriendButton.BackgroundImage = Properties.Resources.removeFriendButton;
@@ -1369,7 +1632,7 @@ namespace ChatBubble.Client
                             imageEditor.RoundedCorners(friendThumbnail.Height / 2);
                             imageEditor.BackgroundColor(Color.White);
                             imageEditor.Save(thumbnailStream);
-                        
+
                             friendThumbnail.BackgroundImage = System.Drawing.Image.FromStream(thumbnailStream);
 
                             friendName.AutoSize = true;
@@ -1381,18 +1644,18 @@ namespace ChatBubble.Client
                             friendUsername.Font = subtitleFont;
                             friendUsername.ForeColor = Color.Gray;
                             friendUsername.Location = new Point(6, friendName.Height + friendName.Location.Y + 3);
-                            friendUsername.Text = friendData[1];          
-                          
-                            if(friendBoxList.Count >= 1)
+                            friendUsername.Text = friendData[1];
+
+                            if (friendBoxList.Count >= 1)
                             {
-                                if(friendBoxColumn == 6)
+                                if (friendBoxColumn == 6)
                                 {
                                     friendBoxRow++;
                                     friendBoxColumn = 0;
                                 }
-                                if(friendBoxColumn < 7)
+                                if (friendBoxColumn < 7)
                                 {
-                                    friendBoxList[i].Location = new Point(6 + friendBoxList[i].Size.Width*friendBoxColumn, friendBoxList[i].Size.Height*friendBoxRow + 30);
+                                    friendBoxList[i].Location = new Point(6 + friendBoxList[i].Size.Width * friendBoxColumn, friendBoxList[i].Size.Height * friendBoxRow + 30);
                                     friendBoxColumn++;
                                 }
                             }
@@ -1460,7 +1723,7 @@ namespace ChatBubble.Client
                         button.Parent.Parent.Controls.Clear();
 
                         GetFriendList(button.Parent.Parent, eventArgs);
-                        ShowFriendList(button.Parent.Parent, eventArgs);          
+                        ShowFriendList(button.Parent.Parent, eventArgs);
                     }
 
                     void ShowNextPage(object sender, EventArgs eventArgs)
@@ -1475,11 +1738,11 @@ namespace ChatBubble.Client
                         pageNumber--;
                         Controls.Clear();
                         ShowFriendList(this, eventArgs);
-                    }                   
+                    }
                 }
             }
             private class DialoguesTab : MainPage
-            {                
+            {
                 TabHatImage tabHatImage;
                 TextBox dialogueSearchQueryTextBox;
                 DialogueListPanel dialogueListPanel;
@@ -1495,7 +1758,7 @@ namespace ChatBubble.Client
                     dialogueSearchQueryTextBox.Size = new Size(626, 26);
                     dialogueSearchQueryTextBox.Location = new Point(200, 6);
                     dialogueSearchQueryTextBox.Font = hatFont;
-                                
+
                     Controls.Add(dialogueListPanel);
                     //Controls.Add(dialogueSearchQueryTextBox);
                     Controls.Add(tabHatImage);
@@ -1505,7 +1768,7 @@ namespace ChatBubble.Client
                 }
 
                 private class DialogueListPanel : Panel
-                {                   
+                {
                     Point DialogueListPanelLocation { get; set; } = new Point(6, 48);
                     Size DialogueListPanelSize { get; set; } = new Size(tabSize.Width - 6, tabSize.Height - 48);
 
@@ -1526,7 +1789,7 @@ namespace ChatBubble.Client
                         HorizontalScroll.Maximum = 0;
                         AutoScroll = false;
                         VerticalScroll.Visible = false;
-                        AutoScroll = true; 
+                        AutoScroll = true;
 
                         this.HandleCreated += new EventHandler(GetCurrentDialogues);
                     }
@@ -1568,10 +1831,10 @@ namespace ChatBubble.Client
                         Controls.Clear();
 
                         List<DoubleBufferPanel> dialogueBoxesList = new List<DoubleBufferPanel>();
-                                           
-                        for(int i = 0; i < currentDialoguesList.Count; i++)
+
+                        for (int i = 0; i < currentDialoguesList.Count; i++)
                         {
-                            string[] dialogueDataSubstrings = 
+                            string[] dialogueDataSubstrings =
                                 currentDialoguesList[i].Split(new string[] { "id=", "name=", "time=", "status=", "lastmsg=" }, StringSplitOptions.RemoveEmptyEntries);
                             //[0] - id, [1] - name, [2] - time, [3] - status, [4] - last message content
 
@@ -1664,7 +1927,7 @@ namespace ChatBubble.Client
 
                         for (int i = 0; i < dialogueFilenameArray.Length; i++)
                         {
-                            if(dialogueFilenameArray[i] == "chatid=" + currentChatID)
+                            if (dialogueFilenameArray[i] == "chatid=" + currentChatID)
                             {
                                 fileIO.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
                                 currentDialoguesList.RemoveAt(i);
@@ -1700,8 +1963,6 @@ namespace ChatBubble.Client
                     chatMessagesPanel = new ChatMessagesPanel(dxgid, d2d1d);
                     tabHatImage = new TabHatImage(TabType.ActiveDialogue, chatName);
                     lastTabButton = new LastTabButton();
-                    
-                    lastTabButton.MouseUp += new MouseEventHandler(GoToLastTab);
 
                     HandleCreated += new EventHandler(AddControls);
                 }
@@ -1714,61 +1975,6 @@ namespace ChatBubble.Client
                     Controls.Add(chatMessagesPanel);
                     Controls.Add(lastTabButton);
                     lastTabButton.BringToFront();
-                }
-
-                void GoToLastTab(object sender, EventArgs e)
-                {
-                    MainPage mainPage = Form.ActiveForm.Controls.OfType<MainPage>().First();
-
-                    mainPage.TabClose(TabHistory[TabHistory.Count - 1]);
-                }
-
-                private class LastTabButton : Button
-                {
-                    GraphicsPath RegionPath;
-
-                    public LastTabButton()
-                    {
-                        Size = new Size(22, 22);
-                        Location = new Point(0, 25);
-                        FlatAppearance.BorderSize = 0;
-                        FlatStyle = FlatStyle.Flat;
-                        Image = Properties.Resources.returnButtonIdle;
-                        ImageAlign = ContentAlignment.MiddleCenter;
-
-                        MouseEnter += new EventHandler(OnMouseEnter);
-                        MouseLeave += new EventHandler(OnMouseLeave);
-                        MouseDown += new MouseEventHandler(OnMouseDown);
-                        MouseUp += new MouseEventHandler(OnMouseUp);
-
-                        RegionPath = new GraphicsPath();
-
-                        RegionPath.StartFigure();
-                        RegionPath.AddEllipse(0, 0, Width, Height);
-                        RegionPath.CloseFigure();
-
-                        Region = new Region(RegionPath);
-                    }
-
-                    void OnMouseEnter(object sender, EventArgs e)
-                    {
-                        Image = Properties.Resources.returnButtonHover;
-                    }
-
-                    void OnMouseLeave(object sender, EventArgs e)
-                    {
-                        Image = Properties.Resources.returnButtonIdle;
-                    }
-
-                    void OnMouseDown(object sender, MouseEventArgs e)
-                    {
-                        Image = Properties.Resources.returnButtonClick;
-                    }
-
-                    void OnMouseUp(object sender, MouseEventArgs e)
-                    {
-                        Image = Properties.Resources.returnButtonIdle;                      
-                    }
                 }
 
                 private class ChatMessagesPanel : DoubleBufferPanel
@@ -1839,14 +2045,14 @@ namespace ChatBubble.Client
                     public ChatMessagesPanel(DXGI.Device dxgid, Direct2D1.Device d2d1d)
                     {
                         dxgiDevice = dxgid;
-                        d2dDevice = d2d1d;                       
+                        d2dDevice = d2d1d;
 
                         messageBoxList = new List<MessageBox>();
-                       // messageDecorBoxList = new List<MessageDecorBox>();
+                        // messageDecorBoxList = new List<MessageDecorBox>();
 
                         Location = new Point(0, 39);
                         Size = new Size(tabSize.Width + 15, tabSize.Height - chatInputPanelHeight - 39);
-                        
+
                         HorizontalScroll.Maximum = 0;
                         AutoScroll = false;
                         VerticalScroll.Visible = true;
@@ -1914,7 +2120,7 @@ namespace ChatBubble.Client
 
                     public void GetMessages(object sender, EventArgs eventArgs)
                     {
-                        FileIOStreamer fileIO = new FileIOStreamer();                     
+                        FileIOStreamer fileIO = new FileIOStreamer();
 
                         string dialogueData = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt");
                         string[] dialogueMessages = dialogueData.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
@@ -1931,16 +2137,16 @@ namespace ChatBubble.Client
                             //[0] - message time, [1] - message status, [2] - message content
 
                             messageBoxList.Insert(0, new MessageBox(messageData[0], messageData[1], messageData[2], dxWriteFactory, dxWriteTextFormatMain));
-                            
+
                             if (messageBoxList[0].MessageType == MessageType.Self)
                             {
                                 messageBoxList[0].Left = tabSize.Width - messageBoxList[0].Width - 60;
                             }
-                            if(messageBoxList[0].MessageType == MessageType.Unread)
+                            if (messageBoxList[0].MessageType == MessageType.Unread)
                             {
                                 messageBoxList[0].Left = 45;
                             }
-                            if(messageBoxList[0].MessageType == MessageType.Read)
+                            if (messageBoxList[0].MessageType == MessageType.Read)
                             {
                                 messageBoxList[0].Left = 9;
                             }
@@ -1997,15 +2203,15 @@ namespace ChatBubble.Client
                             }
 
                             Controls.Add(messageBoxList[i]);
-                            
+
                             if (messageBoxList.Count() > 0)
                             {
                                 ScrollControlIntoView(messageBoxList[0]);
                             }
 
                             if (messageBoxList[i].Bottom >= -50 && messageBoxList[i].Top <= tabSize.Height + 50)
-                            {                                
-                                DrawMessage(messageBoxList[i]);                        
+                            {
+                                DrawMessage(messageBoxList[i]);
                             }
 
                             messageBoxList[i].StatusChanged += messageStatusChanged;
@@ -2027,8 +2233,8 @@ namespace ChatBubble.Client
                             RadiusY = 12.5f,
                         };
 
-                        SharpDX.Mathematics.Interop.RawRectangleF contentRectangle = 
-                            new SharpDX.Mathematics.Interop.RawRectangleF(messageBox.Left + 6, 
+                        SharpDX.Mathematics.Interop.RawRectangleF contentRectangle =
+                            new SharpDX.Mathematics.Interop.RawRectangleF(messageBox.Left + 6,
                             messageBox.Top + 8, messageBox.Right - 6, messageBox.Bottom - 8);
 
                         if (messageBox.MessageType == MessageType.Self)
@@ -2099,8 +2305,8 @@ namespace ChatBubble.Client
 
                             swapChain.Present(0, PresentFlags.None);
                         }
-                    }    
-                   
+                    }
+
 
                     void OnScroll(object sender, MouseEventArgs eventArgs)
                     {
@@ -2173,7 +2379,7 @@ namespace ChatBubble.Client
                             MessageContent, dxwFormat, 500, 500)
                             {
                                 WordWrapping = SharpDX.DirectWrite.WordWrapping.NoWrap,
-                            };                          
+                            };
 
                             UniversalMessageTime = DateTime.Parse(messageTime);
                             LocalMessageTime = UniversalMessageTime.ToLocalTime().ToShortTimeString();
@@ -2189,14 +2395,14 @@ namespace ChatBubble.Client
                                 case ("sent"):
                                     MessageType = MessageType.Self;
                                     break;
-                            }                        
+                            }
 
                             Size = new Size((int)TextLayout.Metrics.Width + 16, (int)TextLayout.Metrics.Height + 16);
 
                             TextLayout.MaxWidth = Size.Width;
                             TextLayout.MaxHeight = Size.Height;
 
-                            if(MessageType == MessageType.Unread)
+                            if (MessageType == MessageType.Unread)
                             {
                                 System.Timers.Timer unreadDisplayWaitTimer = new System.Timers.Timer(900);
                                 unreadDisplayWaitTimer.Elapsed += new ElapsedEventHandler(MakeMessageRead);
@@ -2234,7 +2440,7 @@ namespace ChatBubble.Client
                                         MessageSwipeDelegate messageSwipe = new MessageSwipeDelegate(ChangeMessageLocation);
                                         Invoke(messageSwipe);
 
-                                        if(animationTicks >= 12)
+                                        if (animationTicks >= 12)
                                         {
                                             animationTimer.Stop();
                                             animationTimer.Dispose();
@@ -2263,12 +2469,12 @@ namespace ChatBubble.Client
                         {
                             int lineLength;
 
-                            if(content.Length < 150)
+                            if (content.Length < 150)
                             {
                                 lineLength = 30;
                                 DecorTier = DecorTier.Small;
                             }
-                            else if(content.Length < 300)
+                            else if (content.Length < 300)
                             {
                                 lineLength = 40;
                                 DecorTier = DecorTier.Medium;
@@ -2279,22 +2485,22 @@ namespace ChatBubble.Client
                                 DecorTier = DecorTier.Big;
                             }
 
-                            for(int i = 0; i < content.Length; i++)
+                            for (int i = 0; i < content.Length; i++)
                             {
                                 int indexOfPreviousLineChange = content.LastIndexOf("\n");
 
-                                if(indexOfPreviousLineChange == i - lineLength)
+                                if (indexOfPreviousLineChange == i - lineLength)
                                 {
                                     int indexOfNextSpace = i + content.Substring(i).IndexOf(' ');
                                     int indexOfPreviousSpace = content.Substring(0, i).LastIndexOf(' ');
 
                                     if (content.Substring(i).IndexOf(' ') < 10 && content.Substring(i).Length >= 10)
-                                    {                                      
+                                    {
                                         content = content.Insert(indexOfNextSpace, "\n");
                                         content = content.Remove(indexOfNextSpace + 1, 1);
                                     }
                                     else
-                                    {                                      
+                                    {
                                         content = content.Insert(indexOfPreviousSpace, "\n");
                                         content = content.Remove(indexOfPreviousSpace + 1, 1);
                                     }
@@ -2334,7 +2540,7 @@ namespace ChatBubble.Client
                         textBoxBackground.Height = this.Height;
 
                         messageTextBox = new WaterMarkRichTextBox();
-                        messageTextBox.Width = this.Width - 70;                       
+                        messageTextBox.Width = this.Width - 70;
                         messageTextBox.Multiline = true;
                         messageTextBox.WordWrap = true;
                         messageTextBox.ScrollBars = RichTextBoxScrollBars.None;
@@ -2347,7 +2553,7 @@ namespace ChatBubble.Client
                         TextBoxHeight = messageTextBox.Font.Height * TextBoxHeightLines;
 
                         sendMessageButton = new SendMessageButton();
-                        
+
                         textBoxBackground.GetRegion();
                         Controls.Add(textBoxBackground);
                         Controls.Add(messageTextBox);
@@ -2366,7 +2572,7 @@ namespace ChatBubble.Client
 
                     void MessageTextBoxOnKeyDown(object sender, KeyEventArgs e)
                     {
-                        if(e.KeyCode == Keys.Enter)
+                        if (e.KeyCode == Keys.Enter)
                         {
                             SendMessage(this, e);
                         }
@@ -2378,7 +2584,7 @@ namespace ChatBubble.Client
                         {
                             NetComponents.ClientSendMessage(ChatID, messageTextBox.Text);
                             DialoguePanelParent.chatMessagesPanel.GetMessages(DialoguePanelParent.chatMessagesPanel, e);
-                            
+
                             messageTextBox.Text = "";
                         }
                     }
@@ -2403,7 +2609,7 @@ namespace ChatBubble.Client
 
                     void GetTextBoxHeight()
                     {
-                        int textWidthPixels = TextRenderer.MeasureText(messageTextBox.Text, messageTextBox.Font).Width;                     
+                        int textWidthPixels = TextRenderer.MeasureText(messageTextBox.Text, messageTextBox.Font).Width;
 
                         if (textWidthPixels / 769 + 1 != TextBoxHeightLines)
                         {
@@ -2431,9 +2637,9 @@ namespace ChatBubble.Client
                             {
                                 messageTextBox.ScrollBars = RichTextBoxScrollBars.Vertical;
                                 messageTextBox.SelectionStart = oldSelection;
-                            }                          
+                            }
                         }
-                        
+
                     }
 
                     private class BackgroundPictureBox : PictureBox
@@ -2477,12 +2683,12 @@ namespace ChatBubble.Client
                             pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
                             pe.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
                             pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                            pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;                          
+                            pe.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
                             pe.Graphics.FillPath(solidBrush, path);
                             pe.Graphics.FillPath(whiteBrush, buttonBackgroundPath);
 
-                            base.OnPaint(pe);                          
+                            base.OnPaint(pe);
                         }
                     }
 
@@ -2537,7 +2743,7 @@ namespace ChatBubble.Client
                             Image = Properties.Resources.sendButtonHover;
                         }
                     }
-                }                
+                }
             }
 
             private class SearchTab : MainPage
@@ -2551,12 +2757,12 @@ namespace ChatBubble.Client
 
                 volatile bool searchServiceRunning;
 
-                public SearchTab()     
-                {                  
+                public SearchTab()
+                {
                     Name = "Search";
 
                     tabHatImage = new TabHatImage(TabType.Search, "");
-              
+
                     searchResultsPanel = new SearchResultsPanel();
                     searchQueryTextBox = new TextBox();
                     searchQueryTextBox.Size = new Size(tabSize.Width - 62, 26);
@@ -2672,7 +2878,7 @@ namespace ChatBubble.Client
                         DoubleBuffered = true;
 
                         Location = SearchResultPanelLocation;
-                        Size = SearchResultPanelSize;                       
+                        Size = SearchResultPanelSize;
 
                         HorizontalScroll.Maximum = 0;
                         AutoScroll = false;
@@ -2707,7 +2913,7 @@ namespace ChatBubble.Client
                             string[] searchResultSubstrings = searchResultsList[i].Split(searchResultSplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
                             //For searchResultSubstrings, [0] = id, [1] = username, [2] = name
 
-                            if(searchResultSubstrings[0] == "server_closed")
+                            if (searchResultSubstrings[0] == "server_closed")
                             {
                                 break;
                             }
@@ -2761,8 +2967,8 @@ namespace ChatBubble.Client
                                 searchResultSendMessageButton.BackgroundImage = Properties.Resources.searchResultSendMessage;
                                 searchResultSendMessageButton.Name = "chatStart_" + searchResultSubstrings[0];
 
-                                    //TO DO: Pause thread when new tab gets opened
-                                    //TO DO: Add textures to this button
+                                //TO DO: Pause thread when new tab gets opened
+                                //TO DO: Add textures to this button
                                 searchResultSendMessageButton.Click += new EventHandler(ShowUserDialogue);
 
                                 searchResultSendFriendRequestButton.FlatStyle = FlatStyle.Flat;
@@ -2794,7 +3000,7 @@ namespace ChatBubble.Client
 
                             searchResultTitleLabel.Text = searchResultSubstrings[2]; //Name is written in title
                             searchResultSubtitleLabel.Text = searchResultSubstrings[1]; //Username is written in subtitle in smaller font
-                          
+
                             ControlCreationDelegate controlCreationDelegate = new ControlCreationDelegate(AddSearchResultBox);
                             BeginInvoke(controlCreationDelegate, searchResultBoxesList[i], searchResultThumbnail,
                                     searchResultTitleLabel, searchResultSubtitleLabel, searchResultSendMessageButton, searchResultSendFriendRequestButton);
@@ -2869,7 +3075,684 @@ namespace ChatBubble.Client
                     tabHatImage = new TabHatImage(TabType.Search, Name);
 
                     Controls.Add(tabHatImage);
-                }               
+                    Controls.Add(new TitlePanel());
+                    Controls.Add(new SettingsButtonLayout());
+                }
+
+                private class SettingsButtonLayout : DoubleBufferPanel
+                {
+                    enum ButtonFunction { SetName, SetInfo, SetPrivacy, SetBlacklist, SetPassword, SetEmail, SetPhone, SetSecurityQuestions, SetNotifications }
+                    enum ButtonType { ProfileSettings, SecuritySettings, NotificationSettings }
+
+                    List<SettingsButton> ProfileSettingsButtons = new List<SettingsButton>();
+                    List<SettingsButton> SecuritySettingsButtons = new List<SettingsButton>();
+                    List<SettingsButton> NotificationSettingsButtons = new List<SettingsButton>();
+
+                    public static Pen GrayPenWide = new Pen(Color.FromArgb(255, 232, 241, 255), 2);
+                    public static Pen GrayPenNarrow = new Pen(Color.FromArgb(255, 232, 241, 255), 1);
+
+                    public SettingsButtonLayout()
+                    {
+                        Size = new Size(466, 413);
+                        Location = new Point(0, 63);
+
+                        this.HandleCreated += (o, e) => LayoutButtons();
+                    }
+
+                    void LayoutButtons()
+                    {
+                        for (int i = 0; i < Enum.GetNames(typeof(ButtonFunction)).Length; i++)
+                        {
+                            SettingsButton button = new SettingsButton((ButtonFunction)i);
+
+                            switch (button.CurrentButtonFunction)
+                            {
+                                case ButtonFunction.SetName:
+                                case ButtonFunction.SetInfo:
+                                case ButtonFunction.SetPrivacy:
+                                case ButtonFunction.SetBlacklist:
+                                    ProfileSettingsButtons.Add(button);
+                                    break;
+                                case ButtonFunction.SetPassword:
+                                case ButtonFunction.SetEmail:
+                                case ButtonFunction.SetPhone:
+                                case ButtonFunction.SetSecurityQuestions:
+                                    SecuritySettingsButtons.Add(button);
+                                    break;
+                                case ButtonFunction.SetNotifications:
+                                    NotificationSettingsButtons.Add(button);
+                                    break;
+                            }
+                        }
+
+                        int currentButtonY = 0;
+                        int buttonOffsetX = 28;
+
+                        for (int i = 0; i < ProfileSettingsButtons.Count(); i++)
+                        {
+                            if (i == 0)
+                            {
+                                TypeSeparator typeSeparator = new TypeSeparator(ButtonType.ProfileSettings);
+                                typeSeparator.Location = new Point(0, currentButtonY);
+
+                                Controls.Add(typeSeparator);
+
+                                currentButtonY += typeSeparator.Height;
+                            }
+
+                            ProfileSettingsButtons[i].Location = new Point(buttonOffsetX, currentButtonY);
+                            currentButtonY += ProfileSettingsButtons[i].Height;
+
+                            Controls.Add(ProfileSettingsButtons[i]);
+                        }
+
+                        for (int i = 0; i < SecuritySettingsButtons.Count(); i++)
+                        {
+                            if (i == 0)
+                            {
+                                currentButtonY += 10;
+
+                                TypeSeparator typeSeparator = new TypeSeparator(ButtonType.SecuritySettings);
+                                typeSeparator.Location = new Point(0, currentButtonY);
+
+                                Controls.Add(typeSeparator);
+
+                                currentButtonY += typeSeparator.Height;
+                            }
+
+                            SecuritySettingsButtons[i].Location = new Point(buttonOffsetX, currentButtonY);
+                            currentButtonY += SecuritySettingsButtons[i].Height;
+
+                            Controls.Add(SecuritySettingsButtons[i]);
+                        }
+
+                        for (int i = 0; i < NotificationSettingsButtons.Count(); i++)
+                        {
+                            if (i == 0)
+                            {
+                                currentButtonY += 10;
+
+                                TypeSeparator typeSeparator = new TypeSeparator(ButtonType.NotificationSettings);
+                                typeSeparator.Location = new Point(0, currentButtonY);
+
+                                Controls.Add(typeSeparator);
+
+                                currentButtonY += typeSeparator.Height;
+                            }
+
+                            NotificationSettingsButtons[i].Location = new Point(buttonOffsetX, currentButtonY);
+                            currentButtonY += NotificationSettingsButtons[i].Height;
+
+                            Controls.Add(NotificationSettingsButtons[i]);
+                        }
+                    }
+
+
+                    private class SettingsButton : Button
+                    {
+                        public ButtonFunction CurrentButtonFunction;
+                        public SettingsButton(ButtonFunction buttonFunction)
+                        {
+                            CurrentButtonFunction = buttonFunction;
+
+                            Size = new Size(411, 29);
+
+                            ForeColor = Color.FromArgb(255, 93, 143, 217);
+                            BackColor = Color.White;
+                            Font = new Font("Verdana", 8, FontStyle.Regular);
+                            TextAlign = ContentAlignment.MiddleLeft;
+                            FlatStyle = FlatStyle.Flat;
+                            FlatAppearance.BorderSize = 0;
+                            FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 243, 247, 255);
+                            FlatAppearance.MouseDownBackColor = Color.FromArgb(255, 232, 241, 255);
+
+                            Click += new EventHandler(OpenSettingsScreen);
+
+                            switch (CurrentButtonFunction)
+                            {
+                                case ButtonFunction.SetName:
+                                    Text = "Change profile name";
+                                    break;
+                                case ButtonFunction.SetInfo:
+                                    Text = "Edit profile information - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetPrivacy:
+                                    Text = "Privacy settings - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetBlacklist:
+                                    Text = "Blocked accounts - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetPassword:
+                                    Text = "Change password";
+                                    break;
+                                case ButtonFunction.SetEmail:
+                                    Text = "Update email address - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetPhone:
+                                    Text = "Update phone number - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetSecurityQuestions:
+                                    Text = "Update security questions - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                                case ButtonFunction.SetNotifications:
+                                    Text = "Notification settings - unavailable";
+                                    BackColor = Color.WhiteSmoke;
+                                    Enabled = false;
+                                    break;
+                            }
+                        }
+
+                        void OpenSettingsScreen(object sender, EventArgs e)
+                        {
+                            MainPage mainPage = Form.ActiveForm.Controls.OfType<MainPage>().First();
+
+                            switch (CurrentButtonFunction)
+                            {
+                                case ButtonFunction.SetName:
+                                    NameChangePanel nameChangePanel = new NameChangePanel();
+
+                                    mainPage.OpenNewTabArbitrary(nameChangePanel, "NameChangePanel");
+                                    break;
+                                case ButtonFunction.SetInfo:
+
+                                    break;
+                                case ButtonFunction.SetPrivacy:
+
+                                    break;
+                                case ButtonFunction.SetBlacklist:
+
+                                    break;
+                                case ButtonFunction.SetPassword:
+                                    PasswordChangePanel passwordChangePanel = new PasswordChangePanel();
+
+                                    mainPage.OpenNewTabArbitrary(passwordChangePanel, "PasswordChangePanel");
+                                    break;
+                                case ButtonFunction.SetEmail:
+
+                                    break;
+                                case ButtonFunction.SetPhone:
+
+                                    break;
+                                case ButtonFunction.SetSecurityQuestions:
+
+                                    break;
+                                case ButtonFunction.SetNotifications:
+
+                                    break;
+                            }
+                        }
+
+                        protected override void OnPaint(PaintEventArgs pevent)
+                        {
+                            base.OnPaint(pevent);
+
+                            pevent.Graphics.DrawLine(GrayPenNarrow, new Point(0, Height - 1), new Point(Width, Height - 1));
+                        }
+                    }
+
+                    private class TypeSeparator : Panel
+                    {
+                        ButtonType ButtonCollectionType;
+
+                        public TypeSeparator(ButtonType separationType)
+                        {
+                            ButtonCollectionType = separationType;
+
+                            Size = new Size(466, 33);
+
+                            Label typeLabel = new Label();
+                            typeLabel.Font = new Font("Verdana", 12, FontStyle.Regular);
+                            typeLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                            typeLabel.BackColor = Color.White;
+                            typeLabel.Size = new Size(442, 28);
+
+                            switch (ButtonCollectionType)
+                            {
+                                case ButtonType.ProfileSettings:
+                                    typeLabel.Text = "Profile";
+                                    break;
+                                case ButtonType.SecuritySettings:
+                                    typeLabel.Text = "Security";
+                                    break;
+                                case ButtonType.NotificationSettings:
+                                    typeLabel.Text = "Notifications";
+                                    break;
+                            }
+
+
+                            typeLabel.Location = new Point(13, 2);
+
+                            this.HandleCreated += (o, e) => Controls.Add(typeLabel);
+                        }
+
+                        protected override void OnPaint(PaintEventArgs e)
+                        {
+                            e.Graphics.DrawLine(GrayPenWide, new Point(14, 32), new Point(454, 32));
+
+                            base.OnPaint(e);
+                        }
+                    }
+                }
+
+                private class TitlePanel : DoubleBufferPanel
+                {
+                    PictureBox logotypePictureBox;
+                    Label versionLabel;
+                    Label versionDateLabel;
+                    Label rightsLabel;
+
+                    Pen GrayPen = new Pen(Color.FromArgb(255, 232, 241, 255), 2);
+
+                    public TitlePanel()
+                    {
+                        Size = new Size(374, 433);
+                        Location = new Point(466, 40);
+
+                        logotypePictureBox = new PictureBox();
+                        logotypePictureBox.Size = Properties.Resources.chatBubbleLogo.Size;
+                        logotypePictureBox.Location = new Point(Width / 2 - logotypePictureBox.Width / 2, Height / 2 - logotypePictureBox.Height + 15);
+                        logotypePictureBox.Image = Properties.Resources.chatBubbleLogo;
+
+                        versionLabel = new Label();
+                        versionLabel.Size = new Size(Width - 8, 16);
+                        versionLabel.Location = new Point(4, 270);
+                        versionLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                        versionLabel.Font = new Font("Verdana", 9.2f, FontStyle.Regular);
+                        versionLabel.TextAlign = ContentAlignment.MiddleCenter;
+                        versionLabel.Text = "ChatBubble v" + typeof(Form1).Assembly.GetName().Version.Major + "." + typeof(Form1).Assembly.GetName().Version.Minor;
+
+                        versionDateLabel = new Label();
+                        versionDateLabel.Size = new Size(Width - 8, 16);
+                        versionDateLabel.Location = new Point(4, 292);
+                        versionDateLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                        versionDateLabel.Font = new Font("Verdana", 8, FontStyle.Regular);
+                        versionDateLabel.TextAlign = ContentAlignment.MiddleCenter;
+                        versionDateLabel.Text = "03.10.2020";
+
+                        rightsLabel = new Label();
+                        rightsLabel.Size = new Size(Width - 8, 50);
+                        rightsLabel.Location = new Point(4, 344);
+                        rightsLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                        rightsLabel.Font = new Font("Verdana", 9.6f, FontStyle.Regular);
+                        rightsLabel.TextAlign = ContentAlignment.MiddleCenter;
+                        rightsLabel.Text = "Timofey Zheludkov\nAll Rights Reserved";
+
+                        this.HandleCreated += (o, e) =>
+                        {
+                            Controls.Add(versionLabel);
+                            Controls.Add(versionDateLabel);
+                            Controls.Add(rightsLabel);
+                            Controls.Add(logotypePictureBox);
+                        };
+                    }
+
+                    protected override void OnPaint(PaintEventArgs e)
+                    {
+                        e.Graphics.DrawLine(GrayPen, 2, 20, 2, Height - 20);
+
+                        base.OnPaint(e);
+                    }
+                }
+
+                private class NameChangePanel : DoubleBufferPanel
+                {
+                    List<WaterMarkTextBox> TextBoxList = new List<WaterMarkTextBox>();
+
+                    TabHatImage tabHatImage;
+                    Label manualLabel;
+                    WaterMarkTextBox firstNameTextBox;
+                    WaterMarkTextBox secondNameTextBox;
+                    LastTabButton lastTabButton;
+
+                    RoundedBackgroundButton confirmButton;
+
+                    ResultPanel resultPanel;
+
+                    Pen GrayPen = new Pen(Color.FromArgb(255, 232, 241, 255), 2);
+
+                    public NameChangePanel()
+                    {
+                        tabHatImage = new TabHatImage(TabType.Settings, "Change Profile Name", true);
+                        lastTabButton = new LastTabButton();
+
+                        manualLabel = new Label();
+                        manualLabel.Font = new Font("Verdana", 12, FontStyle.Regular);
+                        manualLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                        manualLabel.Size = new Size(442, 28);
+                        manualLabel.Location = new Point(13, 100);
+                        manualLabel.Text = "Please provide your new preferred name here";
+                        manualLabel.TextAlign = ContentAlignment.MiddleCenter;
+
+                        firstNameTextBox = new WaterMarkTextBox();
+                        firstNameTextBox.Watermark = "First name";
+                        firstNameTextBox.Font = titleFont;
+                        firstNameTextBox.Size = new Size(350, 16);
+                        firstNameTextBox.Location = new Point(468 / 2 - firstNameTextBox.Width / 2, 170);
+                        firstNameTextBox.CreateRoundedBorder = true;
+                        firstNameTextBox.RoundedBorderColor = manualLabel.ForeColor;
+                        firstNameTextBox.RoundedBorderWidth = 3;
+                        firstNameTextBox.TabIndex = 0;
+
+                        secondNameTextBox = new WaterMarkTextBox();
+                        secondNameTextBox.Watermark = "Last name";
+                        secondNameTextBox.Font = titleFont;
+                        secondNameTextBox.Size = new Size(350, 16);
+                        secondNameTextBox.Location = new Point(468 / 2 - secondNameTextBox.Width / 2, firstNameTextBox.Bottom + 16);
+                        secondNameTextBox.CreateRoundedBorder = true;
+                        secondNameTextBox.RoundedBorderColor = manualLabel.ForeColor;
+                        secondNameTextBox.RoundedBorderWidth = 3;
+                        secondNameTextBox.TabIndex = 1;
+
+                        confirmButton = new RoundedBackgroundButton();
+                        confirmButton.DefaultRectangleColor = Color.FromArgb(255, 93, 143, 217);
+                        confirmButton.Size = new Size(firstNameTextBox.Width + 18, secondNameTextBox.Bottom - firstNameTextBox.Top);
+                        confirmButton.Location = new Point(secondNameTextBox.Left - 9, secondNameTextBox.Bottom + 8);
+                        confirmButton.Text = "Confirm";
+                        confirmButton.Font = titleFont;
+                        confirmButton.ForeColor = Color.White;
+                        confirmButton.Click += new EventHandler(ConfirmNameChange);
+                        confirmButton.TabIndex = 2;
+
+                        TextBoxList.Add(firstNameTextBox);
+
+                        this.HandleCreated += (o, e) =>
+                        {
+                            Controls.Add(tabHatImage);
+                            Controls.Add(manualLabel);
+                            Controls.Add(firstNameTextBox);
+                            Controls.Add(secondNameTextBox);
+                            Controls.Add(lastTabButton);
+                            Controls.Add(confirmButton);
+
+                            resultPanel = new ResultPanel(ResultPanel.AppearanceType.RightBorder, new Size(Width - 470, Height - 40), 40);
+                            Controls.Add(resultPanel);
+
+                            tabHatImage.BringToFront();
+                            lastTabButton.BringToFront();
+                        };
+                    }
+
+                    void ConfirmNameChange(object sender, EventArgs e)
+                    {
+                        if (firstNameTextBox.WatermarkApplied || secondNameTextBox.WatermarkApplied)
+                        {
+                            return;
+                        }
+
+                        string firstName = firstNameTextBox.Text;
+                        string lastName = secondNameTextBox.Text;
+
+                        firstName = Char.ToUpper(firstName[0]) + firstName.Substring(1);
+                        lastName = Char.ToUpper(lastName[0]) + lastName.Substring(1);
+
+                        string serverReply = NetComponents.ClientRequestArbitrary("[chng_names_reqs]", "newname=" + firstName + " " + lastName, true, true);
+
+                        if (serverReply == "namess_chg_succes")
+                        {
+                            foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                            {
+                                textBox.RoundedBorderColor = Color.FromArgb(255, 141, 179, 16);
+                                textBox.Click += new EventHandler(RefreshOutlineColors);
+                            }
+
+                            confirmButton.DefaultRectangleColor = Color.FromArgb(255, 141, 179, 16);
+                            
+                            resultPanel.CreateResult(ResultPanel.ResultType.Success, "Name changed successfully!");
+                        }
+                        if (serverReply == "name_restricted_f")
+                        {
+                            foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                            {
+                                textBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                                textBox.Click += new EventHandler(RefreshOutlineColors);
+                            }
+
+                            resultPanel.CreateResult(ResultPanel.ResultType.Failure, "Wrong password!");
+                        }
+                        if (serverReply == "database__error__")
+                        {
+                            foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                            {
+                                textBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                                textBox.Click += new EventHandler(RefreshOutlineColors);
+                            }
+                            confirmButton.DefaultRectangleColor = Color.FromArgb(255, 255, 98, 78);
+
+                            resultPanel.CreateResult(ResultPanel.ResultType.ServerFailure, "");
+                        }
+
+                        confirmButton.MouseEnter += new EventHandler(RefreshOutlineColors);
+                        resultPanel.Focus();
+                    }
+
+                    void RefreshOutlineColors(object sender, EventArgs eventArgs)
+                    {
+                        foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                        {
+                            textBox.RoundedBorderColor = Color.FromArgb(255, 93, 143, 217);
+                            textBox.Click -= RefreshOutlineColors;
+                        }
+
+                        foreach (RoundedBackgroundButton button in Controls.OfType<RoundedBackgroundButton>())
+                        {
+                            button.DefaultRectangleColor = Color.FromArgb(255, 93, 143, 217);
+                            button.Focus();
+                        }
+                    }
+
+                    protected override void OnPaint(PaintEventArgs e)
+                    {
+                        e.Graphics.DrawLine(GrayPen, manualLabel.Left, manualLabel.Bottom + 1, manualLabel.Right, manualLabel.Bottom + 1);
+                        e.Graphics.DrawLine(GrayPen, 468, 60, 468, Height - 20);
+
+                        base.OnPaint(e);
+                    }
+                }
+
+                private class PasswordChangePanel : DoubleBufferPanel
+                {
+                    List<WaterMarkTextBox> TextBoxList = new List<WaterMarkTextBox>();
+
+                    TabHatImage tabHatImage;
+                    Label manualLabel;
+                    WaterMarkTextBox oldPasswordTextBox;
+                    WaterMarkTextBox newPasswordTextBox;
+                    WaterMarkTextBox repeatPasswordTextBox;
+                    LastTabButton lastTabButton;
+
+                    ResultPanel resultPanel;
+
+                    RoundedBackgroundButton confirmButton;
+
+                    Pen GrayPen = new Pen(Color.FromArgb(255, 232, 241, 255), 2);
+
+                    public PasswordChangePanel()
+                    {
+                        tabHatImage = new TabHatImage(TabType.Settings, "Change Password", true);
+                        lastTabButton = new LastTabButton();
+
+                        manualLabel = new Label();
+                        manualLabel.Font = new Font("Verdana", 12, FontStyle.Regular);
+                        manualLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
+                        manualLabel.Size = new Size(442, 28);
+                        manualLabel.Location = new Point(13, 100);
+                        manualLabel.Text = "Please provide necessary information";
+                        manualLabel.TextAlign = ContentAlignment.TopCenter;
+
+                        oldPasswordTextBox = new WaterMarkTextBox();
+                        oldPasswordTextBox.Watermark = "Old password";
+                        oldPasswordTextBox.Font = titleFont;
+                        oldPasswordTextBox.PasswordEnabled = true;
+                        oldPasswordTextBox.Size = new Size(350, 16);
+                        oldPasswordTextBox.Location = new Point(468 / 2 - oldPasswordTextBox.Width / 2, 170);
+                        oldPasswordTextBox.CreateRoundedBorder = true;
+                        oldPasswordTextBox.RoundedBorderColor = manualLabel.ForeColor;
+                        oldPasswordTextBox.RoundedBorderWidth = 3;
+                        oldPasswordTextBox.TabIndex = 0;
+
+                        newPasswordTextBox = new WaterMarkTextBox();
+                        newPasswordTextBox.Watermark = "New password";
+                        newPasswordTextBox.Font = titleFont;
+                        newPasswordTextBox.PasswordEnabled = true;
+                        newPasswordTextBox.Size = new Size(350, 16);
+                        newPasswordTextBox.Location = new Point(468 / 2 - newPasswordTextBox.Width / 2, oldPasswordTextBox.Bottom + 16);
+                        newPasswordTextBox.CreateRoundedBorder = true;
+                        newPasswordTextBox.RoundedBorderColor = manualLabel.ForeColor;
+                        newPasswordTextBox.RoundedBorderWidth = 3;
+                        newPasswordTextBox.TabIndex = 1;
+
+                        repeatPasswordTextBox = new WaterMarkTextBox();
+                        repeatPasswordTextBox.Watermark = "Repeat password";
+                        repeatPasswordTextBox.Font = titleFont;
+                        repeatPasswordTextBox.PasswordEnabled = true;
+                        repeatPasswordTextBox.Size = new Size(350, 16);
+                        repeatPasswordTextBox.Location = new Point(468 / 2 - repeatPasswordTextBox.Width / 2, newPasswordTextBox.Bottom + 16);
+                        repeatPasswordTextBox.CreateRoundedBorder = true;
+                        repeatPasswordTextBox.RoundedBorderColor = manualLabel.ForeColor;
+                        repeatPasswordTextBox.RoundedBorderWidth = 3;
+                        repeatPasswordTextBox.TabIndex = 2;
+
+                        confirmButton = new RoundedBackgroundButton();
+                        confirmButton.DefaultRectangleColor = Color.FromArgb(255, 93, 143, 217);
+                        confirmButton.Size = new Size(repeatPasswordTextBox.Width + 18, repeatPasswordTextBox.Bottom - newPasswordTextBox.Top);
+                        confirmButton.Location = new Point(repeatPasswordTextBox.Left - 9, repeatPasswordTextBox.Bottom + 8);
+                        confirmButton.Text = "Confirm";
+                        confirmButton.Font = titleFont;
+                        confirmButton.ForeColor = Color.White;
+                        confirmButton.Click += new EventHandler(ConfirmPasswordChange);
+                        confirmButton.TabIndex = 3;
+
+                        TextBoxList.Add(oldPasswordTextBox);
+
+                        this.HandleCreated += (o, e) =>
+                        {
+                            Controls.Add(tabHatImage);
+                            Controls.Add(manualLabel);
+                            Controls.Add(oldPasswordTextBox);
+                            Controls.Add(newPasswordTextBox);
+                            Controls.Add(repeatPasswordTextBox);
+                            Controls.Add(lastTabButton);
+                            Controls.Add(confirmButton);
+
+                            resultPanel = new ResultPanel(ResultPanel.AppearanceType.RightBorder, new Size(Width - 470, Height - 40), 40);
+                            Controls.Add(resultPanel);
+
+                            tabHatImage.BringToFront();
+                            lastTabButton.BringToFront();
+                        };
+                    }
+
+                    protected override void OnPaint(PaintEventArgs e)
+                    {
+                        e.Graphics.DrawLine(GrayPen, manualLabel.Left, manualLabel.Bottom + 1, manualLabel.Right, manualLabel.Bottom + 1);
+                        e.Graphics.DrawLine(GrayPen, 468, 60, 468, Height - 20);
+
+                        base.OnPaint(e);
+                    }
+
+                    void ConfirmPasswordChange(object sender, EventArgs e)
+                    {
+                        if (oldPasswordTextBox.WatermarkApplied || newPasswordTextBox.WatermarkApplied || repeatPasswordTextBox.WatermarkApplied)
+                        {
+                            return;
+                        }
+
+                        if (oldPasswordTextBox.Text == repeatPasswordTextBox.Text && oldPasswordTextBox.Text == newPasswordTextBox.Text)
+                        {
+                            foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                            {
+                                textBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                                textBox.Click += new EventHandler(RefreshOutlineColors);
+                            }
+
+                            confirmButton.DefaultRectangleColor = Color.FromArgb(255, 255, 98, 78);
+                            confirmButton.MouseEnter += new EventHandler(RefreshOutlineColors);
+
+                            resultPanel.CreateResult(ResultPanel.ResultType.Failure, "New password can't be\n the same as the old password!");
+
+                            resultPanel.Focus();
+                            return;
+                        }
+
+                        if (newPasswordTextBox.Text == repeatPasswordTextBox.Text)
+                        {
+                            string serverReply = NetComponents.ClientRequestArbitrary("[chng_pswrd_reqs]", "oldpass=" + oldPasswordTextBox.Text + "newpass=" + newPasswordTextBox.Text, true, true);
+
+                            if (serverReply == "passwd_chg_succes")
+                            {
+                                foreach(WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                                {
+                                    textBox.RoundedBorderColor = Color.FromArgb(255, 141, 179, 16);
+                                    textBox.Click += new EventHandler(RefreshOutlineColors);
+                                }
+
+                                confirmButton.DefaultRectangleColor = Color.FromArgb(255, 141, 179, 16);
+                                confirmButton.MouseEnter += new EventHandler(RefreshOutlineColors);
+
+                                resultPanel.CreateResult(ResultPanel.ResultType.Success, "Password changed successfully!");
+                            }
+                            if (serverReply == "passwrd_not_match")
+                            {
+                                oldPasswordTextBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                                oldPasswordTextBox.Click += new EventHandler(RefreshOutlineColors);
+
+                                resultPanel.CreateResult(ResultPanel.ResultType.Failure, "Wrong password!");
+                            }
+                            if (serverReply == "database__error__")
+                            {
+                                foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                                {
+                                    textBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                                    textBox.Click += new EventHandler(RefreshOutlineColors);
+                                }
+
+                                confirmButton.DefaultRectangleColor = Color.FromArgb(255, 255, 98, 78);
+                                confirmButton.MouseEnter += new EventHandler(RefreshOutlineColors);
+
+                                resultPanel.CreateResult(ResultPanel.ResultType.ServerFailure, "");
+                            }
+                        }
+                        else
+                        {
+                            resultPanel.CreateResult(ResultPanel.ResultType.Failure, "Passwords don't match!");
+
+                            newPasswordTextBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                            newPasswordTextBox.Click += new EventHandler(RefreshOutlineColors);
+
+                            repeatPasswordTextBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
+                            repeatPasswordTextBox.Click += new EventHandler(RefreshOutlineColors);
+                        }
+
+                        resultPanel.Focus();
+                    }
+
+                    void RefreshOutlineColors(object sender, EventArgs eventArgs)
+                    {
+                        foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
+                        {
+                            textBox.RoundedBorderColor = Color.FromArgb(255, 93, 143, 217);
+                            textBox.Click -= RefreshOutlineColors;
+                        }      
+                        
+                        foreach (RoundedBackgroundButton button in Controls.OfType<RoundedBackgroundButton>())
+                        {
+                            button.DefaultRectangleColor = Color.FromArgb(255, 93, 143, 217);
+                            button.Focus();
+                        }
+                    }
+                }
             }
             private class LogOutTab : MainPage
             {
@@ -2883,7 +3766,7 @@ namespace ChatBubble.Client
 
                     //tabNameLabel.Text = "Log Out";
                     //this.Controls.Add(tabNameLabel);
-                }              
+                }
             }
 
             private class MenuButton : Button   //This class encompasses all the buttons to the left of the tabs
@@ -2894,7 +3777,7 @@ namespace ChatBubble.Client
                 System.Drawing.Bitmap backgroundImageIdle;
                 System.Drawing.Bitmap backgroundImageOnHover;
                 System.Drawing.Bitmap backgroundImageOnClick;
-               
+
 
                 public MenuButton(Panel parentMainPage, MainPage instanceMainPage, TabType tabType)
                 {
@@ -2904,10 +3787,10 @@ namespace ChatBubble.Client
                     Font = titleFont;
                     thisTabType = tabType;
 
-                    int buttonY;                   
+                    int buttonY;
 
-                    if(parentMainPage.Controls.OfType<MenuButton>().Count() > 0)
-                    {               
+                    if (parentMainPage.Controls.OfType<MenuButton>().Count() > 0)
+                    {
                         buttonY = parentMainPage.Controls.OfType<MenuButton>().Last().Location.Y + parentMainPage.Controls.OfType<MenuButton>().Last().Height - 1;
                     }
                     else
@@ -2994,7 +3877,7 @@ namespace ChatBubble.Client
                     }
 
                     void OnMouseLeave(object sender, EventArgs eventArgs)
-                    {                      
+                    {
                         BackgroundImage = backgroundImageIdle;
                     }
 
@@ -3073,7 +3956,7 @@ namespace ChatBubble.Client
                 }
 
                 return (false);
-            }            
+            }
 
             class LoginPanel : FrontDoorPage
             {
@@ -3091,7 +3974,7 @@ namespace ChatBubble.Client
                 public RegistrationPanel registrationPanelReferenceObj { get; set; }
 
                 public LoginPanel(FrontDoorPage frontDoorPage)
-                {                  
+                {
                     loginTextBox.Size = new Size(292, 30);
                     loginTextBox.Location = new Point(14, 250);
                     loginTextBox.BorderStyle = BorderStyle.None;
@@ -3101,22 +3984,22 @@ namespace ChatBubble.Client
                     loginTextBoxBackgroundPicture.Size = new Size(308, 34);
                     loginTextBoxBackgroundPicture.Location = new Point(loginTextBox.Location.X - 8, loginTextBox.Location.Y - 6);
                     loginTextBoxBackgroundPicture.BackgroundImage = Properties.Resources.frontDoorTextBoxBorder;
-                    this.Controls.Add(loginTextBoxBackgroundPicture);                    
+                    this.Controls.Add(loginTextBoxBackgroundPicture);
                     loginTextBox.BringToFront();
 
                     statusMessage.AutoSize = false;
                     statusMessage.TextAlign = ContentAlignment.MiddleCenter;
                     statusMessage.Size = new Size(308, 28);
-                    statusMessage.Location = new Point(6, loginTextBox.Location.Y - statusMessage.Size.Height - 6);                   
+                    statusMessage.Location = new Point(6, loginTextBox.Location.Y - statusMessage.Size.Height - 6);
                     statusMessage.Font = titleFont;
                     statusMessage.ForeColor = Color.Red;
-                    this.Controls.Add(statusMessage);                  
+                    this.Controls.Add(statusMessage);
 
                     passwordTextBox.Size = loginTextBox.Size;
                     passwordTextBox.Location = new Point(14, loginTextBox.Location.Y + 42);
                     passwordTextBox.BorderStyle = BorderStyle.None;
                     passwordTextBox.Watermark = "Password";
-                    passwordTextBox.PasswordChar = '•';
+                    passwordTextBox.PasswordEnabled = true;
                     this.Controls.Add(passwordTextBox);
 
                     passwordTextBoxBackgroundPicture.Size = new Size(308, 34);
@@ -3162,13 +4045,13 @@ namespace ChatBubble.Client
                     noAccountButton.MouseEnter += new EventHandler(OnFrontDoorMouseEnter);
                     noAccountButton.MouseLeave += new EventHandler(OnFrontDoorButtonMouseLeft);
 
-                    foreach(WaterMarkTextBox textBox in this.Controls.OfType<WaterMarkTextBox>())
+                    foreach (WaterMarkTextBox textBox in this.Controls.OfType<WaterMarkTextBox>())
                     {
                         textBox.Click += new EventHandler(OnRefreshErrors);
                     }
 
                     loginButton.Click += new EventHandler(LogInAttempt);
-                    noAccountButton.Click += new EventHandler(OnNoAccountClick);                                  
+                    noAccountButton.Click += new EventHandler(OnNoAccountClick);
                 }
 
                 void OnFrontDoorButtonMouseDown(object sender, EventArgs eventArgs)
@@ -3216,7 +4099,7 @@ namespace ChatBubble.Client
                 }
                 public void LogInAttempt(object sender, EventArgs eventArgs)
                 {
-                    if(loginTextBox.watermarkApplied == true || passwordTextBox.watermarkApplied == true)
+                    if (loginTextBox.WatermarkApplied == true || passwordTextBox.WatermarkApplied == true)
                     {
                         return;
                     }
@@ -3250,12 +4133,12 @@ namespace ChatBubble.Client
 
                     statusMessage.Text = LogInHandler(serverReply);
 
-                    if(statusMessage.Text == "Wrong login or password.")
+                    if (statusMessage.Text == "Wrong login or password.")
                     {
                         loginTextBoxBackgroundPicture.BackgroundImage = Properties.Resources.frontDoorTextBoxBorderError;
                         passwordTextBoxBackgroundPicture.BackgroundImage = Properties.Resources.frontDoorTextBoxBorderError;
                     }
-                }              
+                }
             }
 
             public string LogInHandler(string serverReply)
@@ -3283,14 +4166,14 @@ namespace ChatBubble.Client
                     NetComponents.ClientPendingMessageManager();
 
                     Thread messageReceiverThread = new Thread(NetComponents.ClientServerFlagListener);
-                    messageReceiverThread.Start();                                      
+                    messageReceiverThread.Start();
 
                     this.Dispose();
 
                     return ("login_success");
                 }
                 else if (serverReply == "login_failure")
-                {                   
+                {
                     return ("Wrong login or password.");
                 }
                 else
@@ -3320,7 +4203,7 @@ namespace ChatBubble.Client
 
                 public RegistrationPanel(FrontDoorPage frontDoorPage)
                 {
-                    
+
                     //First Name Textbox
                     firstNameTextBox.Size = new Size(292, 30);
                     firstNameTextBox.Location = new Point(14, 250);
@@ -3363,7 +4246,7 @@ namespace ChatBubble.Client
                     passwordTextBox.Location = new Point(14, usernameTextBox.Location.Y + 42);
                     passwordTextBox.BorderStyle = BorderStyle.None;
                     passwordTextBox.Watermark = "Password";
-                    passwordTextBox.PasswordChar = '•';
+                    passwordTextBox.PasswordEnabled = true;
                     passwordTextBox.TabIndex = 3;
                     this.Controls.Add(passwordTextBox);
 
@@ -3429,7 +4312,7 @@ namespace ChatBubble.Client
                     goBackButton.MouseEnter += new EventHandler(OnFrontDoorMouseEnter);
                     goBackButton.MouseLeave += new EventHandler(OnFrontDoorButtonMouseLeft);
 
-                    foreach(WaterMarkTextBox textBox in this.Controls.OfType<WaterMarkTextBox>())
+                    foreach (WaterMarkTextBox textBox in this.Controls.OfType<WaterMarkTextBox>())
                     {
                         textBox.Click += new EventHandler(OnRefreshErrors);
                     }
@@ -3491,8 +4374,8 @@ namespace ChatBubble.Client
                     string password = passwordTextBox.Text;
                     string repeatPassword = repeatPasswordTextBox.Text;
 
-                    if (usernameTextBox.watermarkApplied == true || passwordTextBox.watermarkApplied == true
-                        || firstNameTextBox.watermarkApplied == true || repeatPasswordTextBox.watermarkApplied == true)
+                    if (usernameTextBox.WatermarkApplied == true || passwordTextBox.WatermarkApplied == true
+                        || firstNameTextBox.WatermarkApplied == true || repeatPasswordTextBox.WatermarkApplied == true)
                     {
                         return;
                     }
@@ -3557,7 +4440,7 @@ namespace ChatBubble.Client
                     return;
                 }
 
-            }          
+            }
 
             public void PanelShow(object sender, EventArgs eventArgs)
             {
@@ -3572,7 +4455,7 @@ namespace ChatBubble.Client
             }
 
             public void PanelHide(object sender, EventArgs eventArgs)
-            {         
+            {
                 for (int i = 0; i >= -320; i = i - 32)
                 {
                     Location = new Point(i, 0);
@@ -3584,10 +4467,10 @@ namespace ChatBubble.Client
 
             void CleanUpPanel(Panel currentPanel)
             {
-                foreach(WaterMarkTextBox textBox in currentPanel.Controls.OfType<WaterMarkTextBox>())
+                foreach (WaterMarkTextBox textBox in currentPanel.Controls.OfType<WaterMarkTextBox>())
                 {
-                    textBox.watermarkApplied = false;
-                    textBox.Text = "";                  
+                    textBox.WatermarkApplied = false;
+                    textBox.Text = "";
                 }
             }
         }
@@ -3612,12 +4495,12 @@ namespace ChatBubble.Client
 
 
             public void OpenLoadingPage()
-            {             
+            {
                 loadingImageBox = new PictureBox();
                 loadingImageBox.Size = new Size(250, 250);
                 loadingImageBox.Location = new Point(loadingPageSize.Width / 2 - loadingImageBox.Width / 2, 75);
                 loadingImageBox.Image = Properties.Resources.LoadingCog;
-                
+
 
                 loadingMessageLabel = new Label();
                 loadingMessageLabel.Size = new Size(400, 21);
@@ -3627,20 +4510,20 @@ namespace ChatBubble.Client
 
                 this.Controls.Add(loadingImageBox);
                 this.Controls.Add(loadingMessageLabel);
-                
+
                 Thread initialHandshakeThread = new Thread(ClientStartUp);
                 initialHandshakeThread.Start();
             }
 
             void ClientStartUp()
             {
-                while(ActiveForm.IsHandleCreated != true)
+                while (ActiveForm.IsHandleCreated != true)
                 {
                     Thread.Sleep(1);
                 }
 
                 MessageChangeDelegate messageChangeDelegate = new MessageChangeDelegate(LoadingMessageSetText);
-                            
+
                 int attemptNumber = 2;
                 string handshakeResult;
 
@@ -3704,9 +4587,9 @@ namespace ChatBubble.Client
                         BringToFrontDelegate bringToFrontDelegate = new BringToFrontDelegate(mainPage.BringToFront);
                         ControlDisposeDelegate controlDisposeDelegate = new ControlDisposeDelegate(this.Dispose);
 
-                        Invoke(cookieLoginDelegate, handshakeResult);                        
+                        Invoke(cookieLoginDelegate, handshakeResult);
                         Invoke(bringToFrontDelegate);
-                        
+
                         connectedCheckTimer.Start();
                         return;
                     }
@@ -3735,15 +4618,75 @@ namespace ChatBubble.Client
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
         }
     }
-  
+
     public class WaterMarkTextBox : TextBox
     {
+        BorderPictureBox borderPictureBox;
+
         string customWatermark = "Watermark";
-        public bool watermarkApplied = false;
+        public bool WatermarkApplied = false;
+        bool createRoundedBorder = false;
+        bool passwordEnabled;
         char specifiedPasswordChar;
 
         Font font;
-        
+
+        Color color1;
+        int width1;
+
+        public bool CreateRoundedBorder
+        {
+            get
+            {
+                return createRoundedBorder;
+            }
+            set
+            {
+                createRoundedBorder = value;
+                BorderStyle = BorderStyle.None;
+            }
+        }
+
+        public bool PasswordEnabled
+        {
+            get
+            {
+                return passwordEnabled;
+            }
+            set
+            {
+                passwordEnabled = value;
+                specifiedPasswordChar = '•';
+                PasswordChar = '\0';
+            }
+        }
+
+        public Color RoundedBorderColor
+        {
+            get
+            {
+                return color1;
+            }
+            set
+            {
+                color1 = value;
+                OnRoundedBorderChanged(this, EventArgs.Empty);
+            }
+        }
+
+        public int RoundedBorderWidth
+        {
+            get
+            {
+                return width1;
+            }
+            set
+            {
+                width1 = value;
+                OnRoundedBorderChanged(this, EventArgs.Empty);
+            }
+        }
+
 
         [Category("Appearance"), DefaultValue("Watermark"), Browsable(true)]
         public string Watermark
@@ -3764,18 +4707,20 @@ namespace ChatBubble.Client
         {
             font = new Font("Verdana", 10, FontStyle.Regular);
             Font = font;
-            ForeColor = Color.Gray;           
+            ForeColor = Color.Gray;
             
             Text = customWatermark;
-            watermarkApplied = true;
+            WatermarkApplied = true;
+
+            this.HandleCreated += new EventHandler(PrepareControl);
         }
 
-        protected override void OnCreateControl()
+        void PrepareControl(object sender, EventArgs e)
         {
-            base.OnCreateControl();
-
-            specifiedPasswordChar = this.PasswordChar;
-            PasswordChar = '\0';
+            if (CreateRoundedBorder)
+            {
+                CreateBorder();
+            }
 
             TextChanged += new EventHandler(this.WatermarkSwitch);
             KeyDown += new KeyEventHandler(this.SelectionMoved);
@@ -3787,11 +4732,18 @@ namespace ChatBubble.Client
             this.SelectionStart = 0;
         }
 
+        private void CreateBorder()
+        {
+            borderPictureBox = new BorderPictureBox(this, RoundedBorderColor, RoundedBorderWidth);
+
+            Parent.Controls.Add(borderPictureBox);
+        }
+
         private void WatermarkSwitch(object sender, EventArgs eventArgs)
         {
             if (specifiedPasswordChar != '\0')
             {
-                if (watermarkApplied == false)
+                if (WatermarkApplied == false)
                 {
                     PasswordChar = specifiedPasswordChar;
                 }
@@ -3801,17 +4753,17 @@ namespace ChatBubble.Client
                 }
             }
 
-            if (Text.Length == 0 && watermarkApplied == false)
+            if (Text.Length == 0 && WatermarkApplied == false)
             {
-                watermarkApplied = true;
+                WatermarkApplied = true;
                 ForeColor = Color.Gray;
                 Text = customWatermark;
                 SelectionStart = 0;
             }
 
-            if ((watermarkApplied == true && this.Text != customWatermark))
+            if ((WatermarkApplied == true && this.Text != customWatermark))
             {              
-                watermarkApplied = false;
+                WatermarkApplied = false;
                 ForeColor = Color.Black;
 
                 try
@@ -3828,7 +4780,7 @@ namespace ChatBubble.Client
 
         private void SelectionMoved(object sender, KeyEventArgs eventArgs)
         {
-            if ((eventArgs.KeyCode == Keys.Right || eventArgs.KeyCode == Keys.Left) && watermarkApplied == true)
+            if ((eventArgs.KeyCode == Keys.Right || eventArgs.KeyCode == Keys.Left) && WatermarkApplied == true)
             {
                 eventArgs.Handled = true;
             }
@@ -3855,12 +4807,78 @@ namespace ChatBubble.Client
             }
         }
 
+        protected virtual void OnRoundedBorderChanged(object sender, EventArgs eventArgs)
+        {
+            if (this.Created)
+            {
+                borderPictureBox.GetNewPen(RoundedBorderColor, RoundedBorderWidth);
+            }
+        }
+
         private void ControlSelected(object sender, MouseEventArgs eventArgs)
         {
-            if (watermarkApplied == true)
+            if (WatermarkApplied == true)
             {
                 this.SelectionLength = 0;
                 this.SelectionStart = 0;
+            }
+        }
+
+        private class BorderPictureBox : PictureBox
+        {
+            GraphicsPath borderPath;
+            Pen BorderPen;
+
+            public BorderPictureBox(WaterMarkTextBox primaryTextBox, Color borderColor, int borderWidth)
+            {
+                Size = new Size(primaryTextBox.Width + borderWidth * 3 + 8, primaryTextBox.Height + borderWidth * 3 + 2);
+                Location = new Point(primaryTextBox.Left - borderWidth - 7, primaryTextBox.Top - borderWidth - 6);
+
+                GetNewPen(borderColor, borderWidth);
+
+                this.HandleCreated += (o, e) => GetRegion();
+            }
+
+            public void GetNewPen(Color color, int width)
+            {
+                BorderPen = new Pen(color, width);
+                Invalidate();
+            }
+
+            void GetRegion()
+            {
+                int cornerRadius = 20;
+                int borderMargin = (int)BorderPen.Width;
+
+                borderPath = new GraphicsPath();
+
+                borderPath.StartFigure();
+
+                borderPath.AddArc(new Rectangle(borderMargin, borderMargin, cornerRadius, cornerRadius), 180, 90);
+                borderPath.AddLine(cornerRadius + borderMargin, borderMargin, Width - cornerRadius - borderMargin, borderMargin);
+
+                borderPath.AddArc(new Rectangle(Width - cornerRadius - borderMargin, borderMargin, cornerRadius, cornerRadius), 270, 90);
+                borderPath.AddLine(Width - borderMargin, cornerRadius + borderMargin, Width - borderMargin, Height - cornerRadius - borderMargin);
+
+                borderPath.AddArc(new Rectangle(Width - cornerRadius - borderMargin, Height - cornerRadius - borderMargin, cornerRadius, cornerRadius), 0, 90);
+                borderPath.AddLine(Width - cornerRadius - borderMargin, Height - borderMargin, cornerRadius + borderMargin, Height - borderMargin);
+
+                borderPath.AddArc(new Rectangle(borderMargin, Height - cornerRadius - borderMargin, cornerRadius, cornerRadius), 90, 90);
+                borderPath.AddLine(borderMargin, Height - cornerRadius + borderMargin, borderMargin, cornerRadius + borderMargin);
+
+                borderPath.CloseFigure();
+            }
+
+            protected override void OnPaint(PaintEventArgs pe)
+            {
+                pe.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                pe.Graphics.CompositingMode = CompositingMode.SourceOver;
+                pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+
+                pe.Graphics.DrawPath(BorderPen, borderPath);
+
+                base.OnPaint(pe);
             }
         }
     }
@@ -3874,7 +4892,6 @@ namespace ChatBubble.Client
         int selectionStartOld;
 
         Font font;
-
 
         [Category("Appearance"), DefaultValue("Watermark"), Browsable(true)]
         public string Watermark
@@ -4007,6 +5024,154 @@ namespace ChatBubble.Client
                 this.SelectionLength = 0;
                 this.SelectionStart = 0;
             }
+        }
+    }
+
+    public class RoundedBackgroundButton : Button
+    {    
+        Color RectangleIdleColor { get; set; }
+        Color RectangleMouseEnterColor { get; set; }
+        Color RectangleMouseDownColor { get; set; }
+        Color defaultColor;
+        public Color DefaultRectangleColor
+        {
+            get
+            {
+                return defaultColor;
+            }
+            set
+            {
+                defaultColor = value;
+                GetColors();
+            }
+        }
+
+        SolidBrush BackgroundBrush;
+        SolidBrush TextBrush;
+
+        GraphicsPath borderPath;
+        Size TextSize;
+
+        public RoundedBackgroundButton()
+        {
+            FlatAppearance.BorderSize = 0;
+            FlatStyle = FlatStyle.Flat;
+            FlatAppearance.MouseDownBackColor = Color.Transparent;
+            FlatAppearance.MouseOverBackColor = Color.Transparent;
+
+            Text = "test";
+        }
+
+        protected override void OnCreateControl()
+        {
+            GetColors();
+            GetBackground();
+
+            base.OnCreateControl();
+        }
+
+        void GetColors()
+        {
+            RectangleIdleColor = DefaultRectangleColor;
+
+            BackColor = Color.White;
+
+            int newRed = DefaultRectangleColor.R - 22;
+            int newGreen = DefaultRectangleColor.G - 32;
+            int newBlue = DefaultRectangleColor.B - 54;
+
+            if (newRed < 0)
+            {
+                newRed = 0;
+            }
+            if (newGreen < 0)
+            {
+                newGreen = 0;
+            }
+            if (newBlue < 0)
+            {
+                newBlue = 0;
+            }
+
+            RectangleMouseDownColor = Color.FromArgb(255, newRed, newGreen, newBlue);
+            RectangleMouseEnterColor = Color.FromArgb(255, newRed + 12, newGreen + 18, newBlue + 30);
+
+            BackgroundBrush = new System.Drawing.SolidBrush(RectangleIdleColor);
+            TextBrush = new System.Drawing.SolidBrush(ForeColor);
+        }
+
+        void GetBackground()
+        {
+            int cornerRadius = 25;
+            int borderMargin = 1;
+
+            borderPath = new GraphicsPath();
+
+            borderPath.StartFigure();
+
+            borderPath.AddArc(new Rectangle(borderMargin, borderMargin, cornerRadius, cornerRadius), 180, 90);
+            borderPath.AddLine(cornerRadius + borderMargin, borderMargin, Width - cornerRadius - borderMargin, borderMargin);
+
+            borderPath.AddArc(new Rectangle(Width - cornerRadius - borderMargin, borderMargin, cornerRadius, cornerRadius), 270, 90);
+            borderPath.AddLine(Width - borderMargin, cornerRadius + borderMargin, Width - borderMargin, Height - cornerRadius - borderMargin);
+
+            borderPath.AddArc(new Rectangle(Width - cornerRadius - borderMargin, Height - cornerRadius - borderMargin, cornerRadius, cornerRadius), 0, 90);
+            borderPath.AddLine(Width - cornerRadius - borderMargin, Height - borderMargin, cornerRadius + borderMargin, Height - borderMargin);
+
+            borderPath.AddArc(new Rectangle(borderMargin, Height - cornerRadius - borderMargin, cornerRadius, cornerRadius), 90, 90);
+            borderPath.AddLine(borderMargin, Height - cornerRadius + borderMargin, borderMargin, cornerRadius + borderMargin);
+
+            borderPath.CloseFigure();
+
+            TextSize = TextRenderer.MeasureText(Text, Font);
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            BackgroundBrush = new SolidBrush(RectangleMouseEnterColor);
+
+            base.OnMouseEnter(e);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs mevent)
+        {
+            BackgroundBrush = new SolidBrush(RectangleMouseDownColor);
+
+            base.OnMouseDown(mevent);
+        }
+
+        protected override void OnMouseUp(MouseEventArgs mevent)
+        {
+            BackgroundBrush = new SolidBrush(RectangleMouseEnterColor);
+            
+            base.OnMouseUp(mevent);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            BackgroundBrush = new SolidBrush(RectangleIdleColor);
+
+            base.OnMouseLeave(e);
+        }
+
+        protected override void OnBackColorChanged(EventArgs e)
+        {
+            GetColors();
+            
+            base.OnBackColorChanged(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs pevent)
+        {
+            pevent.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            pevent.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            pevent.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            pevent.Graphics.CompositingMode = CompositingMode.SourceOver;
+
+            base.OnPaint(pevent);
+
+            pevent.Graphics.FillPath(BackgroundBrush, borderPath);
+            pevent.Graphics.DrawString(Text, Font, TextBrush, Width/2 - TextSize.Width / 2, Height/2 - TextSize.Height / 2);
         }
     }
 }
