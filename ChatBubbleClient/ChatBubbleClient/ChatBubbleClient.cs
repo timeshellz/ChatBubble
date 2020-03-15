@@ -3496,9 +3496,9 @@ namespace ChatBubble.Client
                         firstName = Char.ToUpper(firstName[0]) + firstName.Substring(1);
                         lastName = Char.ToUpper(lastName[0]) + lastName.Substring(1);
 
-                        string serverReply = NetComponents.ClientRequestArbitrary("[chng_names_reqs]", "newname=" + firstName + " " + lastName, true, true);
+                        string serverReply = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.ChangeNameRequest, "newname=" + firstName + " " + lastName, true, true);
 
-                        if (serverReply == "namess_chg_succes")
+                        if (serverReply == NetComponents.ConnectionCodes.NmChgSuccess)
                         {
                             foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
                             {
@@ -3510,7 +3510,7 @@ namespace ChatBubble.Client
                             
                             resultPanel.CreateResult(ResultPanel.ResultType.Success, "Name changed successfully!");
                         }
-                        if (serverReply == "name_restricted_f")
+                        if (serverReply == NetComponents.ConnectionCodes.RestrictedError)
                         {
                             foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
                             {
@@ -3520,7 +3520,7 @@ namespace ChatBubble.Client
 
                             resultPanel.CreateResult(ResultPanel.ResultType.Failure, "Wrong password!");
                         }
-                        if (serverReply == "database__error__")
+                        if (serverReply == NetComponents.ConnectionCodes.DatabaseError)
                         {
                             foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
                             {
@@ -3687,9 +3687,9 @@ namespace ChatBubble.Client
 
                         if (newPasswordTextBox.Text == repeatPasswordTextBox.Text)
                         {
-                            string serverReply = NetComponents.ClientRequestArbitrary("[chng_pswrd_reqs]", "oldpass=" + oldPasswordTextBox.Text + "newpass=" + newPasswordTextBox.Text, true, true);
+                            string serverReply = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.ChangePasswdRequest, "oldpass=" + oldPasswordTextBox.Text + "newpass=" + newPasswordTextBox.Text, true, true);
 
-                            if (serverReply == "passwd_chg_succes")
+                            if (serverReply == NetComponents.ConnectionCodes.PswdChgSuccess)
                             {
                                 foreach(WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
                                 {
@@ -3702,14 +3702,14 @@ namespace ChatBubble.Client
 
                                 resultPanel.CreateResult(ResultPanel.ResultType.Success, "Password changed successfully!");
                             }
-                            if (serverReply == "passwrd_not_match")
+                            if (serverReply == NetComponents.ConnectionCodes.PswdChgFailure)
                             {
                                 oldPasswordTextBox.RoundedBorderColor = Color.FromArgb(255, 255, 98, 78);
                                 oldPasswordTextBox.Click += new EventHandler(RefreshOutlineColors);
 
                                 resultPanel.CreateResult(ResultPanel.ResultType.Failure, "Wrong password!");
                             }
-                            if (serverReply == "database__error__")
+                            if (serverReply == NetComponents.ConnectionCodes.DatabaseError)
                             {
                                 foreach (WaterMarkTextBox textBox in Controls.OfType<WaterMarkTextBox>())
                                 {

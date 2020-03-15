@@ -53,16 +53,19 @@ namespace ChatBubble
             [ConnectionCodes.EditUserSummaryRequest] = new Func<string, string>(ServerEditUserSummaryService),
             [ConnectionCodes.SendNewMessageRequest] = new Func<string, string>(ServerPassMessageService),
             [ConnectionCodes.GetPendingMessageRequest] = new Func<string, string>(ServerGetPendingMessagesService),
+            [ConnectionCodes.ChangePasswdRequest] = new Func<string, string>(ServerChangePasswordService),
+            [ConnectionCodes.ChangeNameRequest] = new Func<string, string>(ServerChangeNameService),
             [ConnectionCodes.LogOutCall] = new Action<string>(ServerConnectionCloseDictionaryUpdater),
         };
 
         public static class ConnectionCodes
         {
             public static readonly string LogInRequest, SignUpRequest, SearchRequest, AddFriendRequest, GetFriendListRequest, RemoveFriendRequest,
-            GetUserSummaryRequest, EditUserSummaryRequest, GetPendingMessageRequest, SendNewMessageRequest, FreshSessionStatus, ExpiredSessionStatus,
-            MsgToSelfStatus, AvailablePendingMessagesStatus, NoPendingMessagesStatus, ConnectionTimeoutStatus, LoginSuccess, SignUpSuccess, FriendAddSuccess, 
-            FriendRemSuccess, DescEditSuccess, MsgSendSuccess, LoginFailure, SignUpFailure, FriendAddFailure, SendFailure, AuthFailure, ConnectionFailure, 
-            NotFoundError, DatabaseError, LogOutCall, ConnectionSignature, InvalidSignature, InvalidRequest;
+            GetUserSummaryRequest, EditUserSummaryRequest, GetPendingMessageRequest, SendNewMessageRequest, ChangeNameRequest, ChangePasswdRequest, 
+            FreshSessionStatus, ExpiredSessionStatus, MsgToSelfStatus, AvailablePendingMessagesStatus, NoPendingMessagesStatus, ConnectionTimeoutStatus, 
+            LoginSuccess, SignUpSuccess, FriendAddSuccess, FriendRemSuccess, DescEditSuccess, MsgSendSuccess, PswdChgSuccess, NmChgSuccess, LoginFailure, 
+            SignUpFailure, FriendAddFailure, SendFailure, AuthFailure, ConnectionFailure, PswdChgFailure, NmChgFailure, NotFoundError, DatabaseError, 
+            RestrictedError, LogOutCall, ConnectionSignature, InvalidSignature, InvalidRequest;
 
             public static int DefaultFlagLength { get; private set; }
 
@@ -1229,27 +1232,27 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error")
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError)
             {
                 if (userData[3] == clientRequestSubstrings[2])
                 {
                     fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "password=", "", clientRequestSubstrings[3], false, true);
 
-                    return ("passwd_chg_succes");
+                    return (ConnectionCodes.PswdChgSuccess);
                 }
                 else
                 {
-                    return ("passwrd_not_match");
+                    return (ConnectionCodes.PswdChgFailure);
                 }
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -1265,20 +1268,20 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error")
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError)
             {
                 fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "name=", "", clientRequestSubstrings[2], false, true);
 
-                return ("namess_chg_succes");
+                return (ConnectionCodes.NmChgSuccess);
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.NmChgFailure);
             }
         }
 
@@ -1521,7 +1524,12 @@ namespace ChatBubble
                 mainSocket.Receive(streamBytes, oldLength, mainSocket.Available, SocketFlags.None);
             }
 
-            string test = us_US.GetString(streamBytes);
+            string result = us_US.GetString(streamBytes);
+
+            if(result.Contains("\0"))
+            {
+                result = result.Substring(0, result.IndexOf('\0'));
+            }
 
             return (result);
         }
