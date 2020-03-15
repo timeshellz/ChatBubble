@@ -27,12 +27,132 @@ namespace ChatBubble
 
         //Server State Variables
         static bool serverListeningState = false;
-        public static int liveClientCount;
+        public static int[] handshakeSuccessCount = new int[4]; //Max connection attempts per time interval
+
+        public static DateTime serverSessionStartTime;
+        public static DateTime serverListeningStartTime;
+        public static TimeSpan[] updateTimeSpans = new TimeSpan[3] { new TimeSpan(0, 10, 0), new TimeSpan(1, 0, 0), new TimeSpan(24, 0, 0) };
+        public static int[] connectionAttemptsCount = new int[4]; //Max connected count per time interval //Current connection attempts per time interval
+
 
         public static ConcurrentDictionary<int, string> connectedClientsBlockingCollection = new ConcurrentDictionary<int, string>();
         public static ConcurrentDictionary<int, string> loggedInUsersBlockingCollection = new ConcurrentDictionary<int, string>();
 
         public static ConcurrentQueue<string> receivedMessagesCollection = new ConcurrentQueue<string>();
+
+
+        public static Dictionary<string, Delegate> RequestDictionary = new Dictionary<string, Delegate>()
+        {
+            [ConnectionCodes.LogInRequest] = new Func<string, EndPoint, string>(ServerLogInService),
+            [ConnectionCodes.SignUpRequest] = new Func<string, string>(ServerSignUpService),
+            [ConnectionCodes.SearchRequest] = new Func<string, string>(ServerSearchService),
+            [ConnectionCodes.AddFriendRequest] = new Func<string, string>(ServerAddFriendService),
+            [ConnectionCodes.GetFriendListRequest] = new Func<string, string>(ServerGetFriendsService),
+            [ConnectionCodes.RemoveFriendRequest] = new Func<string, string>(ServerRemoveFriendService),
+            [ConnectionCodes.GetUserSummaryRequest] = new Func<string, string>(ServerGetUserSummaryService),
+            [ConnectionCodes.EditUserSummaryRequest] = new Func<string, string>(ServerEditUserSummaryService),
+            [ConnectionCodes.SendNewMessageRequest] = new Func<string, string>(ServerPassMessageService),
+            [ConnectionCodes.GetPendingMessageRequest] = new Func<string, string>(ServerGetPendingMessagesService),
+            [ConnectionCodes.LogOutCall] = new Action<string>(ServerConnectionCloseDictionaryUpdater),
+        };
+
+        public static class ConnectionCodes
+        {
+            public static readonly string LogInRequest, SignUpRequest, SearchRequest, AddFriendRequest, GetFriendListRequest, RemoveFriendRequest,
+            GetUserSummaryRequest, EditUserSummaryRequest, GetPendingMessageRequest, SendNewMessageRequest, FreshSessionStatus, ExpiredSessionStatus,
+            MsgToSelfStatus, AvailablePendingMessagesStatus, NoPendingMessagesStatus, ConnectionTimeoutStatus, LoginSuccess, SignUpSuccess, FriendAddSuccess, 
+            FriendRemSuccess, DescEditSuccess, MsgSendSuccess, LoginFailure, SignUpFailure, FriendAddFailure, SendFailure, AuthFailure, ConnectionFailure, 
+            NotFoundError, DatabaseError, LogOutCall, ConnectionSignature, InvalidSignature, InvalidRequest;
+
+            public static int DefaultFlagLength { get; private set; }
+
+            static ConnectionCodes()
+            {
+                DefaultFlagLength = 8;
+
+                System.Reflection.FieldInfo[] fields = typeof(ConnectionCodes).GetFields();
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    switch (fields[i].Name)
+                    {
+                        case "LogOutCall":
+                            fields[i].SetValue(new object(), "[LOGOUT]");
+                            break;
+                        case "ConnectionSignature":
+                            fields[i].SetValue(new object(), "[CBLSIG]");
+                            break;
+                        case "InvalidSignature":
+                            fields[i].SetValue(new object(), "[INVSIG]");
+                            break;
+                        case "InvalidRequest":
+                            fields[i].SetValue(new object(), "[INVREQ]");
+                            break;
+                        default:
+                            string flagLabel = "A";
+
+                            if (fields[i].Name.Contains("Request"))
+                            {
+                                flagLabel = "R";
+                            }
+                            if(fields[i].Name.Contains("Error"))
+                            {
+                                flagLabel = "E";
+                            }
+                            if(fields[i].Name.Contains("Status"))
+                            {
+                                flagLabel = "S";
+                            }
+                            if(fields[i].Name.Contains("Failure"))
+                            {
+                                flagLabel = "F";
+                            }
+                            if(fields[i].Name.Contains("Success"))
+                            {
+                                flagLabel = "C";
+                            }
+
+                            int code = i + 1;
+                            string finalFlag = code.ToString() + flagLabel;
+                            int initialLength = finalFlag.Length;
+
+                            for (int j = initialLength; j < DefaultFlagLength - 2; j++)
+                            {
+                                finalFlag = "0" + finalFlag;
+                            }
+
+                            finalFlag = "[" + finalFlag + "]";
+
+                            fields[i].SetValue(new object(), finalFlag);
+                            break;
+                    }
+                }
+            }
+
+            public static string GetAllErrorCodes()
+            {
+                string output = "Currently used error codes:\n";
+                System.Reflection.FieldInfo[] fields = typeof(ConnectionCodes).GetFields();
+                object obj = new object();
+
+                for(int i = 0; i < fields.Length; i++)
+                {
+                    output += fields[i].Name + " - " + fields[i].GetValue(obj).ToString() + "\n";
+                }
+
+                return output;
+            }
+
+            public static bool Exists(string connectionFlag)
+            {
+                System.Reflection.FieldInfo[] fields = typeof(ConnectionCodes).GetFields();
+                object obj = new object();
+                for (int i = 0; i < fields.Length; i++) if ((string)fields[i].GetValue(obj) == connectionFlag) return true;
+
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Scans for the local machine address.
@@ -90,6 +210,114 @@ namespace ChatBubble
             return ("");
         }
 
+        static void StatRecordConnection()
+        {
+            for (int i = 0; i < connectionAttemptsCount.Length; i++)
+            {
+                connectionAttemptsCount[i]++;
+            }
+        }
+
+        static void StatRecordHandshake()
+        {
+            for (int i = 0; i < handshakeSuccessCount.Length; i++)
+            {
+                handshakeSuccessCount[i]++;
+            }
+        }
+
+        /// <summary>
+        /// Serverside method.<para/>
+        /// Updates server statistics max values per given intervals, and for entire runtime.<para/>
+        /// 
+        /// </summary>
+        static public void ServerStatUpdater()
+        {
+            //Regulating update times for every possible update interval
+            //Updates maximum number of connections reached per interval
+
+            int updateCount = 0;
+
+            while (serverListeningState)
+            {
+                Thread.Sleep((int)updateTimeSpans[0].TotalMilliseconds);
+                updateCount++;
+
+                //Update every [i] interval
+                for (int i = 0; i < updateTimeSpans.Length; i++)
+                {
+                    if (updateCount * updateTimeSpans[0].Minutes % updateTimeSpans[i].TotalMinutes == 0)
+                    {
+                        connectionAttemptsCount[i] = 0;
+                        handshakeSuccessCount[i] = 0;
+                    }
+                }
+
+                if(updateCount * updateTimeSpans[0].Minutes % updateTimeSpans[1].TotalMinutes == 0)
+                {
+                    FileIOStreamer.LogWriter("Regular server statistics update:\n----------------------------------------------------------------------\n"
+                        + GetServerSessionStats() + "----------------------------------------------------------------------");
+                }
+            }
+        }
+
+        public static string GetServerSessionStats()
+        {
+            string outputFormat;          
+            string[] outputTypeModifiers = new string[2] { "Connections attempted ", "Successful handshakes performed " };
+            string outputTimeNameModifier;
+
+            string output = "Server statistics:\n\n";
+
+            for (int j = 0; j <= 1; j++)
+            {
+                outputFormat = "";
+                outputTimeNameModifier = "";
+
+                for (int i = 0; i < updateTimeSpans.Length; i++)
+                {
+                    if (updateTimeSpans[i].Minutes > 0)
+                    {
+                        if (updateTimeSpans[i].Minutes / 10 > 0) outputFormat = "mm";
+                        else outputFormat = "%m";
+                        outputTimeNameModifier = " minutes(s): ";
+                    }
+                    if (updateTimeSpans[i].Hours > 0)
+                    {
+                        if (updateTimeSpans[i].Hours / 10 > 0) outputFormat = "hh";
+                        else outputFormat = "%h";
+                        outputTimeNameModifier = " hour(s): ";
+                    }
+                    if (updateTimeSpans[i].Days > 0)
+                    {
+                        if (updateTimeSpans[i].Days / 10 > 0) outputFormat = "dd";
+                        else outputFormat = "%d";
+                        outputTimeNameModifier = " day(s): ";
+                    }
+
+                    output += outputTypeModifiers[j] + "in " + updateTimeSpans[i].ToString(outputFormat) + outputTimeNameModifier;
+
+                    if (j == 0) output += connectionAttemptsCount[i] + "\n";
+                    else output += handshakeSuccessCount[i] + "\n";
+                }
+
+                if (j == 0) output += outputTypeModifiers[j] + "since start of session: "
+                    + connectionAttemptsCount[connectionAttemptsCount.Length - 1] + "\n";
+                else output += outputTypeModifiers[j] + "since start of session: "
+                        + handshakeSuccessCount[handshakeSuccessCount.Length - 1] + "\n";
+            }
+
+            output += "\nTime since session start: " + (DateTime.Now - serverSessionStartTime).TotalHours.ToString("hh") + 
+                (DateTime.Now - serverSessionStartTime).ToString(@"\:mm\:ss") + "\n";
+
+            if(serverListeningStartTime != DateTime.MinValue)
+            {
+                output += "Time since listening start: " + (DateTime.Now - serverListeningStartTime).TotalHours.ToString("hh") + (DateTime.Now - serverListeningStartTime).ToString(@"\:mm\:ss") + "\n";
+            }
+
+            return output;
+        }
+
         /// <summary>
         /// Serverside method. <para />
         /// Puts the server into listen - accept loop. On accept, creates new thread to handle pending client. Exits from method when
@@ -99,6 +327,8 @@ namespace ChatBubble
         public static void ServerListeningState()
         {
             serverListeningState = true;
+            serverListeningStartTime = DateTime.Now;
+
             while (serverListeningState == true)
             {
                 try
@@ -107,14 +337,20 @@ namespace ChatBubble
 
                     Socket pendingClientSocket = mainSocket.Accept();
 
+                    FileIOStreamer.LogWriter("New connection with " + pendingClientSocket.RemoteEndPoint.ToString() + " established.");
+
                     Thread handshakeReceiveReplyThread = new Thread(ServerHandshakeReception);
                     handshakeReceiveReplyThread.Start(pendingClientSocket);
+
+                    StatRecordConnection();
                 }
                 catch
                 {
-
+                    FileIOStreamer.LogWriter("Attempted connection failure occured.");
                 }
             }
+
+            serverListeningStartTime = DateTime.MinValue;
         }
 
         /// <summary>
@@ -123,21 +359,50 @@ namespace ChatBubble
         /// passes the client to request handler.
         /// </summary>
         /// <param name="clientSocket">Pending client socket.</param>
-        public static void ServerHandshakeReception(object clientSocket)
+        static void ServerHandshakeReception(object clientSocket)
         {
             string clientHandshakeToken;
             byte[] streamBytes = new byte[64];
 
-
             Socket pendingClientSocket = (Socket)clientSocket;
 
-            pendingClientSocket.Receive(streamBytes);
+            try
+            {
+                pendingClientSocket.Receive(streamBytes);
+            }
+            catch
+            {
+                FileIOStreamer.LogWriter("Connection with " + pendingClientSocket.RemoteEndPoint.ToString() + " ended abruptly.");
+                pendingClientSocket.Close();
+
+                return;
+            }
 
             clientHandshakeToken = us_US.GetString(streamBytes);
-            clientHandshakeToken = clientHandshakeToken.Substring(0, clientHandshakeToken.IndexOf('\0'));
+
+            if (clientHandshakeToken.Contains("\0"))
+            {
+                clientHandshakeToken = clientHandshakeToken.Substring(0, clientHandshakeToken.IndexOf('\0'));
+            }
+
+            if (!IsSignatureValid(clientHandshakeToken))
+            {
+                FileIOStreamer.LogWriter("Invalid connection signature detected. Disconnecting " + pendingClientSocket.RemoteEndPoint.ToString() + ".");
+
+                streamBytes = us_US.GetBytes(ConnectionCodes.InvalidRequest);
+                pendingClientSocket.Send(streamBytes);
+
+                pendingClientSocket.Close();
+                return;
+            }
+
+            string remoteEndPointLogString = pendingClientSocket.RemoteEndPoint.ToString();
+            FileIOStreamer.LogWriter("Received " + clientHandshakeToken + " token from " + remoteEndPointLogString);
+
+            clientHandshakeToken = clientHandshakeToken.Substring(ConnectionCodes.DefaultFlagLength);
 
             //Code below compares the stored user persistence cookie signature to the one sent by the user
-            if (clientHandshakeToken != "fresh_session" && String.IsNullOrEmpty(clientHandshakeToken) != true &&
+            if (clientHandshakeToken != ConnectionCodes.FreshSessionStatus && String.IsNullOrEmpty(clientHandshakeToken) != true &&
                                                                                   IsCookieInDatabase(clientHandshakeToken) == true)
             {
                 //If signature is correct, gets user data from database to pass into the login service
@@ -145,24 +410,42 @@ namespace ChatBubble
                 string[] clientHandshakeTokenSubstrings = clientHandshakeToken.Split(new string[2] { "id=", "confirmation=" }, 2, StringSplitOptions.RemoveEmptyEntries);
                 string[] userData = GetUserData(clientHandshakeTokenSubstrings[0]);
 
-                if (userData.Length > 1 && userData[0] != "User_not_found")
+                if (userData.Length > 1 && userData[0] != ConnectionCodes.NotFoundError)
                 {
                     string cookieCredentials = "login=" + userData[1] + "password=" + userData[3];
+
+                    FileIOStreamer.LogWriter("Cookie received from " + remoteEndPointLogString);
+                    FileIOStreamer.LogWriter("Handling fresh session handshake for " + remoteEndPointLogString);
 
                     clientHandshakeToken = ServerLogInService(cookieCredentials, pendingClientSocket.RemoteEndPoint);
                 }
                 else
                 {
-                    clientHandshakeToken = "session_expr";
+                    clientHandshakeToken = ConnectionCodes.ExpiredSessionStatus;
+
+                    FileIOStreamer.LogWriter("Handling expired session handshake for " + remoteEndPointLogString);
                 }
             }
             else
             {
-                clientHandshakeToken = "session_expr";
+                clientHandshakeToken = ConnectionCodes.ExpiredSessionStatus;
+
+                FileIOStreamer.LogWriter("Handling expired session handshake for " + remoteEndPointLogString);
+            }
+            
+            try
+            {
+                streamBytes = us_US.GetBytes(clientHandshakeToken);
+                pendingClientSocket.Send(streamBytes);              
+            }   
+            catch
+            {
+                FileIOStreamer.LogWriter("Handshake failed for " + remoteEndPointLogString);
+                return;
             }
 
-            streamBytes = us_US.GetBytes(clientHandshakeToken);
-            pendingClientSocket.Send(streamBytes);
+            FileIOStreamer.LogWriter("Handshake established with " + remoteEndPointLogString);
+            StatRecordHandshake();
 
             connectedClientsBlockingCollection.TryAdd(connectedClientsBlockingCollection.Count + 1, "ip=" + pendingClientSocket.RemoteEndPoint.ToString());
             ServersideRequestReceiver(pendingClientSocket);
@@ -173,7 +456,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="cookieContent">Contents of the comparable cookie.</param>
         /// <returns></returns>
-        public static bool IsCookieInDatabase(string cookieContent)
+        static bool IsCookieInDatabase(string cookieContent)
         {
             string[] clientHandshakeTokenSplitStrings = new string[2] { "id=", "confirmation=" };
 
@@ -199,6 +482,19 @@ namespace ChatBubble
             return (false);
         }
 
+        static bool IsSignatureValid(string request)
+        {
+            if(request.Length < ConnectionCodes.DefaultFlagLength)
+            {
+                return false;
+            }
+
+            string signature = request.Substring(0, ConnectionCodes.DefaultFlagLength);
+
+            if (signature == ConnectionCodes.ConnectionSignature) return true;
+            return false;
+        }
+
         /// <summary>
         /// Serverside method.<para />
         /// Gets data for specified user ID or username from database.<para />
@@ -208,10 +504,10 @@ namespace ChatBubble
         /// </summary>
         /// <param name="searchParameter">Search parameter. Can be either user ID or username.</param>
         /// <returns></returns>
-        public static string[] GetUserData(string searchParameter, bool fastSearch = false)
+        static string[] GetUserData(string searchParameter, bool fastSearch = false)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
 
             string[] registeredUserFilesSplitStrings = new string[15]
             {
@@ -271,19 +567,19 @@ namespace ChatBubble
             }
             catch
             {
-                return (new string[1] { "Error" });
+                return (new string[1] { ConnectionCodes.DatabaseError });
             }
-            return (new string[1] { "User_not_found" });
+            return (new string[1] { ConnectionCodes.NotFoundError });
         }
 
         /// <summary>
         /// Gets the highest user ID found in database.
         /// </summary>
         /// <returns></returns>
-        public static int GetMaxUserID()
+        static int GetMaxUserID()
         {
             FileIOStreamer fileIO = new FileIOStreamer();
-            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
 
             string[] registeredUserFilesSplitStrings = new string[3] { "name=", "login=", "password=" };
             string[] registeredUserFiles = fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false);
@@ -317,7 +613,7 @@ namespace ChatBubble
         /// <param name="userDataString1"></param>
         /// <param name="userDataString2"></param>
         /// <returns></returns>
-        public static int SearchCompareByName(string userDataString1, string userDataString2)
+        static int SearchCompareByName(string userDataString1, string userDataString2)
         {
             string[] userDataSplitStrings = new string[3] { "id=", "login=", "name=" };
             string[] userData1Substrings = userDataString1.Split(userDataSplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
@@ -331,13 +627,13 @@ namespace ChatBubble
         /// Receives incoming client requests and dispatches them to their respective destinations.
         /// </summary>
         /// <param name="pendingClientSocket">Pending client socket.</param>
-        public static void ServersideRequestReceiver(Socket pendingClientSocket)
+        static void ServersideRequestReceiver(Socket pendingClientSocket)
         {
             while (pendingClientSocket.Connected == true)
             {
                 byte[] streamBytes = new byte[1024];
 
-                if (pendingClientSocket.Poll(10, SelectMode.SelectRead) == true) //Ensures that data is available to be read from the socket
+                if (pendingClientSocket.Poll(-1, SelectMode.SelectRead) == true) //Ensures that data is available to be read from the socket
                 {
                     try
                     {
@@ -354,65 +650,63 @@ namespace ChatBubble
                     }
                     catch
                     {
-                        ServerConnectionCloseDictionaryUpdater(pendingClientSocket.RemoteEndPoint.ToString());
+                        string remoteEndPoint = pendingClientSocket.RemoteEndPoint.ToString();
+                        ServerConnectionCloseDictionaryUpdater(remoteEndPoint);
 
                         pendingClientSocket.Close();
+
+                        FileIOStreamer.LogWriter("Connection with " + remoteEndPoint + " ended abruptly.");
                         return;
                     }
 
                     string clientRequestRaw = us_US.GetString(streamBytes);
-                    clientRequestRaw = clientRequestRaw.Substring(0, clientRequestRaw.IndexOf('\0'));
 
-                    if (clientRequestRaw.Length >= 17)
+                    if (clientRequestRaw.Contains("\0"))
                     {
-                        switch (clientRequestRaw.Substring(0, 17))
-                        {
-                            case "[log_in_request_]":
-                                streamBytes = us_US.GetBytes(ServerLogInService(clientRequestRaw.Substring(17), pendingClientSocket.RemoteEndPoint));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[sign_up_request]":
-                                streamBytes = us_US.GetBytes(ServerSignUpService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[searchs_request]":
-                                streamBytes = us_US.GetBytes(ServerSearchService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[add_friend_add_]":
-                                streamBytes = us_US.GetBytes(ServerAddFriendService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[get_friends_lst]":
-                                streamBytes = us_US.GetBytes(ServerGetFriendsService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[rem_friend_rem_]":
-                                streamBytes = us_US.GetBytes(ServerRemoveFriendService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[get_user_summar]":
-                                streamBytes = us_US.GetBytes(ServerGetUserSummaryService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[edt_user_summar]":
-                                streamBytes = us_US.GetBytes(ServerEditUserSummaryService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[get_pendng_msgs]":
-                                streamBytes = us_US.GetBytes(ServerGetPendingMessagesService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[send_new_messag]":
-                                streamBytes = us_US.GetBytes(ServerPassMessageService(clientRequestRaw.Substring(17)));
-                                pendingClientSocket.Send(streamBytes);
-                                break;
-                            case "[log_out_log_out]":
-                                ServerConnectionCloseDictionaryUpdater(pendingClientSocket.RemoteEndPoint.ToString());
+                        clientRequestRaw = clientRequestRaw.Substring(0, clientRequestRaw.IndexOf('\0'));
+                    }
 
-                                pendingClientSocket.Close();
-                                return;
+                    FileIOStreamer.LogWriter("Remote request " + clientRequestRaw + " received from " + pendingClientSocket.RemoteEndPoint.ToString() + ".");                 
+
+                    if (clientRequestRaw.Length >= ConnectionCodes.DefaultFlagLength*2)
+                    {
+                        if(!IsSignatureValid(clientRequestRaw))
+                        {
+                            FileIOStreamer.LogWriter("Invalid connection signature detected. Disconnecting " + pendingClientSocket.RemoteEndPoint.ToString() + ".");
+                            streamBytes = us_US.GetBytes(ConnectionCodes.InvalidRequest);
+
+                            pendingClientSocket.Send(streamBytes);
+                            pendingClientSocket.Close();
+                            return;
                         }
+
+                        clientRequestRaw = clientRequestRaw.Substring(ConnectionCodes.DefaultFlagLength);
+                        string requestType = clientRequestRaw.Substring(0, ConnectionCodes.DefaultFlagLength);
+                        string requestBody = clientRequestRaw.Substring(ConnectionCodes.DefaultFlagLength);
+                        string serverReply = "";
+
+                        if (RequestDictionary.ContainsKey(requestType))
+                        {
+                            if (requestType == ConnectionCodes.LogInRequest)
+                            {
+                                serverReply = (string)RequestDictionary[requestType].DynamicInvoke(requestBody, pendingClientSocket.RemoteEndPoint);
+                            }
+                            else if(requestType != ConnectionCodes.LogOutCall)
+                            {
+                                serverReply = (string)RequestDictionary[requestType].DynamicInvoke(requestBody);
+                            }    
+                            else
+                            {
+                                RequestDictionary[requestType].DynamicInvoke(pendingClientSocket.RemoteEndPoint.ToString());
+                            }
+                        }
+                        else
+                        {
+                            serverReply = ConnectionCodes.InvalidRequest;
+                        }
+
+                        streamBytes = us_US.GetBytes(serverReply);
+                        pendingClientSocket.Send(streamBytes);                
                     }
                 }
             }
@@ -426,7 +720,7 @@ namespace ChatBubble
         /// <param name="clientRequest">Received client request.<para/>Follows the following format:<para/>
         /// login=[login]password=[password]</param>
         /// <returns></returns>
-        public static string ServerLogInService(string clientRequest, EndPoint clientIP)
+        static string ServerLogInService(string clientRequest, EndPoint clientIP)
         {
             string[] clientRequestSubstrings;
             string[] clientRequestSplitStrings = new string[3] { "name=", "login=", "password=" };
@@ -440,12 +734,13 @@ namespace ChatBubble
             }
             catch
             {
-                return ("login_failure");
+                FileIOStreamer.LogWriter("User id=" + clientRequestSubstrings[0] + " login attempt failed. Database error.");
+                return (ConnectionCodes.DatabaseError);
             }
 
-            if (userData[0] != "User_not_found")
+            if (userData[0] != ConnectionCodes.NotFoundError)
             {
-                //For userData,index 0 is user ID, index 1 is user login, index 2 is user name, index 3 is user password, index 4 is user ip
+                //For userData, index 0 is user ID, index 1 is user login, index 2 is user name, index 3 is user password, index 4 is user ip
                 //For clientRequestSubstrings, index 0 is login, index 1 is password
 
                 if (clientRequestSubstrings[1] == userData[3])
@@ -456,11 +751,15 @@ namespace ChatBubble
                     ClientSessionHandler(userData[0], randomHashSeed);
 
                     loggedInUsersBlockingCollection.TryAdd(loggedInUsersBlockingCollection.Count + 1, "id=" + userData[0] + "ip=" + clientIP.ToString());
-                    return ("login_success" + "id=" + userData[0] + "hash=" + randomHashSeed.ToString());
+
+                    FileIOStreamer.LogWriter("User id=" + userData[0] + " successful login detected.");
+                    return (ConnectionCodes.LoginSuccess + "id=" + userData[0] + "hash=" + randomHashSeed.ToString());
                     //Passes user ID and persistence cookie key back for session update purposes
                 }
             }
-            return ("login_failure");
+
+            FileIOStreamer.LogWriter("User id=" + userData[0] +" log in attempt failed. Incorrect credentials.");
+            return (ConnectionCodes.LoginFailure);
         }
 
 
@@ -470,7 +769,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest">Received client request.</param>
         /// <returns></returns>
-        public static string ServerSignUpService(string clientRequest)
+        static string ServerSignUpService(string clientRequest)
         {
             DateTime dateTime = DateTime.Now;
 
@@ -488,10 +787,11 @@ namespace ChatBubble
             }
             catch
             {
-                return ("sign_up_failure_2");
+                FileIOStreamer.LogWriter("New user sign up attempt failed. Database error.");
+                return (ConnectionCodes.DatabaseError);
             }
 
-            if (userData[0] == "User_not_found")
+            if (userData[0] == ConnectionCodes.NotFoundError)
             {
                 FileIOStreamer fileIO = new FileIOStreamer();
                 int maxID = GetMaxUserID();
@@ -511,13 +811,17 @@ namespace ChatBubble
                 "\nblacklist==null\n==blacklist" +
                 "\nregdateutc=" + dateTime.ToUniversalTime().ToString(), true);
 
-                return ("sign_up_success");
+                FileIOStreamer.LogWriter("New user id=" + maxID + "signed up.");
+                return (ConnectionCodes.SignUpSuccess);
             }
             else if (userData[0] != "Error")
             {
-                return ("sign_up_failure_1"); //Returns if a user with this name already exists
+                FileIOStreamer.LogWriter("New user sign up attempt failed. Name already exists.");
+                return (ConnectionCodes.SignUpFailure); //Returns if a user with this name already exists
             }
-            return ("sign_up_failure_2"); //Returns if the database couldn't be parsed
+
+            FileIOStreamer.LogWriter("New user sign up attempt failed. Database error.");
+            return (ConnectionCodes.DatabaseError); //Returns if the database couldn't be parsed
         }
 
         /// <summary>
@@ -526,7 +830,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest">Received client request.</param>
         /// <returns></returns>
-        public static string ServerGetUserSummaryService(string clientRequest)
+        static string ServerGetUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "reqid=" };
             FileIOStreamer fileIO = new FileIOStreamer();
@@ -537,7 +841,7 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             if (clientRequestSubstrings[2] == "self")
@@ -548,7 +852,7 @@ namespace ChatBubble
 
             string[] userData = GetUserData(clientRequestSubstrings[2]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error" && userData[6].Length > 0)
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && userData[6].Length > 0)
             {
                 string[] summarySubstrings = userData[6].Split(new string[] { "status=", "main=" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -557,7 +861,7 @@ namespace ChatBubble
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -567,7 +871,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest"></param>
         /// <returns></returns>
-        public static string ServerEditUserSummaryService(string clientRequest)
+        static string ServerEditUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "newsummary=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
@@ -579,7 +883,7 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             //Reform newsummary= and replace '=' with '[eqlsgn]' to prevent injection attacks
@@ -594,7 +898,7 @@ namespace ChatBubble
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error" && userData[6].Length > 0)
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && userData[6].Length > 0)
             {
                 fileIO.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "summary==", userData[6], true, true);
 
@@ -609,11 +913,11 @@ namespace ChatBubble
                 }
 
                 fileIO.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", clientRequestSubstrings[2], false, "summary==");
-                return ("descript_chng_suc");
+                return (ConnectionCodes.DescEditSuccess);
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -623,7 +927,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="searchParameter"></param>
         /// <returns></returns>
-        public static string ServerSearchService(string searchParameter)
+        static string ServerSearchService(string searchParameter)
         {
             if (searchParameter == "")
             {
@@ -680,7 +984,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest"></param>
         /// <returns></returns>
-        public static string ServerAddFriendService(string clientRequest)
+        static string ServerAddFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "addid=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
@@ -692,30 +996,30 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error")
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError)
             {
                 //Check if user already has this friend (probably going to be made redundant in the future)
                 string[] fIDSubstrings = userData[8].Split(new string[] { "fid=" }, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (string fid in fIDSubstrings)
                 {
-                    if (fid == clientRequestSubstrings[2])
+                    if (fid == clientRequestSubstrings[2] + "=")
                     {
-                        return ("friend_already_added");
+                        return (ConnectionCodes.FriendAddFailure);
                     }
                 }
 
                 fileIO.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "\nfid=" + clientRequestSubstrings[2] + "=", true, "friends==");
-                return ("friend_add_succes");
+                return (ConnectionCodes.FriendAddSuccess);
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -725,7 +1029,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest"></param>
         /// <returns></returns>
-        public static string ServerGetFriendsService(string clientRequest)
+        static string ServerGetFriendsService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[2] { "id=", "confirmation=" };
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -734,12 +1038,12 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData.Length > 11 && userData[0] != "User_not_found" && userData[0] != "Error" && userData[8].Contains("null") == false)
+            if (userData.Length > 11 && userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && userData[8].Contains("null") == false)
             {
                 string[] friendsListArray;
 
@@ -764,7 +1068,7 @@ namespace ChatBubble
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -774,7 +1078,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest"></param>
         /// <returns></returns>
-        public static string ServerRemoveFriendService(string clientRequest)
+        static string ServerRemoveFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "fid=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
@@ -786,19 +1090,19 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] userData = GetUserData(clientRequestSubstrings[0]);
 
-            if (userData[0] != "User_not_found" && userData[0] != "Error" && clientRequestSubstrings.Length > 2 && clientRequestSubstrings[2] != "")
+            if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && clientRequestSubstrings.Length > 2 && clientRequestSubstrings[2] != "")
             {
                 fileIO.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "friends==", "\nfid=" + clientRequestSubstrings[2] + "=");
-                return ("friend_rem_succes");
+                return (ConnectionCodes.FriendRemSuccess);
             }
             else
             {
-                return ("database__error__");
+                return (ConnectionCodes.DatabaseError);
             }
         }
 
@@ -808,7 +1112,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="clientRequest"></param>
         /// <returns></returns>
-        public static string ServerGetPendingMessagesService(string clientRequest)
+        static string ServerGetPendingMessagesService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[2] { "id=", "confirmation=" };
             string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory; //TEMPORARY
@@ -821,7 +1125,7 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             string[] allPendingMessages = fileIO.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false);
@@ -847,7 +1151,7 @@ namespace ChatBubble
 
             if (serverReplyString == "")
             {
-                return ("[no_pndg_msgs]");
+                return (ConnectionCodes.NoPendingMessagesStatus);
             }
             else
             {
@@ -855,7 +1159,7 @@ namespace ChatBubble
             }
         }
 
-        public static void ServerMakeMessagePending(string sender, string recepient, string content)
+        static void ServerMakeMessagePending(string sender, string recepient, string content)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
             string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory;
@@ -867,7 +1171,7 @@ namespace ChatBubble
                 "time=" + currentServerTime.ToString("dddd, dd MMMM yyyy HH: mm:ss") + "\ncontent=" + content);
         }
 
-        public static string ServerPassMessageService(string clientRequest)
+        static string ServerPassMessageService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "rcpnt=", "content=" };
 
@@ -877,14 +1181,14 @@ namespace ChatBubble
             //Ensures user authenticity
             if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
             {
-                return ("authsn_not_passed");
+                return (ConnectionCodes.AuthFailure);
             }
 
             //Check if user texted himself to prevent server action
             {
                 if(clientRequestSubstrings[2] == clientRequestSubstrings[0])
                 {
-                    return ("msg_sent_to_self");
+                    return (ConnectionCodes.MsgToSelfStatus);
                 }
             }
 
@@ -899,7 +1203,7 @@ namespace ChatBubble
                     byte[] streamBytes;
                     string[] ipPortSubstrings = userRecord.Value.Substring(userRecord.Value.IndexOf("ip=") + 3).Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
 
-                    string messagePullRequest = "[pndg_msgs_av]";
+                    string messagePullRequest = ConnectionCodes.AvailablePendingMessagesStatus;
 
                     streamBytes = us_US.GetBytes(messagePullRequest);
 
@@ -910,7 +1214,7 @@ namespace ChatBubble
                 }
             }
 
-            return ("msg_sent");
+            return (ConnectionCodes.MsgSendSuccess);
         }
 
         /// <summary>
@@ -920,7 +1224,7 @@ namespace ChatBubble
         /// </summary>
         /// <param name="userID">Pending log in user ID.</param>
         /// <param name="hashSeed">Hash generator seed.</param>
-        public static void ClientSessionHandler(string userID, int hashSeed)
+        static void ClientSessionHandler(string userID, int hashSeed)
         {
             FileIOStreamer fileIO = new FileIOStreamer();
 
@@ -958,7 +1262,7 @@ namespace ChatBubble
             }
         }
 
-        public static void ServerConnectionCloseDictionaryUpdater(string userIP)
+        static void ServerConnectionCloseDictionaryUpdater(string userIP)
         {
             foreach (var connectedClient in connectedClientsBlockingCollection)
             {
@@ -989,8 +1293,10 @@ namespace ChatBubble
 
             if (String.IsNullOrEmpty(localCookieContents) == true)
             {
-                localCookieContents = "fresh_session";
+                localCookieContents = ConnectionCodes.FreshSessionStatus;
             }
+
+            localCookieContents = ConnectionCodes.ConnectionSignature + localCookieContents;
 
             byte[] handshakeBytes = us_US.GetBytes(localCookieContents);
 
@@ -1013,20 +1319,20 @@ namespace ChatBubble
             catch
             {
 
-                return ("connection_failure");
+                return (ConnectionCodes.ConnectionTimeoutStatus);
             }
 
-            if (handshakeReplyString == "session_expr")
+            if (handshakeReplyString == ConnectionCodes.ExpiredSessionStatus)
             {
-                return ("session_expr");
+                return (ConnectionCodes.ExpiredSessionStatus);
             }
-            else if (handshakeReplyString.Substring(0, 13) == "login_success")
+            else if (handshakeReplyString.Substring(0, ConnectionCodes.DefaultFlagLength) == ConnectionCodes.LoginSuccess)
             {
                 return (handshakeReplyString);
             }
             else
             {
-                return ("connection_fatal_error");
+                return (ConnectionCodes.ConnectionFailure);
             }
 
         }
@@ -1043,7 +1349,7 @@ namespace ChatBubble
             //HERE WILL BE THE ENCRYPTION MECHANISM
             byte[] streamLogPassBytes;
 
-            string loginPasswordRaw = "[log_in_request_]login=" + login + "password=" + password;
+            string loginPasswordRaw = ConnectionCodes.ConnectionSignature + ConnectionCodes.LogInRequest + "login=" + login + "password=" + password;
 
             streamLogPassBytes = us_US.GetBytes(loginPasswordRaw);
             mainSocket.Send(streamLogPassBytes);
@@ -1056,7 +1362,7 @@ namespace ChatBubble
             }
             catch
             {
-                return ("server_closed");
+                return (ConnectionCodes.ConnectionFailure);
             }
 
             return (us_US.GetString(streamLogPassBytes));
@@ -1073,7 +1379,7 @@ namespace ChatBubble
         public static string SignUpRequestClientside(string name, string login, string password)
         {
             byte[] streamSignUpBytes;
-            string signUpRequestRaw = "[sign_up_request]name=" + name + "login=" + login + "password=" + password;
+            string signUpRequestRaw = ConnectionCodes.ConnectionSignature + ConnectionCodes.SignUpRequest + "name=" + name + "login=" + login + "password=" + password;
 
             streamSignUpBytes = us_US.GetBytes(signUpRequestRaw);
             mainSocket.Send(streamSignUpBytes);
@@ -1086,7 +1392,7 @@ namespace ChatBubble
             }
             catch
             {
-                return ("server_closed");
+                return (ConnectionCodes.ConnectionFailure);
             }
 
             return (us_US.GetString(streamSignUpBytes));
@@ -1098,7 +1404,7 @@ namespace ChatBubble
         /// <param name="flag">Request type flag.</param>
         /// <param name="request">Request body.</param>
         /// <returns></returns>
-        public static string ClientRequestArbitrary(string flag, string request, bool waitReceive = true, bool sendConfirmation = false)
+        public static string ClientRequestArbitrary(string flag, string request, bool waitReceive = true, bool sendConfirmation = false, bool sendConnectionSignature = true)
         {
             byte[] streamBytes;
             string localCookieContents = "";
@@ -1111,6 +1417,11 @@ namespace ChatBubble
 
             string clientRequestRaw = flag + localCookieContents + request;
 
+            if (sendConnectionSignature)
+            {
+                clientRequestRaw = ConnectionCodes.ConnectionSignature + clientRequestRaw;
+            }
+
             streamBytes = us_US.GetBytes(clientRequestRaw);
             try
             {
@@ -1118,7 +1429,7 @@ namespace ChatBubble
             }
             catch
             {
-                return ("send_failure");
+                return (ConnectionCodes.SendFailure);
             }
 
             Array.Clear(streamBytes, 0, streamBytes.Length);
@@ -1134,7 +1445,7 @@ namespace ChatBubble
             }
             catch
             {
-                return ("server_closed");
+                return (ConnectionCodes.ConnectionFailure);
             }
 
             if (mainSocket.Available > 0)
@@ -1145,7 +1456,7 @@ namespace ChatBubble
                 mainSocket.Receive(streamBytes, oldLength, mainSocket.Available, SocketFlags.None);
             }
 
-            //string test = us_US.GetString(streamBytes);
+            string test = us_US.GetString(streamBytes);
 
             return (us_US.GetString(streamBytes));
         }
@@ -1154,7 +1465,7 @@ namespace ChatBubble
         {
             FileIOStreamer fileIO = new FileIOStreamer();
 
-            NetComponents.ClientRequestArbitrary("[send_new_messag]", "rcpnt=" + chatID + "content=" + content, true, true);
+            NetComponents.ClientRequestArbitrary(ConnectionCodes.SendNewMessageRequest, "rcpnt=" + chatID + "content=" + content, true, true);
 
             fileIO.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + chatID + ".txt",
                     "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss") + "\nstatus=sent" +
@@ -1168,9 +1479,9 @@ namespace ChatBubble
         /// <returns></returns>
         public static string ClientPendingMessageManager()
         {
-            string pendingMessagesString = NetComponents.ClientRequestArbitrary("[get_pendng_msgs]", "", true, true);
+            string pendingMessagesString = NetComponents.ClientRequestArbitrary(ConnectionCodes.GetPendingMessageRequest, "", true, true);
 
-            if (pendingMessagesString.Contains("[no_pndg_msgs]"))
+            if (pendingMessagesString.Contains(ConnectionCodes.NoPendingMessagesStatus))
                 return "";
 
             string[] pendingMessages = pendingMessagesString.Split(new string[] { "msg=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -1202,12 +1513,17 @@ namespace ChatBubble
             {
                 streamBytes = new byte[64];
 
-                auxilarryUDPSocket.Receive(streamBytes);
+                try
+                {
+                    auxilarryUDPSocket.Receive(streamBytes);
+                }
+                catch
+                { return; }
 
                 string serverMessage = us_US.GetString(streamBytes);
                 serverMessage = serverMessage.Substring(0, serverMessage.IndexOf('\0'));
 
-                if (serverMessage == "[pndg_msgs_av]")
+                if (serverMessage == ConnectionCodes.AvailablePendingMessagesStatus)
                 {
                     NetComponents.ClientPendingMessageManager();
                 }
@@ -1230,7 +1546,7 @@ namespace ChatBubble
 
             }
             serverListeningState = false;
-            return ("Stopped listening on port " + socketAddress + ".\n");
+            return ("Stopped listening on port " + socketAddress);
         }
 
         /// <summary>
@@ -1309,10 +1625,10 @@ namespace ChatBubble
             }
             catch
             {
-                return ("Server not bound. Use 'unbind' before binding server again.\n");
+                return ("Server not bound. Use 'unbind' before binding server again.");
             }
 
-            return ("Server bound on IP " + ipAddress + ":" + socketAddress + "\n");
+            return ("Server bound on IP " + ipAddress + ":" + socketAddress);
         }
 
         /// <summary>
@@ -1330,7 +1646,6 @@ namespace ChatBubble
             {
                 mainSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 auxilarryUDPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                liveClientCount = 0;
             }
         }
 

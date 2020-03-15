@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 
 namespace ChatBubble
@@ -26,6 +27,8 @@ namespace ChatBubble
 
         static Object streamLock = new Object();
 
+        public static bool LoggingEnabled { get; set; }
+
         /// <summary>
         /// Writes a defined string to a defined file at filepath with specified conditions.
         /// </summary>
@@ -37,9 +40,19 @@ namespace ChatBubble
         {
             lock (streamLock)
             {
-                if (!Directory.Exists(filePath.Substring(0, filePath.LastIndexOf(@"\"))))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf(@"\")));
+                    if (filePath.Contains(@"/") && !Directory.Exists(filePath.Substring(0, filePath.LastIndexOf("/"))))
+                    {
+                        Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf("/")));
+                    }
+                }
+                else
+                {
+                    if (filePath.Contains(@"\") && !Directory.Exists(filePath.Substring(0, filePath.LastIndexOf(@"\"))))
+                    {
+                        Directory.CreateDirectory(filePath.Substring(0, filePath.LastIndexOf(@"\")));
+                    }
                 }
 
                 FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
@@ -47,20 +60,6 @@ namespace ChatBubble
                 byte[] byteStream = new byte[fileStream.Length];
 
                 inputStream = input;
-
-                for (int i = 0; i < inputStream.Length; i++)
-                {
-                    if (inputStream[i] == '\n')
-                    {
-                        inputStream = inputStream.Insert(i, Environment.NewLine);
-
-                        if (Environment.OSVersion.Platform != PlatformID.Unix)
-                        {
-                            inputStream = inputStream.Remove(i + 2, 1);
-                        }
-                        i++;
-                    }
-                }
 
                 if (beginFromString != "")       //Reads all data from file and rewrites it in a new form
                 {
@@ -145,6 +144,7 @@ namespace ChatBubble
                 }
 
                 fileStream.Close();
+
                 return output;
             }
         }
@@ -303,13 +303,17 @@ namespace ChatBubble
 
             if (includeDirectoryPrefix == false)
             {
-                for (int i = 0; i <= output.Length - 1; i++)
+                for (int i = 0; i < output.Length; i++)
                 {
-                     output[i] = output[i].Replace(directory, "");
-                     if (keepFileExtensions == false)
-                     {
-                         output[i] = output[i].Substring(0, output[i].Length - 4);
-                     }
+                     output[i] = output[i].Replace(directory, "");                  
+                }
+            }
+
+            if(!keepFileExtensions)
+            {
+                for(int i = 0; i < output.Length; i++)
+                {
+                    output[i] = output[i].Remove(output[i].Length - 4);
                 }
             }
 
@@ -377,7 +381,8 @@ namespace ChatBubble
             defaultDirectoryRoot = directoryData[0];
             defaultRegisteredUsersDirectory = directoryData[0] + directoryData[1];
             defaultActiveUsersDirectory = directoryData[0] + directoryData[2];
-            defaultPendingMessagesDirectory = directoryData[0] + directoryData[3];          
+            defaultPendingMessagesDirectory = directoryData[0] + directoryData[3];
+            defaultLogDirectory = directoryData[0] + directoryData[4];
         }
 
         public static void SetClientRootDirectory(string mainDirectory)
@@ -392,6 +397,17 @@ namespace ChatBubble
             defaultLocalUserDataDirectory = defaultDirectoryRoot + @"\UserData" + @"\user" + userID;
 
             defaultLocalUserDialoguesDirectory = defaultLocalUserDataDirectory + @"\Dialogues\";
+        }
+
+        public static void LogWriter(string input)
+        {
+            if (LoggingEnabled)
+            {
+                FileIOStreamer fileIO = new FileIOStreamer();
+                string timedInput = "[" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToString("HH:mm:ss") + "] " + input + "\n";
+
+                fileIO.WriteToFile(defaultLogDirectory, timedInput, false);
+            }
         }
     }
 }
