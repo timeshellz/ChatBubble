@@ -103,6 +103,16 @@ namespace ChatBubble.Client.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap chatBubbleLogo {
+            get {
+                object obj = ResourceManager.GetObject("chatBubbleLogo", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap confirmEditButtonClick {
             get {
                 object obj = ResourceManager.GetObject("confirmEditButtonClick", resourceCulture);

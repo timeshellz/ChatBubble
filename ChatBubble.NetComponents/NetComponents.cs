@@ -407,9 +407,16 @@ namespace ChatBubble
                                 streamBytes = us_US.GetBytes(ServerPassMessageService(clientRequestRaw.Substring(17)));
                                 pendingClientSocket.Send(streamBytes);
                                 break;
+                            case "[chng_pswrd_reqs]":
+                                streamBytes = us_US.GetBytes(ServerChangePasswordService(clientRequestRaw.Substring(17)));
+                                pendingClientSocket.Send(streamBytes);
+                                break;
+                            case "[chng_names_reqs]":
+                                streamBytes = us_US.GetBytes(ServerChangeNameService(clientRequestRaw.Substring(17)));
+                                pendingClientSocket.Send(streamBytes);
+                                break;
                             case "[log_out_log_out]":
-                                ServerConnectionCloseDictionaryUpdater(pendingClientSocket.RemoteEndPoint.ToString());
-
+                                ServerConnectionCloseDictionaryUpdater(pendingClientSocket.RemoteEndPoint.ToString());                           
                                 pendingClientSocket.Close();
                                 return;
                         }
@@ -777,7 +784,7 @@ namespace ChatBubble
         public static string ServerRemoveFriendService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "fid=" };
-            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
             FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
@@ -911,6 +918,71 @@ namespace ChatBubble
             }
 
             return ("msg_sent");
+        }
+
+        public static string ServerChangePasswordService(string clientRequest)
+        {          
+            string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "oldpass=", "newpass=" };
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
+            FileIOStreamer fileIO = new FileIOStreamer();
+
+            string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
+            //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] = old password, [3] = new password
+
+            //Ensures user authenticity
+            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            {
+                return ("authsn_not_passed");
+            }
+
+            string[] userData = GetUserData(clientRequestSubstrings[0]);
+
+            if (userData[0] != "User_not_found" && userData[0] != "Error")
+            {
+                if (userData[3] == clientRequestSubstrings[2])
+                {
+                    fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "password=", "", clientRequestSubstrings[3], false, true);
+
+                    return ("passwd_chg_succes");
+                }
+                else
+                {
+                    return ("passwrd_not_match");
+                }
+            }
+            else
+            {
+                return ("database__error__");
+            }
+        }
+
+        public static string ServerChangeNameService(string clientRequest)
+        {
+            string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "newname=" };
+            string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
+            FileIOStreamer fileIO = new FileIOStreamer();
+
+            string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
+            //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] = new name
+
+            //Ensures user authenticity
+            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            {
+                return ("authsn_not_passed");
+            }
+
+            string[] userData = GetUserData(clientRequestSubstrings[0]);
+
+            if (userData[0] != "User_not_found" && userData[0] != "Error")
+            {
+                fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "name=", "", clientRequestSubstrings[2], false, true);
+
+                return ("namess_chg_succes");
+            }
+            else
+            {
+                return ("database__error__");
+            }
         }
 
         /// <summary>
@@ -1145,9 +1217,14 @@ namespace ChatBubble
                 mainSocket.Receive(streamBytes, oldLength, mainSocket.Available, SocketFlags.None);
             }
 
-            //string test = us_US.GetString(streamBytes);
+            string result = us_US.GetString(streamBytes); ;
 
-            return (us_US.GetString(streamBytes));
+            if(result.Contains("\0"))
+            {
+                result = result.Substring(0, result.IndexOf('\0'));
+            }
+
+            return (result);
         }
 
         public static void ClientSendMessage(string chatID, string content)
