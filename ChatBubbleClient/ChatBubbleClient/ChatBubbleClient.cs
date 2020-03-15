@@ -54,6 +54,10 @@ namespace ChatBubble.Client
         {
             InitializeComponent();
 
+            TopMost = false;
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(6f, 13f);
+
             GetDevices();
 
             this.ControlBox = false;
@@ -133,7 +137,7 @@ namespace ChatBubble.Client
 
                 Size = mainPageSize;
                 Location = mainPageLocation;
-                BackgroundImage = Properties.Resources.mainPanelBGImage;
+                BackgroundImage = Properties.Resources.mainPanelBGImage;    
             }
 
             public void OpenMainPage()
@@ -364,13 +368,13 @@ namespace ChatBubble.Client
 
                 if (sendTCPResetRequest == true)
                 {
-                    NetComponents.ClientRequestArbitrary("[log_out_log_out]", "", false);
+                    NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.LogOutCall, "", false);
                 }
 
                 NetComponents.BreakBind(true);
 
                 FileIOStreamer fileIO = new FileIOStreamer();
-                fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_", true);
+                fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_invalid", true);
 
                 Form1 currentForm = (Form1)Application.OpenForms[0];
                 MainPage mainPage = currentForm.Controls.OfType<MainPage>().First();
@@ -399,7 +403,7 @@ namespace ChatBubble.Client
                         string[] pendingMessageSubstrings = pendingMessages[pendingMessages.Length - 1].Split(new string[] { "sender=", "time=", "message=" }, StringSplitOptions.RemoveEmptyEntries);
                         //[0] = sender id, [1] - message time, [2] = message text
 
-                        string messageSenderData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + pendingMessageSubstrings[0], true, true);
+                        string messageSenderData = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + pendingMessageSubstrings[0], true, true);
                         string[] messageDataSubstrings = messageSenderData.Split(new string[] { "id=", "login=", "name=", "status=", "main=", "bubscore=" }, StringSplitOptions.RemoveEmptyEntries);
 
                         Notification notification = new Notification(notificationType);
@@ -1084,18 +1088,14 @@ namespace ChatBubble.Client
                     private void ShowProfileInfo(object sender, EventArgs eventArgs)
                     {
                         string[] profileInfoSplitstrings = { "id=", "login=", "name=", "status=", "main=", "bubscore=" };
-                        string profileInfoString = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + userID, true, true);
+                        string profileInfoString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + userID, true, true);
 
-                        try
+                        if(profileInfoString.Contains("\0"))
                         {
                             profileInfoString = profileInfoString.Substring(0, profileInfoString.IndexOf('\0'));
                         }
-                        catch
-                        {
 
-                        }
-
-                        if (profileInfoString == "database__error__")
+                        if (profileInfoString == NetComponents.ConnectionCodes.DatabaseError)
                         {
                             return;
                         }
@@ -1402,7 +1402,7 @@ namespace ChatBubble.Client
                                 descriptionChangeRequest += "\nmain=" + textBox.Text + "\n";
                             }
                         }
-                        NetComponents.ClientRequestArbitrary("[edt_user_summar]", descriptionChangeRequest, true, true);
+                        NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.EditUserSummaryRequest, descriptionChangeRequest, true, true);
 
                         ProfileInfoPanel profileInfoPanel = new ProfileInfoPanel();
                         this.Parent.Controls.Add(profileInfoPanel);
@@ -1510,18 +1510,14 @@ namespace ChatBubble.Client
 
                     void GetFriendList(object sender, EventArgs eventArgs)
                     {
-                        string friendListResultString = NetComponents.ClientRequestArbitrary("[get_friends_lst]", "", true, true);
+                        string friendListResultString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetFriendListRequest, "", true, true);
 
-                        try
+                        if(friendListResultString.Contains("\0"))
                         {
                             friendListResultString = friendListResultString.Substring(0, friendListResultString.IndexOf('\0'));
                         }
-                        catch
-                        {
 
-                        }
-
-                        if (friendListResultString == "database__error__")      //TO DO: Output an error message here
+                        if (friendListResultString == NetComponents.ConnectionCodes.DatabaseError)      //TO DO: Output an error message here
                         {
                             allFriendsDataByPage = null;
                             return;
@@ -1721,7 +1717,7 @@ namespace ChatBubble.Client
 
                         //TO DO: Move this logic into another thread
 
-                        NetComponents.ClientRequestArbitrary("[rem_friend_rem_]", "fid=" + requestID, true, true);
+                        NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.RemoveFriendRequest, "fid=" + requestID, true, true);
 
                         button.Parent.Parent.Controls.Clear();
 
@@ -1809,7 +1805,7 @@ namespace ChatBubble.Client
                         for (int i = 0; i < dialogueFilenameArray.Length; i++)
                         {
                             string senderID = dialogueFilenameArray[i].Substring(dialogueFilenameArray[i].IndexOf('=') + 1);
-                            string senderData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + senderID, true, true);
+                            string senderData = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + senderID, true, true);
                             string dialogueContent = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
 
                             if (!String.IsNullOrEmpty(dialogueContent))
@@ -1959,7 +1955,7 @@ namespace ChatBubble.Client
                     Name = "ActiveDialogue";
 
                     ChatID = id;
-                    string recepientData = NetComponents.ClientRequestArbitrary("[get_user_summar]", "reqid=" + ChatID, true, true);
+                    string recepientData = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + ChatID, true, true);
                     string chatName = recepientData.Split(new string[] {
                         "id=", "login=", "name=", "status=", "main=", "bubscore=" }, StringSplitOptions.RemoveEmptyEntries)[2];
 
@@ -2827,7 +2823,7 @@ namespace ChatBubble.Client
                             string searchQueryString;
                             queryQueue.TryDequeue(out searchQueryString);
 
-                            string searchResultString = NetComponents.ClientRequestArbitrary("[searchs_request]", searchQueryString, true);
+                            string searchResultString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.SearchRequest, searchQueryString, true);
 
                             try
                             {
@@ -2916,7 +2912,7 @@ namespace ChatBubble.Client
                             string[] searchResultSubstrings = searchResultsList[i].Split(searchResultSplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
                             //For searchResultSubstrings, [0] = id, [1] = username, [2] = name
 
-                            if (searchResultSubstrings[0] == "server_closed")
+                            if(searchResultSubstrings[0] == NetComponents.ConnectionCodes.ConnectionFailure)
                             {
                                 break;
                             }
@@ -3063,7 +3059,7 @@ namespace ChatBubble.Client
 
                         //TO DO: Move this logic into another thread
 
-                        NetComponents.ClientRequestArbitrary("[add_friend_add_]", "addid=" + requestID, true, true);
+                        NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.AddFriendRequest, "addid=" + requestID, true, true);
                     }
                 }
             }
@@ -4149,7 +4145,7 @@ namespace ChatBubble.Client
                 //For serverReplySubstrings, index 0 is server flag, index 1 is ID, index 2 is hash
                 string[] serverReplySubstrings = serverReply.Split(serverReplySplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
 
-                if (serverReplySubstrings[0] == "login_success")
+                if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.LoginSuccess)
                 {
                     //Set local user directory for logged in user
                     FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
@@ -4173,10 +4169,10 @@ namespace ChatBubble.Client
 
                     this.Dispose();
 
-                    return ("login_success");
+                    return (NetComponents.ConnectionCodes.LoginSuccess);
                 }
-                else if (serverReply == "login_failure")
-                {
+                else if (serverReply == NetComponents.ConnectionCodes.LoginFailure)
+                {                   
                     return ("Wrong login or password.");
                 }
                 else
@@ -4420,26 +4416,30 @@ namespace ChatBubble.Client
                     string[] serverReplySubstrings = serverReply.Split(serverReplySplitStrings, 2, StringSplitOptions.RemoveEmptyEntries);
                     //It isn't necessary to split strings at this point of functionality, but it might be needed in the future
 
-                    switch (serverReplySubstrings[0])
+                    if(serverReplySplitStrings[0] == NetComponents.ConnectionCodes.SignUpFailure)
                     {
-                        case "sign_up_failure_1":
-                            usernameTextBoxBackgroundPicture.BackgroundImage = Properties.Resources.frontDoorTextBoxBorderError;
-                            statusMessage.Text = "User with this username already exists.";
-                            return;
-                        case "sign_up_failure_2":
-                            statusMessage.Text = "Server sign up service unavailable.";
-                            return;
-                        case "sign_up_success":
-                            statusMessage.ForeColor = Color.Green;
-                            statusMessage.Text = "You have successfully signed up!";
-
-                            Application.DoEvents(); //TO DO: Find a way around this...
-                            Thread.Sleep(1000);
-
-                            PanelHide(this, eventArgs);
-                            loginPanelReferenceObj.PanelShow(loginPanelReferenceObj, eventArgs);
-                            return;
+                        usernameTextBoxBackgroundPicture.BackgroundImage = Properties.Resources.frontDoorTextBoxBorderError;
+                        statusMessage.Text = "User with this username already exists.";
+                        return;
                     }
+                    if(serverReplySplitStrings[0] == NetComponents.ConnectionCodes.DatabaseError)
+                    {
+                        statusMessage.Text = "Server sign up service unavailable.";
+                        return;
+                    }
+                    if(serverReplySplitStrings[0] == NetComponents.ConnectionCodes.SignUpSuccess)
+                    {
+                        statusMessage.ForeColor = Color.Green;
+                        statusMessage.Text = "You have successfully signed up!";
+
+                        Application.DoEvents(); //TO DO: Find a way around this...
+                        Thread.Sleep(1000);
+
+                        PanelHide(this, eventArgs);
+                        loginPanelReferenceObj.PanelShow(loginPanelReferenceObj, eventArgs);
+                        return;
+                    }
+
                     return;
                 }
 
@@ -4536,10 +4536,11 @@ namespace ChatBubble.Client
                 Invoke(messageChangeDelegate, "Connecting...");
                 while (loadingMessageLabel.Text != "Connected!")
                 {
-                    NetComponents.ClientSetServerEndpoints(NetComponents.ScanIP(), 8000);
+                    //"68.183.203.93"
+                    NetComponents.ClientSetServerEndpoints("68.183.203.93", 8000);
                     handshakeResult = NetComponents.InitialHandshakeClient();
 
-                    if (attemptNumber >= 100 || handshakeResult == "connection_fatal_error")
+                    if (attemptNumber >= 100 || handshakeResult == NetComponents.ConnectionCodes.ConnectionFailure)
                     {
                         Invoke(messageChangeDelegate, "Server unavailable. Please try again later.");
                         loadingImageBox.Image = Client.Properties.Resources.WarningSign;
@@ -4556,7 +4557,7 @@ namespace ChatBubble.Client
                         break;
                     }
 
-                    if (handshakeResult == "session_expr")
+                    if (handshakeResult == NetComponents.ConnectionCodes.ExpiredSessionStatus)
                     {
                         Invoke(messageChangeDelegate, "Connected!");
 
@@ -4595,7 +4596,7 @@ namespace ChatBubble.Client
 
                         return;
                     }
-                    else if (handshakeResult.Substring(0, 13) == "login_success") // V This happens when user cookie matches server records V
+                    else if (handshakeResult.Substring(0, NetComponents.ConnectionCodes.DefaultFlagLength) == NetComponents.ConnectionCodes.LoginSuccess) // V This happens when user cookie matches server records V
                     {
                         Invoke(messageChangeDelegate, "Connected!");
 
