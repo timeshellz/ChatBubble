@@ -77,4 +77,3 @@
     - Erasing search query too fast may cause search results to fail updating.
     - Any issues in the database may cause unexpected runtime errors and logic errors to appear, since none of them
     get caught in any way yet.
-    

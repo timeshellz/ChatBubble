@@ -11,6 +11,7 @@ features are outlined below.
 This software works around a simplified multiple flat file implementation of a database that stores every user's profile information
 and allows it to be edited, read and modified in any necessary way. It is planned to migrate to MySQL sooner than later.
 
+
 User profiles, passwords and logins are currently stored as plaintext, encryption will come.
 
 **ChatBubble.NetComponents.dll**
@@ -46,4 +47,3 @@ User profiles, passwords and logins are currently stored as plaintext, encryptio
   - [ ] Implement bug reports.
   - [ ] Custom client styling, dark mode.
   - [ ] Video, photo sharing, calling
- 
