@@ -34,8 +34,8 @@ namespace ChatBubble
         /// </summary>
         /// <param name="filePath">Output file path.</param>
         /// <param name="input">Output string.</param>
-        /// <param name="writeFromStart">If true, will write from the beginning of the file. Otherwise, will start from specified string.</param>
-        /// <param name="beginFromString">String from which to start when writeFromStart is true.</param>
+        /// <param name="writeFromStart">If true, will write from the beginning of the file. Otherwise, will append data to the end of file.</param>
+        /// <param name="beginFromString">String from which to start inserting data.</param>
         public void WriteToFile(string filePath, string input, bool writeFromStart = true, string beginFromString = "")
         {
             lock (streamLock)
@@ -59,7 +59,8 @@ namespace ChatBubble
 
                 byte[] byteStream = new byte[fileStream.Length];
 
-                inputStream = input;
+                input = input.Replace("\r", "");
+                inputStream = input.Replace("\n", Environment.NewLine);
 
                 if (beginFromString != "")       //Reads all data from file and rewrites it in a new form
                 {
@@ -194,7 +195,7 @@ namespace ChatBubble
                 }
                 else
                 {
-                    endIndex = rawContents.Substring(beginIndex).IndexOf("\n");
+                    endIndex = rawContents.Substring(beginIndex).IndexOf(Environment.NewLine);
                 }
 
                 string midContents = rawContents.Substring(beginIndex, endIndex);
