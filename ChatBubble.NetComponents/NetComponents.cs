@@ -181,7 +181,14 @@ namespace ChatBubble
         /// <param name="serverSocketAddressInt">Server main socket address.</param>
         public static void ClientSetServerEndpoints(string serverAddressString, int serverSocketAddressInt)
         {
-            serverAddress = IPAddress.Parse(serverAddressString);
+            try
+            {
+                serverAddress = IPAddress.Parse(serverAddressString);
+            }
+            catch
+            {
+                serverAddress = Dns.GetHostAddresses(serverAddressString)[0];
+            }
 
             serverIPEndPoint = new IPEndPoint(serverAddress, serverSocketAddressInt);
         }
@@ -1394,7 +1401,8 @@ namespace ChatBubble
             {
                 return (ConnectionCodes.ExpiredSessionStatus);
             }
-            else if (handshakeReplyString.Substring(0, ConnectionCodes.DefaultFlagLength) == ConnectionCodes.LoginSuccess)
+            else if (handshakeReplyString.Length >= ConnectionCodes.DefaultFlagLength && 
+                handshakeReplyString.Substring(0, ConnectionCodes.DefaultFlagLength) == ConnectionCodes.LoginSuccess)
             {
                 return (handshakeReplyString);
             }

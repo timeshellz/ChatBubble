@@ -14,6 +14,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using System.Configuration;
+using System.Reflection;
 using Direct2D1 = SharpDX.Direct2D1;
 using Direct3D11 = SharpDX.Direct3D11;
 using DXGI = SharpDX.DXGI;
@@ -231,7 +233,7 @@ namespace ChatBubble.Client
 
                     if (panelType != typeof(MenuButton) && panelType != typeof(PictureBox))
                     {
-                        if (!ignoreTopMost || panel != TabHistory.Last())
+                        if (TabHistory.Count > 0 && (!ignoreTopMost || panel != TabHistory.Last()))
                         {
                             Controls.Remove(panel);
                             TabHistory.Clear();
@@ -3466,7 +3468,7 @@ namespace ChatBubble.Client
                         versionDateLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
                         versionDateLabel.Font = new Font("Verdana", 8, FontStyle.Regular);
                         versionDateLabel.TextAlign = ContentAlignment.MiddleCenter;
-                        versionDateLabel.Text = "03.10.2020";
+                        versionDateLabel.Text = "11.24.2020";
 
                         rightsLabel = new Label();
                         rightsLabel.Size = new Size(Width - 8, 50);
@@ -3474,7 +3476,7 @@ namespace ChatBubble.Client
                         rightsLabel.ForeColor = Color.FromArgb(255, 93, 143, 217);
                         rightsLabel.Font = new Font("Verdana", 9.6f, FontStyle.Regular);
                         rightsLabel.TextAlign = ContentAlignment.MiddleCenter;
-                        rightsLabel.Text = "Timofey Zheludkov\nAll Rights Reserved";
+                        rightsLabel.Text = "Timothy Zheludkov\nAll Rights Reserved";
 
                         this.HandleCreated += (o, e) =>
                         {
@@ -4648,15 +4650,18 @@ namespace ChatBubble.Client
                 }
 
                 MessageChangeDelegate messageChangeDelegate = new MessageChangeDelegate(LoadingMessageSetText);
+                Configuration configFile = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
 
                 int attemptNumber = 2;
                 string handshakeResult;
+
+                string[] serverAddress = configFile.AppSettings.Settings["serverAddress"].Value.Split(':');
 
                 Invoke(messageChangeDelegate, "Connecting...");
                 while (loadingMessageLabel.Text != "Connected!")
                 {
                     //"68.183.203.93"
-                    NetComponents.ClientSetServerEndpoints("192.168.0.144", 8000);
+                    NetComponents.ClientSetServerEndpoints(serverAddress[0], Convert.ToInt32(serverAddress[1]));
                     handshakeResult = NetComponents.InitialHandshakeClient();
 
                     if (attemptNumber >= 100 || handshakeResult == NetComponents.ConnectionCodes.ConnectionFailure)
