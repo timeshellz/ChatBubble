@@ -38,6 +38,7 @@
       <HintPath>..\..\ChatBubble.NetComponents\bin\Debug\netstandard2.0\ChatBubble.NetComponents.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
@@ -83,7 +84,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="ChatBubbleServer.exe.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj">

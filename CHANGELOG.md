@@ -1,8 +1,49 @@
 # ChatBubble Changelog #
 
+### 11.24.2020 - v0.4 - *"Tin Can Telephone"* ###
+  - New Features:
+    #### Client ####
+    - Messages.
+    - Message "read"/"unread" status.
+    - Hardware acceleration for dialogues using DirectX.
+    - New loading animation.
+    - Settings tab with initial features.
+    - Beginnings of DPI scaling.
+    - UI optimizations.
+    - Tab history.
+    - Directory, server address configuration now available through config.
+    - Placeholder URL resolver mechanism added.
+    - Filestructure reformatting.
+    
+    #### Server ####
+    - Multiplatform support.
+    - Updated log keeping.
+    - Versatile connection/error code generation.
+    - Better statistics tracking.
+    - Runtime endurance tests have been performed using dedicated server.
+    - Some commands have been updated.
+    - Some new commands have been added.
+    
+  - Fixed bugs
+    #### Client ####
+    - Client connection loss and log out issue.
+    - Fixed some custom controls.
+    - Dialogue fetching database bug.
+    - Multiple IP per machine issue.
+    - Lacking directory issues.
+    - Password watermark display bugs.
+    - Client window is no longer fixed to being top-most all the time.
+    
+    #### Server ####
+    - Old code clean-up.
+    - Fixed some linux filesystem detection issues.
+    - Numerous small fixes.
+    
+  - Known bugs
+    - Non-bold bugs of v0.3 may still persist.
 
 
-### 11.16.2019 - v0.3 - *"Breadcrums"* ###
+### 11.16.2019 - v0.3 - *"Breadcrumbs"* ###
 
   - Changelogging started. List of main features added prior to v0.3:
     #### Client ####

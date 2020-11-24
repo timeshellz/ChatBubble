@@ -1,17 +1,18 @@
-# ChatBubble v0.3 # 
+# ChatBubble v0.4 # 
 
 ## Social Media App ##
 
 This is a social media app that I've been working on for the past few months. It consists of 2 executable pieces of software,
 the server console and the client, as well as a few custom-made libraries. UI is based on WinForms (sadly).
 
-Users can sign up, log in, edit their description, search for, add, delete friends and look up their description. Upcoming
+Users can sign up, log in, edit their description, search for, add, delete friends, look up their description, and so on. Upcoming
 features are outlined below.
 
 This software works around a simplified multiple flat file implementation of a database that stores every user's profile information
-and allows it to be edited, read and modified in any necessary way. While a relational database like SQL would definitely be a better alternative, I decided to get some practice and try to implement my own version of a database, at least for the time being.
+and allows it to be edited, read and modified in any necessary way. It is planned to migrate to MySQL sooner than later.
 
-User profiles, passwords and logins are currently stored as plaintext, encryption will come sooner or later.
+
+User profiles, passwords and logins are currently stored as plaintext, encryption will come.
 
 **ChatBubble.NetComponents.dll**
 
@@ -35,10 +36,11 @@ User profiles, passwords and logins are currently stored as plaintext, encryptio
   
 ### Roadmap ###
 
-  - [ ] Complete main functionality
-  - [ ] **Migrate client to WPF, port client to mobile through Xamarin, port server console to Linux through Mono**
-  - [ ] Improve UI performance through WPF.
-  - [ ] Recreate database using SQL.
+  - [x] Complete main functionality
+  - [x] Port server console to Linux through Mono
+  - [ ] **Migrate client to Xamarin **
+  - [ ] Recreate database using MySQL.
+  - [ ] Encryption
   - [ ] Optimize search.
   - [ ] Organize a separate server hosting network, host 24/7.
   - [ ] Open app to public testing.  

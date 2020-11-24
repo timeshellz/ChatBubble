@@ -103,6 +103,16 @@ namespace ChatBubble.Client.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap chatBubbleLogo {
+            get {
+                object obj = ResourceManager.GetObject("chatBubbleLogo", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap confirmEditButtonClick {
             get {
                 object obj = ResourceManager.GetObject("confirmEditButtonClick", resourceCulture);
@@ -343,9 +353,39 @@ namespace ChatBubble.Client.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Loading_Screen {
+            get {
+                object obj = ResourceManager.GetObject("Loading_Screen", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Loading_Screen_Fast {
+            get {
+                object obj = ResourceManager.GetObject("Loading_Screen_Fast", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap LoadingCog {
             get {
                 object obj = ResourceManager.GetObject("LoadingCog", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap loadingScreen20fps {
+            get {
+                object obj = ResourceManager.GetObject("loadingScreen20fps", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -473,6 +513,36 @@ namespace ChatBubble.Client.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap returnButtonClick {
+            get {
+                object obj = ResourceManager.GetObject("returnButtonClick", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap returnButtonHover {
+            get {
+                object obj = ResourceManager.GetObject("returnButtonHover", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap returnButtonIdle {
+            get {
+                object obj = ResourceManager.GetObject("returnButtonIdle", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap searchButtonClick {
             get {
                 object obj = ResourceManager.GetObject("searchButtonClick", resourceCulture);
@@ -546,6 +616,36 @@ namespace ChatBubble.Client.Properties {
         internal static System.Drawing.Bitmap searchResultSendMessage {
             get {
                 object obj = ResourceManager.GetObject("searchResultSendMessage", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sendButtonClick {
+            get {
+                object obj = ResourceManager.GetObject("sendButtonClick", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sendButtonHover {
+            get {
+                object obj = ResourceManager.GetObject("sendButtonHover", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sendButtonIdle {
+            get {
+                object obj = ResourceManager.GetObject("sendButtonIdle", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
