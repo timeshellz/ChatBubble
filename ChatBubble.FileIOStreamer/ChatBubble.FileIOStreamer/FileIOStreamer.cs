@@ -194,7 +194,7 @@ namespace ChatBubble
                 }
                 else
                 {
-                    endIndex = rawContents.Substring(beginIndex).IndexOf(Environment.NewLine);
+                    endIndex = rawContents.Substring(beginIndex).IndexOf("\n");
                 }
 
                 string midContents = rawContents.Substring(beginIndex, endIndex);
