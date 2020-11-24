@@ -124,6 +124,7 @@ namespace ChatBubble
                 }
                 else
                 {
+                    this.WriteToFile(filePath, String.Empty);
                     fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
                 }
 
