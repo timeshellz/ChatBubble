@@ -1,5 +1,5 @@
-                            COPYRIGHT (C) 2019
-                     Timofey Zheludkov aka. Tim Stark
+                            COPYRIGHT (C) 2020
+                            Timothy Zheludkov
                            All Rights Reserved.
                              
     Permission is hereby granted for any person obtaining a copy of this
