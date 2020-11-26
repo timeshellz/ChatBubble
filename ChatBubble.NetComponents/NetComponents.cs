@@ -6,6 +6,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime;
+using System.Globalization;
 
 namespace ChatBubble
 {
@@ -819,7 +820,7 @@ namespace ChatBubble
                 "\nfriends==null\n==friends" +
                 "\npfriends==null\n==pfriends" +
                 "\nblacklist==null\n==blacklist" +
-                "\nregdateutc=" + dateTime.ToUniversalTime().ToString(), true);
+                "\nregdateutc=" + dateTime.ToUniversalTime().ToString(CultureInfo.InvariantCulture), true);
 
                 FileIOStreamer.LogWriter("New user id=" + maxID + "signed up.");
                 return (ConnectionCodes.SignUpSuccess);
@@ -1549,7 +1550,7 @@ namespace ChatBubble
             NetComponents.ClientRequestArbitrary(ConnectionCodes.SendNewMessageRequest, "rcpnt=" + chatID + "content=" + content, true, true);
 
             fileIO.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + chatID + ".txt",
-                    "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss") + "\nstatus=sent" +
+                    "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss", CultureInfo.InvariantCulture) + "\nstatus=sent" +
                     "\ncontent=" + content + "\n==message\n", false);
         }
 
