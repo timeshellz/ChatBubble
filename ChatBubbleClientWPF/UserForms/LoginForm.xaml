@@ -1,0 +1,34 @@
+﻿<local:CredentialFormPage x:Class="ChatBubbleClientWPF.UserForms.LoginForm"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ChatBubbleClientWPF.UserForms"
+      xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
+      xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
+      xmlns:windows="clr-namespace:ChatBubbleClientWPF"
+      mc:Ignorable="d" 
+      Title="LoginForm" Loaded="CredentialFormPage_Loaded">
+
+    <Grid VerticalAlignment="Stretch" HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" Name="StatusLabel" Foreground="{StaticResource SecondaryColorBrush}" Style="{StaticResource MediumTextStyle}" 
+               HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="2" Content="{Binding StatusPrompt, Mode=TwoWay}"/>
+        <controls:RoundedRectangleTextBox Grid.Row="1" x:Name="UsernameBox" Background="{StaticResource SecondaryColorBrush}" Watermark="Username" Text="{Binding UsernameForm}" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <controls:RoundedRectanglePasswordBox x:Name="PasswordBox" Grid.Row="2" TabIndex="2" Background="{StaticResource SecondaryColorBrush}" Watermark="Password" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <Grid Grid.Row="4" Margin="0,6,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <controls:RoundedButton x:Name="SignupButton" Grid.Column="0" Content="Sign up" TabIndex="3" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="SignupButton_Click" GotFocus="ElementGotFocus"/>
+            <controls:RoundedButton x:Name="LoginButton" Grid.Column="1" Content="Log in" TabIndex="4" Foreground="{StaticResource PrimaryColorBrush}"
+                                    Command="{Binding LoginCommand}" GotFocus="ElementGotFocus"/>
+        </Grid>
+    </Grid>
+</local:CredentialFormPage>

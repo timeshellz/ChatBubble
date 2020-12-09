@@ -1,0 +1,104 @@
+﻿<Page x:Class="ChatBubbleClientWPF.UserForms.SettingsTab"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ChatBubbleClientWPF.UserForms"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="SettingsTab" Name="Settings">
+    <Page.Resources>
+        <Style x:Key="SettingsButtonStyle" BasedOn="{StaticResource SecondaryColorStyle}">
+            <Setter Property="Control.Background" Value="Transparent"/>
+            <Setter Property="Control.BorderThickness" Value="0"/>
+            <Setter Property="Control.Padding" Value="0,4,0,4"/>
+            <Setter Property="Control.HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Control.HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Control.MinHeight" Value="40"/>
+            <Setter Property="Control.Height" Value="50"/>
+        </Style>
+        <Style x:Key="SettingsButtonDelimiterStyle" BasedOn="{StaticResource AuxillaryColorStyle}">
+            <Setter Property="Control.VerticalAlignment" Value="Bottom"/>
+            <Setter Property="Control.HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Control.Height" Value="1"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="320"/>
+        </Grid.ColumnDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid Grid.Column="0" Margin="10,0,10,0" MinWidth="300" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="55"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="1" Content="Profile" Style="{StaticResource MediumTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+                <Rectangle Grid.Row="1" Style="{StaticResource SettingsButtonDelimiterStyle}" Height="2"/>
+                <StackPanel Grid.Row="2" MinWidth="300" Margin="15,0,15,10" HorizontalAlignment="Stretch" >
+                    <Button Content="Change profile name" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Edit profile information" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Privacy settings" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Blocked accounts" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                </StackPanel>
+                <Label Grid.Row="3" Content="Security" Style="{StaticResource MediumTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+                <Rectangle Grid.Row="3" Style="{StaticResource SettingsButtonDelimiterStyle}" Height="2"/>
+                <StackPanel Grid.Row="4" MinWidth="300" HorizontalAlignment="Stretch"  Margin="15,0,15,10">
+                    <Button Content="Change password" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Update email address" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Update phone number" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                    <Button Content="Update security questions" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                </StackPanel>
+                <Label Grid.Row="5" Content="Notifications" Style="{StaticResource MediumTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+                <Rectangle Grid.Row="5" Style="{StaticResource SettingsButtonDelimiterStyle}" Height="2"/>
+                <StackPanel Grid.Row="6" MinWidth="300" HorizontalAlignment="Stretch"  Margin="15,0,15,10">
+                    <Button Content="Notification settings" Style="{StaticResource SettingsButtonStyle}"/>
+                    <Rectangle Style="{StaticResource SettingsButtonDelimiterStyle}"/>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="170"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="20"/>
+            </Grid.RowDefinitions>
+            <Image Grid.Row="1" Source="/Images/chatBubbleLogo.png"  HorizontalAlignment="Center" />
+            <StackPanel Grid.Row="3">
+                <Label Grid.Row="3" Name="VersionInfo" Content="ChatBubble v0.4" Margin="0,0,0,0" Padding="0,2,0,0"  HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Style="{StaticResource SmallTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+                <Label Grid.Row="3" Name="VersionDate" Content="24.11.2020" Margin="0,0,0,0" Padding="0,4,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Style="{StaticResource SmallTextStyle}" Foreground="{StaticResource PrimaryColorBrush}" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Grid.Row="5">
+                <Label Name="CopyrightName" Content="Timothy Zheludkov" Margin="0,0,0,0" Padding="0,4,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Style="{StaticResource SmallTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+                <Label Content="All Rights Reserved" Margin="0,0,0,0" Padding="0,2,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Style="{StaticResource SmallTextStyle}" Foreground="{StaticResource PrimaryColorBrush}"/>
+            </StackPanel>
+
+        </Grid>
+
+
+        <Rectangle Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="2" Style="{StaticResource AuxillaryColorStyle}" Margin="0,40,0,20"/>
+    </Grid>
+</Page>
