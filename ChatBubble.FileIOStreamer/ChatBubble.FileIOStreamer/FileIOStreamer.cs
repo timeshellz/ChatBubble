@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace ChatBubble
 {
-    public class FileIOStreamer
+    public static class FileIOStreamer
     {
-        Encoding us_US = Encoding.GetEncoding(20127);
+        static Encoding us_US = Encoding.GetEncoding(20127);
 
         public static string defaultDirectoryRoot { get; private set; }
 
@@ -23,8 +23,6 @@ namespace ChatBubble
         public static string defaultLocalUserDataDirectory { get; private set; }
         public static string defaultLocalUserDialoguesDirectory { get; private set; }
 
-        public string inputStream;
-
         static Object streamLock = new Object();
 
         public static bool LoggingEnabled { get; set; }
@@ -36,7 +34,7 @@ namespace ChatBubble
         /// <param name="input">Output string.</param>
         /// <param name="writeFromStart">If true, will write from the beginning of the file. Otherwise, will append data to the end of file.</param>
         /// <param name="beginFromString">String from which to start inserting data.</param>
-        public void WriteToFile(string filePath, string input, bool writeFromStart = true, string beginFromString = "")
+        public static void WriteToFile(string filePath, string input, bool writeFromStart = true, string beginFromString = "")
         {
             lock (streamLock)
             {
@@ -60,7 +58,7 @@ namespace ChatBubble
                 byte[] byteStream = new byte[fileStream.Length];
 
                 input = input.Replace("\r", "");
-                inputStream = input.Replace("\n", Environment.NewLine);
+                string inputStream = input.Replace("\n", Environment.NewLine);
 
                 if (beginFromString != "")       //Reads all data from file and rewrites it in a new form
                 {
@@ -112,7 +110,7 @@ namespace ChatBubble
         /// </summary>eginFromString">If not empty, will try to read beginning from the first occurence of this string.</param>
         /// <param name="endOnString">If not empty, will try to end reading until the first occurence of this string.</param>
         /// <returns></returns>
-        public string ReadFromFile(string filePath, string beginFromString = "", string endOnString = "")
+        public static string ReadFromFile(string filePath, string beginFromString = "", string endOnString = "")
         {
             lock (streamLock)
             {
@@ -154,7 +152,7 @@ namespace ChatBubble
         /// Empties the file at specified filepath.
         /// </summary>
         /// <param name="filePath">File path.</param>
-        public void ClearFile(string filePath)
+        public static void ClearFile(string filePath)
         {
             FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
 
@@ -162,12 +160,12 @@ namespace ChatBubble
             fileStream.Close();
         }
 
-        public void RemoveFile(string filePath)
+        public static void RemoveFile(string filePath)
         {
             File.Delete(filePath);
         }
 
-        public void SwapFileEntry(string filePath, string beginFromString, string oldEntry, string newEntry, bool isLongEntry = true, bool swapFullEntry = false)
+        public static void SwapFileEntry(string filePath, string beginFromString, string oldEntry, string newEntry, bool isLongEntry = true, bool swapFullEntry = false)
         {
             lock (streamLock)
             {
@@ -225,7 +223,7 @@ namespace ChatBubble
             }
         }
 
-        public void RemoveFileEntry(string filePath, string beginFromString, string entry, bool isLongEntry = true, bool removeFullEntry = false)
+        public static void RemoveFileEntry(string filePath, string beginFromString, string entry, bool isLongEntry = true, bool removeFullEntry = false)
         {
             lock (streamLock)
             {
@@ -293,7 +291,7 @@ namespace ChatBubble
         /// <param name="includeDirectoryPrefix">If true, will include the path to the files in the output.</param>
         /// <param name="keepFileExtensions">If true, will keep the file extension for each file.</param>
         /// <returns></returns>
-        public string[] GetDirectoryFiles(string directory, bool includeDirectoryPrefix, bool keepFileExtensions)
+        public static string[] GetDirectoryFiles(string directory, bool includeDirectoryPrefix, bool keepFileExtensions)
         {
             if(Directory.Exists(directory) == false)
             {
@@ -332,7 +330,7 @@ namespace ChatBubble
         /// <param name="directory"></param>
         /// <param name="entryArray"></param>
         /// <param name="fileTimeOutSpan"></param>
-        public void FileTimeOutComparator(string directory, string[] entryArray, TimeSpan fileTimeOutSpan)
+        public static void FileTimeOutComparator(string directory, string[] entryArray, TimeSpan fileTimeOutSpan)
         {
             string[] files = GetDirectoryFiles(directory, true, true);
 
@@ -368,7 +366,7 @@ namespace ChatBubble
             }
         }
 
-        public bool FileExists(string directory)
+        public static bool FileExists(string directory)
         {
             if(File.Exists(directory))
             {
@@ -404,10 +402,9 @@ namespace ChatBubble
         {
             if (LoggingEnabled)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
                 string timedInput = "[" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToString("HH:mm:ss") + "] " + input + "\n";
 
-                fileIO.WriteToFile(defaultLogDirectory, timedInput, false);
+                WriteToFile(defaultLogDirectory, timedInput, false);
             }
         }
     }
