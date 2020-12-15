@@ -6,6 +6,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime;
+using System.Globalization;
 
 namespace ChatBubble
 {
@@ -14,7 +15,7 @@ namespace ChatBubble
     /// </summary>
     public static class NetComponents
     {
-        public static Encoding us_US = Encoding.GetEncoding(20127);
+        public static Encoding us_US = Encoding.Unicode;
 
         static Socket mainSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         static Socket auxilarryUDPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -40,7 +41,10 @@ namespace ChatBubble
 
         public static ConcurrentQueue<string> receivedMessagesCollection = new ConcurrentQueue<string>();
 
-
+        /// <summary>
+        /// Delegate dictionary of Connection Flag - Net Method pairs.
+        /// <p>Stores all possible ChatBubble protocol methods according to their flag.</p>
+        /// </summary>
         public static Dictionary<string, Delegate> RequestDictionary = new Dictionary<string, Delegate>()
         {
             [ConnectionCodes.LogInRequest] = new Func<string, EndPoint, string>(ServerLogInService),
@@ -58,6 +62,9 @@ namespace ChatBubble
             [ConnectionCodes.LogOutCall] = new Action<string>(ServerConnectionCloseDictionaryUpdater),
         };
 
+        /// <summary>
+        /// Class that represents and generates Connection Flags based on all existing error, success and status conditions, defined as fields.
+        /// </summary>
         public static class ConnectionCodes
         {
             public static readonly string LogInRequest, SignUpRequest, SearchRequest, AddFriendRequest, GetFriendListRequest, RemoveFriendRequest,
@@ -132,6 +139,10 @@ namespace ChatBubble
                 }
             }
 
+            /// <summary>
+            /// Gets all currently available Connection Codes for ChatBubble protocol.
+            /// </summary>
+            /// <returns></returns>
             public static string GetAllErrorCodes()
             {
                 string output = "Currently used error codes:\n";
@@ -154,8 +165,25 @@ namespace ChatBubble
 
                 return false;
             }
-        }
 
+            /// <summary>
+            /// Checks whether request signature matches valid ConnectionCodes default signature.
+            /// </summary>
+            /// <param name="request"></param>
+            /// <returns>True if signature matches, otherwise false.</returns>
+            public static bool IsSignatureValid(string request)
+            {
+                if (request.Length < ConnectionCodes.DefaultFlagLength)
+                {
+                    return false;
+                }
+
+                string signature = request.Substring(0, ConnectionCodes.DefaultFlagLength);
+
+                if (signature == ConnectionCodes.ConnectionSignature) return true;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Scans for the local machine address.
@@ -220,6 +248,9 @@ namespace ChatBubble
             return ("");
         }
 
+        /// <summary>
+        /// Records all concurrent connections for statistics keeping.
+        /// </summary>
         static void StatRecordConnection()
         {
             for (int i = 0; i < connectionAttemptsCount.Length; i++)
@@ -228,6 +259,9 @@ namespace ChatBubble
             }
         }
 
+        /// <summary>
+        /// Records all current handshake attempts for statistics keeping.
+        /// </summary>
         static void StatRecordHandshake()
         {
             for (int i = 0; i < handshakeSuccessCount.Length; i++)
@@ -271,6 +305,10 @@ namespace ChatBubble
             }
         }
 
+        /// <summary>
+        /// Gets current server session statistics.
+        /// </summary>
+        /// <returns>String containing all avaiable server statistics with timestamps.</returns>
         public static string GetServerSessionStats()
         {
             string outputFormat;          
@@ -395,7 +433,7 @@ namespace ChatBubble
                 clientHandshakeToken = clientHandshakeToken.Substring(0, clientHandshakeToken.IndexOf('\0'));
             }
 
-            if (!IsSignatureValid(clientHandshakeToken))
+            if (!ConnectionCodes.IsSignatureValid(clientHandshakeToken))
             {
                 FileIOStreamer.LogWriter("Invalid connection signature detected. Disconnecting " + pendingClientSocket.RemoteEndPoint.ToString() + ".");
 
@@ -410,14 +448,14 @@ namespace ChatBubble
             FileIOStreamer.LogWriter("Received " + clientHandshakeToken + " token from " + remoteEndPointLogString);
 
             clientHandshakeToken = clientHandshakeToken.Substring(ConnectionCodes.DefaultFlagLength);
+            string[] clientHandshakeTokenSubstrings = clientHandshakeToken.Split(new string[2] { "id=", "confirmation=" }, 2, StringSplitOptions.RemoveEmptyEntries);
 
             //Code below compares the stored user persistence cookie signature to the one sent by the user
             if (clientHandshakeToken != ConnectionCodes.FreshSessionStatus && String.IsNullOrEmpty(clientHandshakeToken) != true &&
-                                                                                  IsCookieInDatabase(clientHandshakeToken) == true)
+                                                                                  IsCookieInDatabase(clientHandshakeTokenSubstrings[0], clientHandshakeTokenSubstrings[1]) == true)
             {
                 //If signature is correct, gets user data from database to pass into the login service
-
-                string[] clientHandshakeTokenSubstrings = clientHandshakeToken.Split(new string[2] { "id=", "confirmation=" }, 2, StringSplitOptions.RemoveEmptyEntries);
+                
                 string[] userData = GetUserData(clientHandshakeTokenSubstrings[0]);
 
                 if (userData.Length > 1 && userData[0] != ConnectionCodes.NotFoundError)
@@ -460,49 +498,32 @@ namespace ChatBubble
             connectedClientsBlockingCollection.TryAdd(connectedClientsBlockingCollection.Count + 1, "ip=" + pendingClientSocket.RemoteEndPoint.ToString());
             ServersideRequestReceiver(pendingClientSocket);
         }
+
         /// <summary>
         /// Serverside method.
         /// Compares client's cookie with live sessions database to confirm identity.
         /// </summary>
-        /// <param name="cookieContent">Contents of the comparable cookie.</param>
-        /// <returns></returns>
-        static bool IsCookieInDatabase(string cookieContent)
+        /// <param name="id">User ID</param>
+        /// <param name="confirmation">User cookie</param>
+        /// <returns>True if session matches server database, otherwise false.</returns>
+        static bool IsCookieInDatabase(string id, string confirmation)
         {
-            string[] clientHandshakeTokenSplitStrings = new string[2] { "id=", "confirmation=" };
-
-            string[] clientHandshakeTokenSubtrings = cookieContent.Split(clientHandshakeTokenSplitStrings, StringSplitOptions.RemoveEmptyEntries);
-            //For clientHandshakeTokenSubstrings, index 0 is id, index 1 is confirmation hash
-
             //For sessionContentSplitstrings, index 0 is hash, index 1 is ip
 
-            FileIOStreamer fileIO = new FileIOStreamer();
             string[] activeUserSessions;
-            activeUserSessions = fileIO.GetDirectoryFiles(FileIOStreamer.defaultActiveUsersDirectory, false, false);
+            activeUserSessions = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultActiveUsersDirectory, false, false);
 
-            if (Array.Exists(activeUserSessions, pendingUser => pendingUser == "id=" + clientHandshakeTokenSubtrings[0]))
+            if (Array.Exists(activeUserSessions, pendingUser => pendingUser == "id=" + id))
             {
-                string sessionHash = fileIO.ReadFromFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + clientHandshakeTokenSubtrings[0] +
+                string sessionHash = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + id +
                                                       ".txt");
 
-                if (sessionHash == clientHandshakeTokenSubtrings[1])
+                if (sessionHash == confirmation)
                 {
                     return (true);
                 }
             }
             return (false);
-        }
-
-        static bool IsSignatureValid(string request)
-        {
-            if(request.Length < ConnectionCodes.DefaultFlagLength)
-            {
-                return false;
-            }
-
-            string signature = request.Substring(0, ConnectionCodes.DefaultFlagLength);
-
-            if (signature == ConnectionCodes.ConnectionSignature) return true;
-            return false;
         }
 
         /// <summary>
@@ -516,7 +537,6 @@ namespace ChatBubble
         /// <returns></returns>
         static string[] GetUserData(string searchParameter, bool fastSearch = false)
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
 
             string[] registeredUserFilesSplitStrings = new string[15]
@@ -534,7 +554,7 @@ namespace ChatBubble
                 "regdate=",                     //[11]
             };
 
-            string[] registeredUserFiles = fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false);
+            string[] registeredUserFiles = FileIOStreamer.GetDirectoryFiles(defaultUsersDirectory, false, false);
             try
             {
                 foreach (string registeredUserFile in registeredUserFiles)
@@ -550,11 +570,11 @@ namespace ChatBubble
                         string fileEntries;
                         if (fastSearch == true)
                         {
-                            fileEntries = fileIO.ReadFromFile(defaultUsersDirectory + registeredUserFile + ".txt", "", "password=");
+                            fileEntries = FileIOStreamer.ReadFromFile(defaultUsersDirectory + registeredUserFile + ".txt", "", "password=");
                         }
                         else
                         {
-                            fileEntries = fileIO.ReadFromFile(defaultUsersDirectory + registeredUserFile + ".txt");
+                            fileEntries = FileIOStreamer.ReadFromFile(defaultUsersDirectory + registeredUserFile + ".txt");
                         }
 
                         string[] fileEntriesSubstrings
@@ -588,11 +608,10 @@ namespace ChatBubble
         /// <returns></returns>
         static int GetMaxUserID()
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
 
             string[] registeredUserFilesSplitStrings = new string[3] { "name=", "login=", "password=" };
-            string[] registeredUserFiles = fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false);
+            string[] registeredUserFiles = FileIOStreamer.GetDirectoryFiles(defaultUsersDirectory, false, false);
 
             int maxUserID = 0;
 
@@ -680,7 +699,7 @@ namespace ChatBubble
 
                     if (clientRequestRaw.Length >= ConnectionCodes.DefaultFlagLength*2)
                     {
-                        if(!IsSignatureValid(clientRequestRaw))
+                        if(!ConnectionCodes.IsSignatureValid(clientRequestRaw))
                         {
                             FileIOStreamer.LogWriter("Invalid connection signature detected. Disconnecting " + pendingClientSocket.RemoteEndPoint.ToString() + ".");
                             streamBytes = us_US.GetBytes(ConnectionCodes.InvalidRequest);
@@ -803,9 +822,8 @@ namespace ChatBubble
 
             if (userData[0] == ConnectionCodes.NotFoundError)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
                 int maxID = GetMaxUserID();
-                fileIO.WriteToFile(defaultUsersDirectory + (maxID + 1).ToString() + "login=" + clientRequestSubstrings[1]
+                FileIOStreamer.WriteToFile(defaultUsersDirectory + (maxID + 1).ToString() + "login=" + clientRequestSubstrings[1]
                 + ".txt",
                 "name=" + clientRequestSubstrings[0] +
                 "\npassword=" + clientRequestSubstrings[2] +
@@ -819,7 +837,7 @@ namespace ChatBubble
                 "\nfriends==null\n==friends" +
                 "\npfriends==null\n==pfriends" +
                 "\nblacklist==null\n==blacklist" +
-                "\nregdateutc=" + dateTime.ToUniversalTime().ToString(), true);
+                "\nregdateutc=" + dateTime.ToUniversalTime().ToString(CultureInfo.InvariantCulture), true);
 
                 FileIOStreamer.LogWriter("New user id=" + maxID + "signed up.");
                 return (ConnectionCodes.SignUpSuccess);
@@ -843,13 +861,12 @@ namespace ChatBubble
         static string ServerGetUserSummaryService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "reqid=" };
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation [2] = ID of requested user
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -885,13 +902,12 @@ namespace ChatBubble
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "newsummary=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation [2] = new summary
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -910,7 +926,7 @@ namespace ChatBubble
 
             if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && userData[6].Length > 0)
             {
-                fileIO.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "summary==", userData[6], true, true);
+                FileIOStreamer.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "summary==", userData[6], true, true);
 
                 if (clientRequestSubstrings[2].Substring(clientRequestSubstrings[2].IndexOf("status=") + 7, clientRequestSubstrings[2].IndexOf("main=") - (clientRequestSubstrings[2].IndexOf("status=") + 7)) == "\n")
                 {
@@ -922,7 +938,7 @@ namespace ChatBubble
                     clientRequestSubstrings[2] = clientRequestSubstrings[2].Insert(clientRequestSubstrings[2].IndexOf("main=") + 5, "null");
                 }
 
-                fileIO.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", clientRequestSubstrings[2], false, "summary==");
+                FileIOStreamer.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", clientRequestSubstrings[2], false, "summary==");
                 return (ConnectionCodes.DescEditSuccess);
             }
             else
@@ -946,9 +962,7 @@ namespace ChatBubble
 
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
 
-            FileIOStreamer fileIO = new FileIOStreamer();
-
-            List<string> registeredUsersList = new List<string>(fileIO.GetDirectoryFiles(defaultUsersDirectory, false, false));
+            List<string> registeredUsersList = new List<string>(FileIOStreamer.GetDirectoryFiles(defaultUsersDirectory, false, false));
             List<string[]> registeredUsersData = new List<string[]>();
             List<string> matchingUsersData = new List<string>();
 
@@ -998,13 +1012,12 @@ namespace ChatBubble
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "addid=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation [2] = prospective friend ID
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1024,7 +1037,7 @@ namespace ChatBubble
                     }
                 }
 
-                fileIO.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "\nfid=" + clientRequestSubstrings[2] + "=", true, "friends==");
+                FileIOStreamer.WriteToFile(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "\nfid=" + clientRequestSubstrings[2] + "=", true, "friends==");
                 return (ConnectionCodes.FriendAddSuccess);
             }
             else
@@ -1046,7 +1059,7 @@ namespace ChatBubble
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1092,13 +1105,12 @@ namespace ChatBubble
         {
             string[] clientRequestSplitStrings = new string[3] { "id=", "confirmation=", "fid=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] fid=id
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1107,7 +1119,7 @@ namespace ChatBubble
 
             if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError && clientRequestSubstrings.Length > 2 && clientRequestSubstrings[2] != "")
             {
-                fileIO.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "friends==", "\nfid=" + clientRequestSubstrings[2] + "=");
+                FileIOStreamer.RemoveFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "friends==", "\nfid=" + clientRequestSubstrings[2] + "=");
                 return (ConnectionCodes.FriendRemSuccess);
             }
             else
@@ -1127,18 +1139,17 @@ namespace ChatBubble
             string[] clientRequestSplitStrings = new string[2] { "id=", "confirmation=" };
             string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory; //TEMPORARY
             string[] messageHandleSplitstrings = new string[3] { "msgid=", "sender=", "rcpnt=" };
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
 
-            string[] allPendingMessages = fileIO.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false);
+            string[] allPendingMessages = FileIOStreamer.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false);
             string serverReplyString = "";
 
             foreach (string pendingMessage in allPendingMessages)
@@ -1148,14 +1159,14 @@ namespace ChatBubble
 
                 if (pendingMessageSubstrings[2] == clientRequestSubstrings[0])
                 {
-                    string messageContent = fileIO.ReadFromFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
+                    string messageContent = FileIOStreamer.ReadFromFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
                     string[] messageContentSubstrings = messageContent.Split(new string[] { "time=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
                     //[0] - message time, [1] - message content
 
                     serverReplyString += "msg=" + "sender=" + pendingMessageSubstrings[1] + "time=" + messageContentSubstrings[0] +
                         "message=" + messageContentSubstrings[1];
 
-                    fileIO.RemoveFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
+                    FileIOStreamer.RemoveFile(defaultPendingMessagesDirectory + pendingMessage + ".txt");
                 }
             }
 
@@ -1169,18 +1180,28 @@ namespace ChatBubble
             }
         }
 
+        /// <summary>
+        /// Receives message sender, recepient and content, formulates it into a message and loades it into pending messages database.
+        /// </summary>
+        /// <param name="sender">Message sender</param>
+        /// <param name="recepient">Message receipient</param>
+        /// <param name="content">Message content</param>
         static void ServerMakeMessagePending(string sender, string recepient, string content)
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
             string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory;
             DateTime currentServerTime = DateTime.Now.ToUniversalTime();
 
-            int chatID = fileIO.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false).Length + 1;
+            int chatID = FileIOStreamer.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false).Length + 1;
 
-            fileIO.WriteToFile(defaultPendingMessagesDirectory + "chatid=" + chatID + "sender=" + sender + "rcpnt=" + recepient + ".txt",
+            FileIOStreamer.WriteToFile(defaultPendingMessagesDirectory + "chatid=" + chatID + "sender=" + sender + "rcpnt=" + recepient + ".txt",
                 "time=" + currentServerTime.ToString("dddd, dd MMMM yyyy HH: mm:ss") + "\ncontent=" + content);
         }
 
+        /// <summary>
+        /// Passes message from sender to server and attempts to notify the receipient of a new message.
+        /// </summary>
+        /// <param name="clientRequest"></param>
+        /// <returns></returns>
         static string ServerPassMessageService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "rcpnt=", "content=" };
@@ -1189,7 +1210,7 @@ namespace ChatBubble
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] = recepient id, [3] = message content
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1227,17 +1248,21 @@ namespace ChatBubble
             return (ConnectionCodes.MsgSendSuccess);
         }
 
+        /// <summary>
+        /// Manages client password change requests.
+        /// </summary>
+        /// <param name="clientRequest"></param>
+        /// <returns></returns>
         public static string ServerChangePasswordService(string clientRequest)
         {          
             string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "oldpass=", "newpass=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] = old password, [3] = new password
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1248,7 +1273,7 @@ namespace ChatBubble
             {
                 if (userData[3] == clientRequestSubstrings[2])
                 {
-                    fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "password=", "", clientRequestSubstrings[3], false, true);
+                    FileIOStreamer.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "password=", "", clientRequestSubstrings[3], false, true);
 
                     return (ConnectionCodes.PswdChgSuccess);
                 }
@@ -1263,17 +1288,21 @@ namespace ChatBubble
             }
         }
 
+        /// <summary>
+        /// Manages client name change requests.
+        /// </summary>
+        /// <param name="clientRequest"></param>
+        /// <returns></returns>
         public static string ServerChangeNameService(string clientRequest)
         {
             string[] clientRequestSplitStrings = new string[] { "id=", "confirmation=", "newname=" };
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory;
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             string[] clientRequestSubstrings = clientRequest.Split(clientRequestSplitStrings, StringSplitOptions.RemoveEmptyEntries);
             //For clientRequestSubstrings, client [0] = client ID, [1] = cookie confirmation, [2] = new name
 
             //Ensures user authenticity
-            if (IsCookieInDatabase("id=" + clientRequestSubstrings[0] + "confirmation=" + clientRequestSubstrings[1]) != true)
+            if (IsCookieInDatabase(clientRequestSubstrings[0], clientRequestSubstrings[1]) != true)
             {
                 return (ConnectionCodes.AuthFailure);
             }
@@ -1282,7 +1311,7 @@ namespace ChatBubble
 
             if (userData[0] != ConnectionCodes.NotFoundError && userData[0] != ConnectionCodes.DatabaseError)
             {
-                fileIO.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "name=", "", clientRequestSubstrings[2], false, true);
+                FileIOStreamer.SwapFileEntry(defaultUsersDirectory + userData[0] + "login=" + userData[1] + ".txt", "name=", "", clientRequestSubstrings[2], false, true);
 
                 return (ConnectionCodes.NmChgSuccess);
             }
@@ -1301,14 +1330,12 @@ namespace ChatBubble
         /// <param name="hashSeed">Hash generator seed.</param>
         static void ClientSessionHandler(string userID, int hashSeed)
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
-
             //PERSISTENCE COOKIE HASH GENERATOR WILL BE HERE
             string hashString = hashSeed.ToString();
 
             //PERSONAL HASH WOULD BE WRITTEN IN THE USER SESSION FILE BELOW
-            fileIO.ClearFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + userID + ".txt");
-            fileIO.WriteToFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + userID + ".txt", hashString, true);
+            FileIOStreamer.ClearFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + userID + ".txt");
+            FileIOStreamer.WriteToFile(FileIOStreamer.defaultActiveUsersDirectory + "id=" + userID + ".txt", hashString, true);
 
             //THIS METHOD WOULD RETURN HASH IN THE FUTURE
         }
@@ -1321,8 +1348,6 @@ namespace ChatBubble
         /// </summary>
         public static void SessionTimeOutCheck()
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
-
             //Sets live session file timeout span here V
             TimeSpan timeOutSpan = new TimeSpan(1, 0, 0);
 
@@ -1331,12 +1356,16 @@ namespace ChatBubble
                 string[] activeUsersArray = new string[loggedInUsersBlockingCollection.Count];
                 loggedInUsersBlockingCollection.Values.CopyTo(activeUsersArray, 0);
 
-                fileIO.FileTimeOutComparator(FileIOStreamer.defaultActiveUsersDirectory, activeUsersArray, timeOutSpan);
+                FileIOStreamer.FileTimeOutComparator(FileIOStreamer.defaultActiveUsersDirectory, activeUsersArray, timeOutSpan);
 
                 Thread.Sleep(1000);
             }
         }
 
+        /// <summary>
+        /// Updates currently connected and logged in users collection.
+        /// </summary>
+        /// <param name="userIP"></param>
         static void ServerConnectionCloseDictionaryUpdater(string userIP)
         {
             foreach (var connectedClient in connectedClientsBlockingCollection)
@@ -1362,9 +1391,8 @@ namespace ChatBubble
         /// <returns></returns>
         public static string InitialHandshakeClient()
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
             string handshakeReplyString;
-            string localCookieContents = fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+            string localCookieContents = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
 
             if (String.IsNullOrEmpty(localCookieContents) == true)
             {
@@ -1478,17 +1506,16 @@ namespace ChatBubble
         /// This method is used to send an arbitrary, user-defined request with it's own flag and request body to the server.
         /// </summary>
         /// <param name="flag">Request type flag.</param>
-        /// <param name="request">Request body.</param>
+        /// <param name="request">Request arguments.</param>
         /// <returns></returns>
         public static string ClientRequestArbitrary(string flag, string request, bool waitReceive = true, bool sendConfirmation = false, bool sendConnectionSignature = true)
         {
             byte[] streamBytes;
             string localCookieContents = "";
 
-            if (sendConfirmation == true)
+            if (sendConfirmation)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
-                localCookieContents= fileIO.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+                localCookieContents = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
             }
 
             string clientRequestRaw = flag + localCookieContents + request;
@@ -1542,14 +1569,17 @@ namespace ChatBubble
             return (result);
         }
 
+        /// <summary>
+        /// Sends a request to pass a new message to the server, and records message on the client PC.
+        /// </summary>
+        /// <param name="chatID"></param>
+        /// <param name="content"></param>
         public static void ClientSendMessage(string chatID, string content)
         {
-            FileIOStreamer fileIO = new FileIOStreamer();
-
             NetComponents.ClientRequestArbitrary(ConnectionCodes.SendNewMessageRequest, "rcpnt=" + chatID + "content=" + content, true, true);
 
-            fileIO.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + chatID + ".txt",
-                    "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss") + "\nstatus=sent" +
+            FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + chatID + ".txt",
+                    "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss", CultureInfo.InvariantCulture) + "\nstatus=sent" +
                     "\ncontent=" + content + "\n==message\n", false);
         }
 
@@ -1567,7 +1597,6 @@ namespace ChatBubble
 
             string[] pendingMessages = pendingMessagesString.Split(new string[] { "msg=" }, StringSplitOptions.RemoveEmptyEntries);
             string[] messageSplitstrings = new string[] { "sender=", "time=", "message=" };
-            FileIOStreamer fileIO = new FileIOStreamer();
 
             foreach(string message in pendingMessages)
             {
@@ -1575,7 +1604,7 @@ namespace ChatBubble
                 //[0] - senderid, [1] - message time, [2] - message contents
 
                 //ChatID is same as senderID
-                fileIO.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + messageSubstrings[0] + ".txt",
+                FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + messageSubstrings[0] + ".txt",
                     "message==" + "\ntime=" + messageSubstrings[1] + "\nstatus=unread" + 
                     "\ncontent=" + messageSubstrings[2] + "\n==message\n", false);
             }
@@ -1586,6 +1615,9 @@ namespace ChatBubble
             
         }
 
+        /// <summary>
+        /// Listens for UDP server calls.
+        /// </summary>
         public static void ClientServerFlagListener()
         {
             byte[] streamBytes;
@@ -1730,6 +1762,9 @@ namespace ChatBubble
             }
         }
 
+        /// <summary>
+        /// Closes main socket and recreates a new one.
+        /// </summary>
         public static void DisconnectMainSocket()
         {
             mainSocket.Shutdown(SocketShutdown.Both);
