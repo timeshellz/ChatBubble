@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Security;
+using System.Runtime.InteropServices;
 using ChatBubble;
 
 namespace ChatBubbleClientWPF
@@ -68,10 +69,10 @@ namespace ChatBubbleClientWPF
             return (false);
         }
 
-        public void AttemptLogin(string username, SecureString password)
+        public void AttemptLogin(string username, SecureString securePassword)
         {
-            SuccessStatus = SuccessStatuses.LoginSuccess;
-            return;
+            string password = ConvertSecureString(securePassword);
+
             if (ContainsRestrictedSymbols(username))
             {
                 SuccessStatus = SuccessStatuses.IncorrectUsernameFailure;
@@ -89,7 +90,7 @@ namespace ChatBubbleClientWPF
             }
 
             string serverReply;
-            serverReply = NetComponents.LogPasRequestClientside(username, password.ToString());
+            serverReply = NetComponents.LogPasRequestClientside(username, password);
 
             serverReply = serverReply.Substring(0, serverReply.IndexOf('\0'));
             serverReply = LoginReplyHandler(serverReply);
@@ -146,10 +147,10 @@ namespace ChatBubbleClientWPF
         }
 
 
-        public void AttemptSignup(string name, string username, SecureString password, SecureString repeatPassword)
+        public void AttemptSignup(string name, string username, SecureString securePassword, SecureString secureRepeatPassword)
         {
-            SuccessStatus = SuccessStatuses.UsernameExistsFailure;
-            return;
+            string password = ConvertSecureString(securePassword);
+            string repeatPassword = ConvertSecureString(secureRepeatPassword);
 
             if (ContainsRestrictedSymbols(name))
             {
@@ -166,7 +167,7 @@ namespace ChatBubbleClientWPF
                 SuccessStatus = SuccessStatuses.IncorrectPasswordFailure;
                 return;
             }
-            if (password.ToString() != repeatPassword.ToString())
+            if (password != repeatPassword)
             {
                 SuccessStatus = SuccessStatuses.PasswordMismatchFailure;
                 return;
@@ -177,7 +178,7 @@ namespace ChatBubbleClientWPF
                 return;
             }
 
-            string serverReply = NetComponents.SignUpRequestClientside(name, username, password.ToString());
+            string serverReply = NetComponents.SignUpRequestClientside(name, username, password);
             string[] serverReplySplitStrings = new string[2] { "id=", "hash=" };
 
             serverReply = serverReply.Substring(0, serverReply.IndexOf('\0'));
@@ -206,6 +207,20 @@ namespace ChatBubbleClientWPF
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private string ConvertSecureString(SecureString sString)
+        {
+            IntPtr valuePtr = IntPtr.Zero;
+            try
+            {
+                valuePtr = Marshal.SecureStringToGlobalAllocUnicode(sString);
+                return Marshal.PtrToStringUni(valuePtr);
+            }
+            finally
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
+            }
         }
     }
 }

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChatBubbleClientWPF"
         xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
-        mc:Ignorable="d" Loaded="Window_Loaded"
+        mc:Ignorable="d" Loaded="Window_Loaded" ContentRendered="Window_ContentRendered"
         Title="LoginWindow" Height="470" Width="880" WindowStyle="None" Background="{StaticResource PrimaryColorBrush}" ResizeMode="NoResize" MouseDown="Window_MouseDown">
     <Grid VerticalAlignment="Stretch" HorizontalAlignment="Center" >
         <Grid.RowDefinitions>

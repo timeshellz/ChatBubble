@@ -82,7 +82,7 @@ namespace ChatBubbleClientWPF
             {
                 string handshakeResult = NetComponents.InitialHandshakeClient();
 
-                if (attemptNumber >= 100 || handshakeResult == NetComponents.ConnectionCodes.ConnectionFailure)
+                if (attemptNumber >= 50 || handshakeResult == NetComponents.ConnectionCodes.ConnectionFailure)
                 {
                     ConnectionStatus = ConnectionStatuses.ConnectionFailed;
 

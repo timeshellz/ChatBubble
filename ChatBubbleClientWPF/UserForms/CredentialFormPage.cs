@@ -27,8 +27,9 @@ namespace ChatBubbleClientWPF.UserForms
 
         protected string defaultStatusPrompt;
 
-        protected virtual void OnFormChangePrompted(UserFormEventArgs eventArgs)
+        public void OnFormChangePrompted(UserFormEventArgs eventArgs)
         {
+            Unsubscribe();
             FormChangePrompted(this, eventArgs);
         }
 
@@ -47,6 +48,23 @@ namespace ChatBubbleClientWPF.UserForms
             if (DataContext is LoginWindowViewModel viewModel)
             {
                 viewModel.ClearFormStatuses();
+            }
+        }
+
+        protected virtual void CredentialFormPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is LoginWindowViewModel viewModel)
+            {
+                viewModel.PropertyChanged += OnViewModelPropertyChanged;
+                viewModel.ClearFormStatuses();
+            }
+        }
+
+        public void Unsubscribe()
+        {
+            if (DataContext is LoginWindowViewModel viewModel)
+            {
+                viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
         }
     }

@@ -26,18 +26,21 @@ namespace ChatBubbleClientWPF
 
         string nameForm = String.Empty;
         string usernameForm = String.Empty;
-        SecureString passwordForm = new SecureString();
-        SecureString passwordRepeatForm = new SecureString();
+        public SecureString PasswordForm { private get; set; }
+        public SecureString RepeatPasswordForm { private get; set; }
 
         string statusPrompt;
 
-        ErrorStatus[] formCorrectnessStatuses = new ErrorStatus[4]
+        private ErrorStatus[] formCorrectnessStatuses = new ErrorStatus[4]
         {
             ErrorStatus.Neutral,
             ErrorStatus.Neutral,
             ErrorStatus.Neutral,
             ErrorStatus.Neutral,
         };
+
+        private ErrorStatus loginStatus;
+        private ErrorStatus signUpStatus;
 
         ICommand loginCommand;
         ICommand signupCommand;
@@ -85,32 +88,32 @@ namespace ChatBubbleClientWPF
             }
         }
 
-        public SecureString PasswordForm
-        {
-            get { return passwordForm; }
-            set
-            {
-                passwordForm = value;
-                //OnPropertyChanged();
-            }
-        }
-
-        public SecureString RepeatPasswordForm
-        {
-            get { return passwordRepeatForm; }
-            set
-            {
-                passwordRepeatForm = value;
-                //OnPropertyChanged();
-            }
-        }
-
         public string StatusPrompt
         {
             get { return statusPrompt; }
             set
             {
                 statusPrompt = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ErrorStatus LoginStatus
+        {
+            get { return loginStatus; }
+            set
+            {
+                loginStatus = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ErrorStatus SignUpStatus
+        {
+            get { return signUpStatus; }
+            set
+            {
+                signUpStatus = value;
                 OnPropertyChanged();
             }
         }
@@ -171,6 +174,7 @@ namespace ChatBubbleClientWPF
                         ErrorStatus.Success,
                     };
                     StatusPrompt = "Success!";
+                    LoginStatus = ErrorStatus.Success;
                     break;
                 case ClientFrontDoor.SuccessStatuses.SignupSuccess:
                     FormCorrectnessStatuses = new ErrorStatus[4]
@@ -181,6 +185,7 @@ namespace ChatBubbleClientWPF
                         ErrorStatus.Success,
                     };
                     StatusPrompt = "Success!";
+                    SignUpStatus = ErrorStatus.Success;
                     break;
                 case ClientFrontDoor.SuccessStatuses.GenericFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]

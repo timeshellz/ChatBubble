@@ -18,6 +18,7 @@ namespace ChatBubbleClientWPF
         ClientStartup clientStartupModel;
 
         public event EventHandler<ConnectionEventArgs> ConnectionEstablished;
+        public event EventHandler<ConnectionEventArgs> ConnectionFailed;
 
         string connectionStatusString = String.Empty;
 
@@ -69,6 +70,7 @@ namespace ChatBubbleClientWPF
             if(status == ClientStartup.ConnectionStatuses.ConnectionFailed)
             {
                 ConnectionStatusString = "Connection failed. Please try again later.";
+                OnConnectionFailed(this, new ConnectionEventArgs());
             }
         }
 
@@ -80,8 +82,8 @@ namespace ChatBubbleClientWPF
                 ConnectionStatusString = "Connected!";
                 Thread.Sleep(1000);
 
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, 
-                    new Action(() => OnConnectionEstablished(this, new ConnectionEventArgs() { ConnectionType = ConnectionEventArgs.ConnectionTypes.Expired })));
+                OnConnectionEstablished(this, new ConnectionEventArgs() { ConnectionType = ConnectionEventArgs.ConnectionTypes.Expired });
+
             }
             if(conType == ClientStartup.ConnectionTypes.Fresh)
             {
@@ -92,7 +94,14 @@ namespace ChatBubbleClientWPF
 
         void OnConnectionEstablished(object sender, ConnectionEventArgs e)
         {
-            ConnectionEstablished?.Invoke(sender, e);
+            if (ConnectionEstablished != null)
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionEstablished, sender, e);
+        }
+
+        void OnConnectionFailed(object sender, ConnectionEventArgs e)
+        {
+            if (ConnectionEstablished != null)
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionFailed, sender, e);
         }
     }
 

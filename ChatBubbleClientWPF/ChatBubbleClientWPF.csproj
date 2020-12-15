@@ -61,6 +61,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\ClientActivities.cs" />
+    <Compile Include="Models\MainTabModel.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="Models\ClientFrontDoor.cs" />
     <Compile Include="Models\ClientStartup.cs" />
@@ -237,7 +239,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Animations\loadingScreen.gif" />
+    <Resource Include="Animations\LoadingAnimation.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Animations\ErrorAnimation.gif" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -28,26 +28,12 @@ namespace ChatBubbleClientWPF.UserForms
             defaultStatusPrompt = "Sign up";
         }
 
-        private void CredentialFormPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is LoginWindowViewModel viewModel)
-            {
-                viewModel.CredentialsRequested += PassSecureData;
-                viewModel.PropertyChanged += OnViewModelPropertyChanged;
-                viewModel.ClearFormStatuses();
-            }            
-        }
-
+        
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            if(DataContext is LoginWindowViewModel viewModel)
-            {
-                viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-            }
-
             OnFormChangePrompted(new UserFormEventArgs() { PromptedFormType = typeof(LoginForm), CurrentFormType = typeof(SignUpForm)});
         }
-
+    
         protected override void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (DataContext is LoginWindowViewModel viewModel)
@@ -75,8 +61,14 @@ namespace ChatBubbleClientWPF.UserForms
                 {
                     if (viewModel.StatusPrompt == String.Empty)
                         StatusLabel.Content = defaultStatusPrompt;
-                }
+                }                
             }
+        }
+
+        protected override void CredentialFormPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is LoginWindowViewModel viewModel) viewModel.CredentialsRequested += PassSecureData;
+            base.CredentialFormPage_Loaded(sender, e);
         }
 
         public void PassSecureData(object sender, UserFormEventArgs e)
