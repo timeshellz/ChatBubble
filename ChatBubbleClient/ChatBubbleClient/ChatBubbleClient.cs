@@ -1876,9 +1876,7 @@ namespace ChatBubble.Client
 
                     void GetCurrentDialogues(object sender, EventArgs eventArgs)
                     {
-                        FileIOStreamer fileIO = new FileIOStreamer();
-
-                        string[] dialogueFilenameArray = fileIO.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
+                        string[] dialogueFilenameArray = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
 
                         string[] senderDataSplitstrings = new string[] {"id=", "login=", "name=",
                             "status=", "main=", "bubscore=" };
@@ -1887,7 +1885,7 @@ namespace ChatBubble.Client
                         {
                             string senderID = dialogueFilenameArray[i].Substring(dialogueFilenameArray[i].IndexOf('=') + 1);
                             string senderData = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + senderID, true, true);
-                            string dialogueContent = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
+                            string dialogueContent = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
 
                             if (!String.IsNullOrEmpty(dialogueContent))
                             {
@@ -1998,18 +1996,17 @@ namespace ChatBubble.Client
 
                     void RemoveDialogue(object sender, EventArgs eventArgs)
                     {
-                        FileIOStreamer fileIO = new FileIOStreamer();
                         Button button = (Button)sender;
 
                         string currentChatID = button.Parent.Name.Substring(button.Parent.Name.IndexOf('_') + 1);
 
-                        string[] dialogueFilenameArray = fileIO.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
+                        string[] dialogueFilenameArray = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
 
                         for (int i = 0; i < dialogueFilenameArray.Length; i++)
                         {
                             if (dialogueFilenameArray[i] == "chatid=" + currentChatID)
                             {
-                                fileIO.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
+                                FileIOStreamer.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
                                 currentDialoguesList.RemoveAt(i);
                             }
                         }
@@ -2200,9 +2197,7 @@ namespace ChatBubble.Client
 
                     public void GetMessages(object sender, EventArgs eventArgs)
                     {
-                        FileIOStreamer fileIO = new FileIOStreamer();
-
-                        string dialogueData = fileIO.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt");
+                        string dialogueData = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt");
                         string[] dialogueMessages = dialogueData.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
 
                         string[] messageSplitstrings = new string[] { "time=", "content=", "status=" };
@@ -2496,9 +2491,7 @@ namespace ChatBubble.Client
                             originalTimer.Stop();
                             originalTimer.Dispose();
 
-                            FileIOStreamer fileIO = new FileIOStreamer();
-
-                            fileIO.SwapFileEntry(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt",
+                            FileIOStreamer.SwapFileEntry(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt",
                                 UniversalMessageTime.ToString("dddd, dd MMMM yyyy HH: mm:ss") + Environment.NewLine + "status=", "unread", "read", false, true);
 
                             MessageType = MessageType.Read;
@@ -3148,7 +3141,7 @@ namespace ChatBubble.Client
 
                         //TO DO: Move this logic into another thread
 
-                        NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.AddFriendRequest, "addid=" + requestID, true, true);
+                        NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.AddFriendRequest, "addid=" + requestID, false, true);
                     }
                 }
             }
@@ -3866,8 +3859,7 @@ namespace ChatBubble.Client
 
                     NetComponents.BreakBind(true);
 
-                    FileIOStreamer fileIO = new FileIOStreamer();
-                    fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_invalid", true);
+                    FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_invalid", true);
 
                     Form1 currentForm = (Form1)Application.OpenForms[0];
                     MainPage mainPage = currentForm.Controls.OfType<MainPage>().First();
@@ -4271,10 +4263,8 @@ namespace ChatBubble.Client
                     FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
 
                     //Create a cookie in local client directory to keep user logged in
-                    FileIOStreamer fileIO = new FileIOStreamer();
-
-                    fileIO.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
-                    fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
+                    FileIOStreamer.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+                    FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
                         serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], true);
 
                     MainPage mainPage = new MainPage();

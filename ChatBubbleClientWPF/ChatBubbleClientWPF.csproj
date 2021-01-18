@@ -61,16 +61,47 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\FriendTile.xaml.cs">
+      <DependentUpon>FriendTile.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\DialoguePreviewPanel.xaml.cs">
+      <DependentUpon>DialoguePreviewPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\MessageBox.xaml.cs">
+      <DependentUpon>MessageBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\MessageLine.xaml.cs">
+      <DependentUpon>MessageLine.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\SearchResultPanel.xaml.cs">
+      <DependentUpon>SearchResultPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\UserPictureTile.xaml.cs">
+      <DependentUpon>UserPictureTile.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Models\ClientActivities.cs" />
-    <Compile Include="Models\MainTabModel.cs" />
+    <Compile Include="Models\CurrentUser.cs" />
+    <Compile Include="Models\Dialogue.cs" />
+    <Compile Include="Models\Message.cs" />
+    <Compile Include="Models\User.cs" />
+    <Compile Include="Tabs\ActiveDialogueTab.xaml.cs">
+      <DependentUpon>ActiveDialogueTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utility\ConnectionEventArgs.cs" />
+    <Compile Include="Utility\InverseBooleanConverter.cs" />
+    <Compile Include="Utility\MessageStatusToStyleConverter.cs" />
+    <Compile Include="Utility\MouseOverTransparencyConverter.cs" />
+    <Compile Include="Utility\PageFactory.cs" />
+    <Compile Include="Utility\ViewModelResolver.cs" />
+    <Compile Include="Utility\ReverseBoolToVisibilityConverter.cs" />
+    <Compile Include="Utility\BoolToVisibilityConverter.cs" />
+    <Compile Include="Utility\WindowFactory.cs" />
+    <Compile Include="ViewModels\ActiveDialogueViewModel.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="Models\ClientFrontDoor.cs" />
     <Compile Include="Models\ClientStartup.cs" />
-    <Compile Include="Controls\MouseOverBackgroundConverter.cs" />
+    <Compile Include="Utility\MouseOverBackgroundConverter.cs" />
     <Compile Include="Controls\PasswordWatermarkManager.cs" />
-    <Compile Include="Controls\RoundedButton.xaml.cs">
-      <DependentUpon>RoundedButton.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Controls\RoundedRectanglePasswordBox.xaml.cs">
       <DependentUpon>RoundedRectanglePasswordBox.xaml</DependentUpon>
     </Compile>
@@ -78,6 +109,17 @@
       <DependentUpon>RoundedRectangleTextBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\WatermarkTextBox.cs" />
+    <Compile Include="ViewModels\DialoguePreviewViewModel.cs" />
+    <Compile Include="ViewModels\DialoguesTabViewModel.cs" />
+    <Compile Include="ViewModels\FriendsTabViewModel.cs" />
+    <Compile Include="ViewModels\FriendTileViewModel.cs" />
+    <Compile Include="ViewModels\MainTabViewModel.cs" />
+    <Compile Include="ViewModels\MainWindowViewModel.cs" />
+    <Compile Include="ViewModels\MenuItemViewModel.cs" />
+    <Compile Include="ViewModels\MessageLineViewModel.cs" />
+    <Compile Include="ViewModels\SearchTabViewModel.cs" />
+    <Compile Include="ViewModels\SettingsTabViewModel.cs" />
+    <Compile Include="ViewModels\UserTileViewModel.cs" />
     <Compile Include="Windows\LoadingWindow.xaml.cs">
       <DependentUpon>LoadingWindow.xaml</DependentUpon>
     </Compile>
@@ -108,7 +150,15 @@
     <Compile Include="UserForms\SignUpForm.xaml.cs">
       <DependentUpon>SignUpForm.xaml</DependentUpon>
     </Compile>
-    <Page Include="Controls\RoundedButton.xaml">
+    <Page Include="Controls\FriendTile.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\MessageBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\MessageLine.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -117,6 +167,22 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\RoundedRectangleTextBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\DialoguePreviewPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\SearchResultPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\UserPictureTile.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\ActiveDialogueTab.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -188,6 +254,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <Resource Include="Fonts\Montserrat-Light.ttf" />
+    <Resource Include="Images\chatBubbleLogo.png" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -204,18 +271,18 @@
     <Resource Include="Images\LogoMinWhiteTransparent.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\chatBubbleLogo.png" />
+    <Resource Include="Images\chatBubbleLogoOld.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\bubblesImage.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Buttons\dialoguesButtonIdle.png" />
-    <Resource Include="Buttons\friendsButtonIdle.png" />
-    <Resource Include="Buttons\homeButtonIdle.png" />
-    <Resource Include="Buttons\logOutButtonIdle.png" />
-    <Resource Include="Buttons\searchButtonIdle.png" />
-    <Resource Include="Buttons\settingsButtonIdle.png" />
+    <Resource Include="Buttons\dialoguesButtonIdleOld.png" />
+    <Resource Include="Buttons\friendsButtonIdleOld.png" />
+    <Resource Include="Buttons\homeButtonIdleOld.png" />
+    <Resource Include="Buttons\logOutButtonIdleOld.png" />
+    <Resource Include="Buttons\searchButtonIdleOld.png" />
+    <Resource Include="Buttons\settingsButtonIdleOld.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\searchLogo.png" />
@@ -226,7 +293,6 @@
   <ItemGroup>
     <Resource Include="Images\LogInTransparent.png" />
     <Resource Include="Images\SignUpTransparent.png" />
-    <Resource Include="Images\cbLogoTransparent.png" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj">
@@ -243,6 +309,34 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Animations\ErrorAnimation.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\cbLogoTransparent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="dialoguesButton.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\friendsButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\searchButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\dialoguesButtonIdle.png" />
+    <Resource Include="Buttons\homeButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\settingsButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\logOutButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\crossWhite.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\crossBlue.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ChatBubbleClientWPF.Controls
+namespace ChatBubbleClientWPF.Utility
 {
-    class MouseOverBackgroundConverter : IValueConverter
+    public class MouseOverBackgroundConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {

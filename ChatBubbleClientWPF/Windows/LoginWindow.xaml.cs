@@ -21,25 +21,32 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class LoginWindow : Window
     {
-        LoginWindowViewModel viewModel;
-        Window previousWindow;
+        ViewModels.LoginWindowViewModel viewModel;
 
-        public LoginWindow()
+        public LoginWindow(ViewModels.BaseViewModel viewModel)
         {
             InitializeComponent();
-            viewModel = new LoginWindowViewModel();
-            this.DataContext = viewModel;         
+            this.viewModel = (ViewModels.LoginWindowViewModel)viewModel;
+            this.DataContext = this.viewModel;
+
+            LoadingWindow ancestorWindow = GetLastLoadingWindow();
+            Top = ancestorWindow.Top;
+            Left = ancestorWindow.Left;
         }
 
-        public LoginWindow(Window previousWindow) : this()
+        private LoadingWindow GetLastLoadingWindow()
         {
-            this.previousWindow = previousWindow;
+            if (App.Current.Windows[0] is LoadingWindow loadingWindow)
+                return loadingWindow;
+            else return null;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             CurrentUserForm.Navigate(new UserForms.LoginForm());
+
             viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            viewModel.ViewModelClosing += (o, ev) => Close();
         }
 
         void ChangeCredentialForm(object sender, UserForms.UserFormEventArgs e)
@@ -60,13 +67,9 @@ namespace ChatBubbleClientWPF
 
         private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (DataContext is LoginWindowViewModel viewModel)
+            if (DataContext is ViewModels.LoginWindowViewModel viewModel)
             {
-                if (e.PropertyName == nameof(viewModel.LoginStatus) && viewModel.LoginStatus == LoginWindowViewModel.ErrorStatus.Success)
-                {
-                    OpenMainWindow();
-                }
-                if (e.PropertyName == nameof(viewModel.SignUpStatus) && viewModel.SignUpStatus == LoginWindowViewModel.ErrorStatus.Success)
+                if (e.PropertyName == nameof(viewModel.SignUpStatus) && viewModel.SignUpStatus == ViewModels.LoginWindowViewModel.ErrorStatus.Success)
                 {
                     ((UserForms.CredentialFormPage)CurrentUserForm.Content).OnFormChangePrompted(new UserForms.UserFormEventArgs()
                     { CurrentFormType = typeof(UserForms.SignUpForm), PromptedFormType = typeof(UserForms.LoginForm) });
@@ -74,24 +77,10 @@ namespace ChatBubbleClientWPF
             }
         }
 
-        private void OpenMainWindow()
-        {
-            Window currentWindow = GetWindow(this);
-            MainWindow mainWindow = new MainWindow();
-
-            mainWindow.Show();
-            currentWindow.Close();
-        }
-
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
         }
-
-        private void Window_ContentRendered(object sender, EventArgs e)
-        {
-            if (previousWindow != null) previousWindow.Close();
-        }       
     }
 }

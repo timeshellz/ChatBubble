@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using ChatBubble;
 
-namespace ChatBubbleClientWPF
+namespace ChatBubbleClientWPF.Models
 {
     class ClientStartup : INotifyPropertyChanged
     {
@@ -102,9 +102,9 @@ namespace ChatBubbleClientWPF
                 }
                 else if (handshakeResult.Substring(0, NetComponents.ConnectionCodes.DefaultFlagLength) == NetComponents.ConnectionCodes.LoginSuccess)
                 {
-                    ConnectionStatus = ConnectionStatuses.Connected;
-                    ConnectionType = ConnectionTypes.Fresh;
                     ServerReply = handshakeResult;
+                    ConnectionStatus = ConnectionStatuses.Connected;
+                    ConnectionType = ConnectionTypes.Fresh;                 
                 }
                 else
                 {

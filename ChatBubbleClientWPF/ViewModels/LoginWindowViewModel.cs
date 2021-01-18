@@ -14,7 +14,7 @@ using System.Windows.Input;
 using System.Security;
 using ChatBubble;
 
-namespace ChatBubbleClientWPF
+namespace ChatBubbleClientWPF.ViewModels
 {
     class LoginWindowViewModel : BaseViewModel
     {
@@ -22,7 +22,7 @@ namespace ChatBubbleClientWPF
 
         public event EventHandler<UserForms.UserFormEventArgs> CredentialsRequested;
 
-        ClientFrontDoor clientFrontDoorModel;
+        Models.ClientFrontDoor clientFrontDoorModel;
 
         string nameForm = String.Empty;
         string usernameForm = String.Empty;
@@ -44,6 +44,7 @@ namespace ChatBubbleClientWPF
 
         ICommand loginCommand;
         ICommand signupCommand;
+
         public ICommand LoginCommand
         {
             get
@@ -145,10 +146,14 @@ namespace ChatBubbleClientWPF
             StatusPrompt = String.Empty;
         }
 
-        public LoginWindowViewModel()
+        public LoginWindowViewModel(Utility.IWindowFactory windowFactory)
         {
-            clientFrontDoorModel = new ClientFrontDoor();
+            this.windowFactory = windowFactory;
+
+            clientFrontDoorModel = new Models.ClientFrontDoor();
             clientFrontDoorModel.PropertyChanged += new PropertyChangedEventHandler(OnModelPropertyChanged);
+
+            this.windowFactory.OpenAssociatedWindow(this);
         }
 
         void OnModelPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -161,11 +166,11 @@ namespace ChatBubbleClientWPF
             }
         }
 
-        void HandleStatusChange(ClientFrontDoor.SuccessStatuses status)
+        void HandleStatusChange(Models.ClientFrontDoor.SuccessStatuses status)
         {
             switch(status)
             {
-                case ClientFrontDoor.SuccessStatuses.LoginSuccess:
+                case Models.ClientFrontDoor.SuccessStatuses.LoginSuccess:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Success,
@@ -175,8 +180,11 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Success!";
                     LoginStatus = ErrorStatus.Success;
+
+                    CreateMainViewModel();
+
                     break;
-                case ClientFrontDoor.SuccessStatuses.SignupSuccess:
+                case Models.ClientFrontDoor.SuccessStatuses.SignupSuccess:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Success,
@@ -187,7 +195,7 @@ namespace ChatBubbleClientWPF
                     StatusPrompt = "Success!";
                     SignUpStatus = ErrorStatus.Success;
                     break;
-                case ClientFrontDoor.SuccessStatuses.GenericFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.GenericFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Failure,
@@ -197,7 +205,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Error. Service unavailable.";
                     break;
-                case ClientFrontDoor.SuccessStatuses.IncorrectNameFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.IncorrectNameFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Failure,
@@ -207,7 +215,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Name contains forbidden characters!";
                     break;
-                case ClientFrontDoor.SuccessStatuses.IncorrectUsernameFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.IncorrectUsernameFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Neutral,
@@ -217,7 +225,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Username contains forbidden characters!";
                     break;
-                case ClientFrontDoor.SuccessStatuses.IncorrectPasswordFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.IncorrectPasswordFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Neutral,
@@ -227,7 +235,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Password contains forbidden characters!";
                     break;
-                case ClientFrontDoor.SuccessStatuses.CredentialFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.CredentialFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Neutral,
@@ -237,7 +245,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Wrong username or password!";
                     break;
-                case ClientFrontDoor.SuccessStatuses.PasswordMismatchFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.PasswordMismatchFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Neutral,
@@ -247,7 +255,7 @@ namespace ChatBubbleClientWPF
                     };
                     StatusPrompt = "Passwords don't match!";
                     break;
-                case ClientFrontDoor.SuccessStatuses.UsernameExistsFailure:
+                case Models.ClientFrontDoor.SuccessStatuses.UsernameExistsFailure:
                     FormCorrectnessStatuses = new ErrorStatus[4]
                     {
                         ErrorStatus.Neutral,
@@ -258,6 +266,13 @@ namespace ChatBubbleClientWPF
                     StatusPrompt = "Username already in use.";
                     break;
             }
+        }
+
+        void CreateMainViewModel()
+        {
+            windowFactory.WindowRendered += (o, e) => OnViewModelClosing();
+
+            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), clientFrontDoorModel.LoggedInUserID);
         }
 
         protected void OnCredentialsRequested(object sender, UserForms.UserFormEventArgs e)

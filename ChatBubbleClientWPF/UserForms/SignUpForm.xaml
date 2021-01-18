@@ -28,8 +28,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <controls:RoundedButton x:Name="ReturnButton" Grid.Column="0" Content="Back to Log in" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="ReturnButton_Click"/>
-            <controls:RoundedButton x:Name="SignupButton" Grid.Column="1" Content="Sign up" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}"
+            <Button x:Name="ReturnButton" Grid.Column="0" Content="Back to Log in" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="ReturnButton_Click"/>
+            <Button x:Name="SignupButton" Grid.Column="1" Content="Sign up" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}"
                                     Command="{Binding SignupCommand}"/>
         </Grid>
     </Grid>

@@ -26,8 +26,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <controls:RoundedButton x:Name="SignupButton" Grid.Column="0" Content="Sign up" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="SignupButton_Click" GotFocus="ElementGotFocus"/>
-            <controls:RoundedButton x:Name="LoginButton" Grid.Column="1" Content="Log in" Foreground="{StaticResource PrimaryColorBrush}"
+            <Button x:Name="SignupButton" Grid.Column="0" Content="Sign up" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="SignupButton_Click" GotFocus="ElementGotFocus"/>
+            <Button x:Name="LoginButton" Grid.Column="1" Content="Log in" Foreground="{StaticResource PrimaryColorBrush}"
                                     Command="{Binding LoginCommand}" GotFocus="ElementGotFocus"/>
         </Grid>
     </Grid>

@@ -13,7 +13,7 @@ using System.Security;
 using System.Runtime.InteropServices;
 using ChatBubble;
 
-namespace ChatBubbleClientWPF
+namespace ChatBubbleClientWPF.Models
 {
     class ClientFrontDoor : INotifyPropertyChanged
     {
@@ -23,6 +23,9 @@ namespace ChatBubbleClientWPF
             IncorrectNameFailure, IncorrectUsernameFailure, IncorrectPasswordFailure, PasswordMismatchFailure,
             UsernameExistsFailure }
 
+        string loggedInUserID;
+        SuccessStatuses successStatus;
+
         public SuccessStatuses SuccessStatus
         {
             get { return successStatus; }
@@ -31,16 +34,19 @@ namespace ChatBubbleClientWPF
                 successStatus = value;
                 OnPropertyChanged();
             }
-        }
+        }      
 
-        SuccessStatuses successStatus;
+        public string LoggedInUserID
+        {
+            get { return loggedInUserID; }
+            set
+            {
+                loggedInUserID = value;
+                OnPropertyChanged();
+            }
+        }
 
         char[] restrictedSymbols = new char[1] { '=', };
-
-        public ClientFrontDoor()
-        {
-
-        }
 
         bool ContainsRestrictedSymbols(string text)
         {
@@ -118,14 +124,14 @@ namespace ChatBubbleClientWPF
 
             if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.LoginSuccess)
             {
+                LoggedInUserID = serverReplySubstrings[1];
+
                 //Set local user directory for logged in user
                 FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
 
                 //Create a cookie in local client directory to keep user logged in
-                FileIOStreamer fileIO = new FileIOStreamer();
-
-                fileIO.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
-                fileIO.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
+                FileIOStreamer.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+                FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
                     serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], true);
 
                 NetComponents.ClientPendingMessageManager();

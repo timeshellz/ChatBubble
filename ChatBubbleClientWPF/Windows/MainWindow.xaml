@@ -4,52 +4,102 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChatBubbleClientWPF"
+        xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="MainWindow" MinHeight="400" MinWidth="600" Height="400" Width="700" Background="{StaticResource SecondaryColorBrush}">
+        Title="MainWindow" MinHeight="400" MinWidth="600" Height="400" Width="700"
+        WindowStyle="None"  ResizeMode="CanResize" Background="{StaticResource SecondaryColorBrush}"
+        StateChanged="Window_StateChanged" MouseMove="Window_MouseMove" MouseUp="Window_MouseUp" Closing="Window_Closing">
     <Window.Resources>
         
     </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5" />
+    </WindowChrome.WindowChrome>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="50"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Frame x:Name="CurrentTab" Grid.Column="1" Source="" NavigationUIVisibility="Hidden" Panel.ZIndex="0" Navigated="Frame_Navigated"/>
-        <StackPanel Grid.Column="0" Style="{StaticResource PrimaryColorStyle}">
-            <Button Panel.ZIndex="1000" x:Name="MainTabButton" Height="80" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0"  Click="MainTabButton_Click">
-                <Image Source="/Buttons/homeButtonIdle.png"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="{StaticResource PrimaryColorBrush}" MouseDown="PageHeader_MouseDown">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="24"/>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="64"/>
+                <ColumnDefinition Width="64"/>
+                <ColumnDefinition Width="64"/>
+            </Grid.ColumnDefinitions>
+            <Image Grid.Column="0" Source="/Images/bubblesImage.png"/>
+            <Label Grid.Column="1" Style="{StaticResource SmallTextStyle}" Content="ChatBubble"/>
+            <Button x:Name="CloseWindowButton" Grid.Column="5" Background="{StaticResource PrimaryColorBrush}" Width="64" Height="24" Click="CloseWindowButton_Click">
+                <Image Source="/Buttons/crossWhite.png" Height="18" Width="18" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
-            <Button Panel.ZIndex="1000" x:Name="FriendsButton" Height="50" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0" Click="FriendsButton_Click">
-                <Image Source="/Buttons/friendsButtonIdle.png"/>
+            <Button x:Name="MaximizeWindowButton" Grid.Column="4" Background="{StaticResource PrimaryColorBrush}" Width="64" Height="24" Click="CloseWindowButton_Click">
+                <Image Source="/Buttons/crossWhite.png" Height="18" Width="18" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
-            <Button Panel.ZIndex="1000" x:Name="DialoguesButton" Height="50" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0"  Click="DialoguesButton_Click">
-                <Image Source="/Buttons/dialoguesButtonIdle.png"/>
+            <Button x:Name="MinimizeWindowButton" Grid.Column="3" Background="{StaticResource PrimaryColorBrush}" Width="64" Height="24" Click="CloseWindowButton_Click">
+                <Image Source="/Buttons/crossWhite.png" Height="18" Width="18" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
-            <Button Panel.ZIndex="1000" x:Name="SearchButton" Height="50" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0" Click="SearchButton_Click">
-                <Image Source="/Buttons/searchButtonIdle.png"/>
-            </Button>
-            <Button Panel.ZIndex="1000" x:Name="SettingsButton" Height="50" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0" Click="SettingsButton_Click">
-                <Image Source="/Buttons/settingsButtonIdle.png"/>
-            </Button>
-            <Button Panel.ZIndex="1000" x:Name="LogOutButton" Height="50" Style="{StaticResource PrimaryColorStyle}" BorderThickness="0">
-                <Image Source="/Buttons/logOutButtonIdle.png"/>
-            </Button>
-        </StackPanel>
-        <Grid Grid.Column="1">
+        </Grid>
+        
+        <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="45"/>
-                <RowDefinition Height="35"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Rectangle x:Name="HeaderRectangle" Grid.Row="0" Panel.ZIndex="1000" Style="{StaticResource PrimaryColorStyle}"/>
-            <Path x:Name="HeaderArc" Grid.Row="1" Style="{StaticResource PrimaryColorStyle}"
-                  Data="M 0,-1 L 35, -1 A 35,35 90 0 0 0, 35 L 0,0 z" Margin="0,-1,0,1"/>
-            <Label x:Name="HeaderLabel" Grid.Row="0" Grid.RowSpan="1" Panel.ZIndex="1001" Style="{StaticResource MediumTextStyle}" Content="Page Name" Margin="35,6,0,0"/>
-            <Ellipse Name="HeaderContentEllipse" Grid.Row="0" Grid.RowSpan="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,6" Width="30" Height="30" Panel.ZIndex="1001">
-                <Ellipse.Fill>
-                    <ImageBrush ImageSource="/Images/bubblesImage.png" Stretch="UniformToFill"/>
-                </Ellipse.Fill>
-            </Ellipse>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Frame x:Name="CurrentTab" Grid.Row="1" Grid.Column="1" NavigationUIVisibility="Hidden" Panel.ZIndex="0" Margin="-1,0,0,0" Navigated="Frame_Navigated"/>
+            <StackPanel Grid.Row="1"  Grid.Column="0" Style="{StaticResource PrimaryColorStyle}" Background="{StaticResource PrimaryColorBrush}">
+                <Button Panel.ZIndex="1000" x:Name="MainTabButton" Height="80" BorderThickness="0" Margin="0"
+                                        Background="{StaticResource PrimaryColorBrush}" 
+                        Command="{Binding OpenMainTabCommand}">
+                    <Button.CommandParameter>
+                        <sys:Int32>0</sys:Int32>
+                    </Button.CommandParameter>
+                    <Image Source="/Buttons/homeButtonIdle.png" Margin="8"/>
+                </Button>
+                <Button Panel.ZIndex="1000" x:Name="FriendsButton" Height="50" 
+                                        Background="{StaticResource PrimaryColorBrush}" BorderThickness="0" Command="{Binding OpenFriendsTabCommand}">
+                    <Image Source="/Buttons/friendsButtonIdle.png" Margin="8"/>
+                </Button>
+                <Button Panel.ZIndex="1000" x:Name="DialoguesButton" Height="50" 
+                                        Background="{StaticResource PrimaryColorBrush}" BorderThickness="0"  Command="{Binding OpenDialoguesTabCommand}">
+                    <Image Source="/Buttons/dialoguesButtonIdle.png" Margin="9"/>
+                </Button>
+                <Button Panel.ZIndex="1000" x:Name="SearchButton" Height="50" 
+                                        Background="{StaticResource PrimaryColorBrush}" BorderThickness="0" Command="{Binding OpenSearchTabCommand}">
+                    <Image Source="/Buttons/searchButtonIdle.png" Margin="9"/>
+                </Button>
+                <Button Panel.ZIndex="1000" x:Name="SettingsButton" Height="50" 
+                                        Background="{StaticResource PrimaryColorBrush}" BorderThickness="0" Command="{Binding OpenSettingsTabCommand}">
+                    <Image Source="/Buttons/settingsButtonIdle.png" Margin="7"/>
+                </Button>
+                <Button Panel.ZIndex="1000" x:Name="LogOutButton" Height="50" 
+                                        Background="{StaticResource PrimaryColorBrush}" BorderThickness="0">
+                    <Image Source="/Buttons/logOutButtonIdle.png" Margin="8"/>
+                </Button>
+            </StackPanel>
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="45"/>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Rectangle x:Name="HeaderRectangle" Grid.Row="0" Panel.ZIndex="1000" Style="{StaticResource PrimaryColorStyle}" Margin="-1,0,0,0"/>
+                <Path x:Name="HeaderArc" Grid.Row="1" Style="{StaticResource PrimaryColorStyle}"
+                        Data="M 0,-1 L 35, -1 A 35,35 90 0 0 0, 35 L 0,0 z" Margin="-1,-1,0,1"/>
+                <Label x:Name="HeaderLabel" Grid.Row="0" Grid.RowSpan="1" Panel.ZIndex="1001" Style="{StaticResource MediumTextStyle}" Content="Page Name" Margin="35,6,0,0"/>
+                <Ellipse Name="HeaderContentEllipse" Grid.Row="0" Grid.RowSpan="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,6" Width="30" Height="30" Panel.ZIndex="1001">
+                    <Ellipse.Fill>
+                        <ImageBrush ImageSource="/Images/bubblesImage.png" Stretch="UniformToFill"/>
+                    </Ellipse.Fill>
+                </Ellipse>
+            </Grid>
         </Grid>
     </Grid>
     

@@ -8,6 +8,9 @@ namespace ChatBubbleClientWPF.Models
 {
     class ClientActivities
     {
+        int currentUserID;
+        LinkedList<object> notificationList;
+
 
     }
 }

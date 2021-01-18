@@ -20,10 +20,22 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        ViewModels.MainWindowViewModel viewModel;
+
+        bool needsLocationRestore = false;
+
+        public MainWindow(ViewModels.BaseViewModel viewModel)
         {
             InitializeComponent();
-            CurrentTab.Navigate(new UserForms.MainTab());
+
+            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
+            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
+
+            this.viewModel = (ViewModels.MainWindowViewModel)viewModel;
+            this.DataContext = this.viewModel;
+
+            this.viewModel.TabSwitchPrompted += OnTabSwitchPrompted;
+            this.viewModel.TabReturnPrompted += OnTabReturnPrompted;
         }
 
         private void SetHeaderVisibility(Visibility visibility)
@@ -43,35 +55,88 @@ namespace ChatBubbleClientWPF
         {
             var page = ((Frame)sender).Content as Page;
 
-            if (((Frame)sender).Content.GetType() == typeof(UserForms.MainTab)) SetHeaderVisibility(Visibility.Hidden);
+            if (((Frame)sender).Content.GetType() == typeof(Tabs.MainTab)) SetHeaderVisibility(Visibility.Hidden);
             else SetHeaderVisibility(Visibility.Visible);
                       
             SetHeaderTitle(page.Name);
         }
 
-        private void MainTabButton_Click(object sender, RoutedEventArgs e)
+        void OnTabSwitchPrompted(object sender, ViewModels.TabNavigationEventArgs e)
         {
-            CurrentTab.Navigate(new UserForms.MainTab());
+
+            if (DataContext is ViewModels.MainWindowViewModel viewModel)
+            {
+                Page promptedTab;
+                promptedTab = e.PageFactory.GetAssociatedPage(e.PageViewModel);
+
+                CurrentTab.Navigate(promptedTab);
+            }
+
         }
 
-        private void DialoguesButton_Click(object sender, RoutedEventArgs e)
+        void OnTabReturnPrompted(object sender, EventArgs e)
         {
-            CurrentTab.Navigate(new UserForms.DialoguesTab());
+            if(DataContext is ViewModels.MainWindowViewModel viewModel)
+            {
+                CurrentTab.GoBack();
+            }
         }
 
-        private void FriendsButton_Click(object sender, RoutedEventArgs e)
+        private void PageHeader_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            CurrentTab.Navigate(new UserForms.FriendsTab());
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                if (this.WindowState == WindowState.Maximized)
+                {                  
+                    needsLocationRestore = true;
+                }
+
+                DragMove();
+            }
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private void Window_StateChanged(object sender, EventArgs e)
         {
-            CurrentTab.Navigate(new UserForms.SearchTab());
+            if (this.WindowState == WindowState.Maximized)
+            {                
+                this.BorderThickness = new Thickness(8);                
+            }
         }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        private void Window_MouseMove(object sender, MouseEventArgs e)
         {
-            CurrentTab.Navigate(new UserForms.SettingsTab());
+            if(needsLocationRestore)
+            {
+                this.BorderThickness = new Thickness(0);
+                needsLocationRestore = false;
+
+                var point = PointToScreen(e.MouseDevice.GetPosition(this));
+
+                Left = point.X - (RestoreBounds.Width * 0.5);
+                Top = point.Y;
+            
+                this.WindowState = WindowState.Normal;
+
+                try { DragMove(); }
+                catch { };
+            }
+        }
+
+        private void Window_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if(e.ChangedButton == MouseButton.Left)
+                needsLocationRestore = false;
+        }
+
+        private void CloseWindowButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (viewModel.CloseSessionCommand.CanExecute(null))
+                viewModel.CloseSessionCommand.Execute(null);
         }
     }
 }

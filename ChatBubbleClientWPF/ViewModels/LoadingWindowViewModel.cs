@@ -9,18 +9,33 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using System.Threading;
+using System.Windows.Input;
 using ChatBubble;
 
-namespace ChatBubbleClientWPF
+namespace ChatBubbleClientWPF.ViewModels
 {
     class LoadingWindowViewModel : BaseViewModel
     {
-        ClientStartup clientStartupModel;
+        Models.ClientStartup clientStartupModel;
 
-        public event EventHandler<ConnectionEventArgs> ConnectionEstablished;
-        public event EventHandler<ConnectionEventArgs> ConnectionFailed;
+        public event EventHandler<Utility.ConnectionEventArgs> ConnectionEstablished;
+        public event EventHandler<Utility.ConnectionEventArgs> ConnectionFailed;      
 
         string connectionStatusString = String.Empty;
+
+        ICommand closeViewModelCommand;
+
+        public ICommand CloseViewModelCommand
+        {
+            get
+            {
+                if (closeViewModelCommand == null)
+                {
+                    closeViewModelCommand = new Command(p => OnViewModelClosing());
+                }
+                return closeViewModelCommand;
+            }
+        }
 
         public string ConnectionStatusString
         {
@@ -32,10 +47,16 @@ namespace ChatBubbleClientWPF
             }
         }
 
-        public LoadingWindowViewModel()
+        public LoadingWindowViewModel(Utility.IWindowFactory windowFactory)
         {
-            clientStartupModel = new ClientStartup();
-            clientStartupModel.PropertyChanged += new PropertyChangedEventHandler(OnModelPropertyChanged);   
+            this.windowFactory = windowFactory;
+
+            clientStartupModel = new Models.ClientStartup();
+            clientStartupModel.PropertyChanged += new PropertyChangedEventHandler(OnModelPropertyChanged);
+
+            this.windowFactory.OpenAssociatedWindow(this);
+
+            InitializeClientLogic();
         }
 
         public void InitializeClientLogic()
@@ -57,9 +78,9 @@ namespace ChatBubbleClientWPF
             }
         }
 
-        void ModifyConnectionStatus(ClientStartup.ConnectionStatuses status)
+        void ModifyConnectionStatus(Models.ClientStartup.ConnectionStatuses status)
         {
-            if(status == ClientStartup.ConnectionStatuses.Connecting)
+            if(status == Models.ClientStartup.ConnectionStatuses.Connecting)
             {
                 if(clientStartupModel.AttemptNumber > 2)
                 {
@@ -67,47 +88,72 @@ namespace ChatBubbleClientWPF
                 }
                 else ConnectionStatusString = "Connecting...";
             }
-            if(status == ClientStartup.ConnectionStatuses.ConnectionFailed)
+            if(status == Models.ClientStartup.ConnectionStatuses.ConnectionFailed)
             {
                 ConnectionStatusString = "Connection failed. Please try again later.";
-                OnConnectionFailed(this, new ConnectionEventArgs());
+                OnConnectionFailed(this, new Utility.ConnectionEventArgs());
             }
         }
 
-        void HandleConnectionType(ClientStartup.ConnectionTypes conType)
+        void HandleConnectionType(Models.ClientStartup.ConnectionTypes conType)
         {
-            if(conType == ClientStartup.ConnectionTypes.Expired)
+            if(conType == Models.ClientStartup.ConnectionTypes.Expired)
             {
                 //Go to login page
                 ConnectionStatusString = "Connected!";
                 Thread.Sleep(1000);
 
-                OnConnectionEstablished(this, new ConnectionEventArgs() { ConnectionType = ConnectionEventArgs.ConnectionTypes.Expired });
+                CreateLoginViewModel();
 
             }
-            if(conType == ClientStartup.ConnectionTypes.Fresh)
+            if(conType == Models.ClientStartup.ConnectionTypes.Fresh)
             {
-                OnConnectionEstablished(this, new ConnectionEventArgs() { ConnectionType = ConnectionEventArgs.ConnectionTypes.Fresh });
+                ConnectionStatusString = "Logged in!";
+                Thread.Sleep(1000);
+
+                string userID = "";
+
+                RecordFreshSession(out userID);
+                CreateMainViewModel(userID);
                 //Go to mainwindow
             }
         }
 
-        void OnConnectionEstablished(object sender, ConnectionEventArgs e)
+        void RecordFreshSession(out string loggedInUserID)
         {
-            if (ConnectionEstablished != null)
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionEstablished, sender, e);
+            Models.ClientFrontDoor clientFront = new Models.ClientFrontDoor();
+            clientFront.LoginReplyHandler(clientStartupModel.ServerReply);
+            loggedInUserID = clientFront.LoggedInUserID;
         }
 
-        void OnConnectionFailed(object sender, ConnectionEventArgs e)
+        void CreateLoginViewModel()
         {
-            if (ConnectionEstablished != null)
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionFailed, sender, e);
-        }
-    }
+            windowFactory.WindowRendered += (o, e) => OnViewModelClosing();
 
-    class ConnectionEventArgs : EventArgs
-    {
-        public enum ConnectionTypes { Expired, Fresh, None }
-        public ConnectionTypes ConnectionType { get; set; } = ConnectionTypes.None;
+            LoginWindowViewModel loginWindowViewModel = new LoginWindowViewModel(windowFactory);
+        }
+
+        void CreateMainViewModel(string userID)
+        {
+            windowFactory.WindowRendered += (o, e) => OnViewModelClosing();
+
+            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), userID);
+        }
+
+        void OnConnectionFailed(object sender, Utility.ConnectionEventArgs e)
+        {
+            for (int i = 0; i < 5; i++) //Do 5 attempts at informing view of connection error. This helps currently loading view receive information.
+            {
+                if (ConnectionFailed != null)
+                {
+                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionFailed, sender, e);
+                    break;
+                }
+                else
+                {
+                    Thread.Sleep(200);
+                }
+            }
+        }
     }
 }

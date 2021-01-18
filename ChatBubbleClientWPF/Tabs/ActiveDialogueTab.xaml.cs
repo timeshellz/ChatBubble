@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ChatBubbleClientWPF.Controls
+namespace ChatBubbleClientWPF.Tabs
 {
     /// <summary>
-    /// Interaction logic for RoundedButton.xaml
+    /// Interaction logic for ActiveDialogueTab.xaml
     /// </summary>
-    public partial class RoundedButton : Button
+    public partial class ActiveDialogueTab : Page
     {
-        public RoundedButton()
+        public ActiveDialogueTab()
         {
             InitializeComponent();
         }

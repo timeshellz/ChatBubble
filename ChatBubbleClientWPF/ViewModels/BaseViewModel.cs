@@ -12,17 +12,30 @@ using System.Windows.Input;
 using ChatBubble;
 
 
-namespace ChatBubbleClientWPF
+namespace ChatBubbleClientWPF.ViewModels
 {
-    class BaseViewModel : INotifyPropertyChanged
+    public class BaseViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
+        public event EventHandler ViewModelClosing;
+
+        internal Utility.IWindowFactory windowFactory;
+
+        public BaseViewModel()
+        {
+            
+        }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        
+
+        protected void OnViewModelClosing()
+        {
+            ViewModelClosing?.Invoke(this, new EventArgs());
+        }
+
     }
 
     class Command : ICommand
@@ -54,5 +67,10 @@ namespace ChatBubbleClientWPF
         {
             execute?.Invoke(obj);
         }
+    }
+
+    interface IUserTileContainer
+    {
+        void OnTileAction(object sender, UserTileInteractionEventArgs e);
     }
 }

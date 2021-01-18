@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using ChatBubble;
 using WpfAnimatedGif;
 
 namespace ChatBubbleClientWPF
@@ -21,39 +22,27 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class LoadingWindow : Window
     {
-        LoadingWindowViewModel viewModel;
+        ViewModels.LoadingWindowViewModel viewModel;
         Image animationBox;
         ImageAnimationController animationBoxController;
 
-        public LoadingWindow()
+        public LoadingWindow(ViewModels.BaseViewModel viewModel)
         {
             InitializeComponent();
-            viewModel = new LoadingWindowViewModel();
-            this.DataContext = viewModel;
+
+            this.viewModel = (ViewModels.LoadingWindowViewModel)viewModel;
+            this.DataContext = this.viewModel;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            viewModel.InitializeClientLogic();
-            viewModel.ConnectionEstablished += OnConnectionEstablished;
             viewModel.ConnectionFailed += OnConnectionFailed;
+            viewModel.ViewModelClosing += (o, s) => { Close(); };
 
             animationBox = (Image)FindName("AnimationBox");
         }
 
-        private void OnConnectionEstablished(object sender, ConnectionEventArgs e)
-        {
-            if(e.ConnectionType == ConnectionEventArgs.ConnectionTypes.Expired)
-            {
-                Window currentWindow = GetWindow(this);
-                LoginWindow loginWindow = new LoginWindow(currentWindow);
-                loginWindow.Top = currentWindow.Top;
-                loginWindow.Left = currentWindow.Left;
-                loginWindow.Show();
-            }
-        }
-
-        private void OnConnectionFailed(object sender, ConnectionEventArgs e)
+        private void OnConnectionFailed(object sender, Utility.ConnectionEventArgs e)
         {
             Task.Run(PromptAndDisplayError);
         }

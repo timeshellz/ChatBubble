@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ChatBubbleClientWPF.UserForms
+namespace ChatBubbleClientWPF.Tabs
 {
     /// <summary>
     /// Interaction logic for FriendsTab.xaml

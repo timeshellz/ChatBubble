@@ -47,7 +47,7 @@ namespace ChatBubble
         /// </summary>
         public static Dictionary<string, Delegate> RequestDictionary = new Dictionary<string, Delegate>()
         {
-            [ConnectionCodes.LogInRequest] = new Func<string, EndPoint, string>(ServerLogInService),
+            [ConnectionCodes.LogInRequest] = new Func<string, EndPoint, bool, string>(ServerLogInService),
             [ConnectionCodes.SignUpRequest] = new Func<string, string>(ServerSignUpService),
             [ConnectionCodes.SearchRequest] = new Func<string, string>(ServerSearchService),
             [ConnectionCodes.AddFriendRequest] = new Func<string, string>(ServerAddFriendService),
@@ -410,7 +410,7 @@ namespace ChatBubble
         static void ServerHandshakeReception(object clientSocket)
         {
             string clientHandshakeToken;
-            byte[] streamBytes = new byte[64];
+            byte[] streamBytes = new byte[128];
 
             Socket pendingClientSocket = (Socket)clientSocket;
 
@@ -454,25 +454,12 @@ namespace ChatBubble
             if (clientHandshakeToken != ConnectionCodes.FreshSessionStatus && String.IsNullOrEmpty(clientHandshakeToken) != true &&
                                                                                   IsCookieInDatabase(clientHandshakeTokenSubstrings[0], clientHandshakeTokenSubstrings[1]) == true)
             {
-                //If signature is correct, gets user data from database to pass into the login service
-                
-                string[] userData = GetUserData(clientHandshakeTokenSubstrings[0]);
+                //If signature is correct, initiates autologin without fetching credentials
 
-                if (userData.Length > 1 && userData[0] != ConnectionCodes.NotFoundError)
-                {
-                    string cookieCredentials = "login=" + userData[1] + "password=" + userData[3];
+                FileIOStreamer.LogWriter("Cookie received from " + remoteEndPointLogString);
+                FileIOStreamer.LogWriter("Handling fresh session handshake for " + remoteEndPointLogString);
 
-                    FileIOStreamer.LogWriter("Cookie received from " + remoteEndPointLogString);
-                    FileIOStreamer.LogWriter("Handling fresh session handshake for " + remoteEndPointLogString);
-
-                    clientHandshakeToken = ServerLogInService(cookieCredentials, pendingClientSocket.RemoteEndPoint);
-                }
-                else
-                {
-                    clientHandshakeToken = ConnectionCodes.ExpiredSessionStatus;
-
-                    FileIOStreamer.LogWriter("Handling expired session handshake for " + remoteEndPointLogString);
-                }
+                clientHandshakeToken = ServerLogInService(clientHandshakeTokenSubstrings[0], pendingClientSocket.RemoteEndPoint, true);
             }
             else
             {
@@ -718,7 +705,7 @@ namespace ChatBubble
                         {
                             if (requestType == ConnectionCodes.LogInRequest)
                             {
-                                serverReply = (string)RequestDictionary[requestType].DynamicInvoke(requestBody, pendingClientSocket.RemoteEndPoint);
+                                serverReply = (string)RequestDictionary[requestType].DynamicInvoke(requestBody, pendingClientSocket.RemoteEndPoint, false);
                             }
                             else if(requestType != ConnectionCodes.LogOutCall)
                             {
@@ -749,7 +736,7 @@ namespace ChatBubble
         /// <param name="clientRequest">Received client request.<para/>Follows the following format:<para/>
         /// login=[login]password=[password]</param>
         /// <returns></returns>
-        static string ServerLogInService(string clientRequest, EndPoint clientIP)
+        static string ServerLogInService(string clientRequest, EndPoint clientIP, bool autoLogin = false)
         {
             string[] clientRequestSubstrings;
             string[] clientRequestSplitStrings = new string[3] { "name=", "login=", "password=" };
@@ -772,16 +759,20 @@ namespace ChatBubble
                 //For userData, index 0 is user ID, index 1 is user login, index 2 is user name, index 3 is user password, index 4 is user ip
                 //For clientRequestSubstrings, index 0 is login, index 1 is password
 
-                if (clientRequestSubstrings[1] == userData[3])
+                if (autoLogin || (!autoLogin && clientRequestSubstrings[1] == userData[3]))
                 {
                     Random randomGenerator = new Random();
                     int randomHashSeed = randomGenerator.Next(99999999);
-
+                    
                     ClientSessionHandler(userData[0], randomHashSeed);
 
                     loggedInUsersBlockingCollection.TryAdd(loggedInUsersBlockingCollection.Count + 1, "id=" + userData[0] + "ip=" + clientIP.ToString());
 
-                    FileIOStreamer.LogWriter("User id=" + userData[0] + " successful login detected.");
+                    if(!autoLogin)
+                        FileIOStreamer.LogWriter("User id=" + userData[0] + " successful login detected.");
+                    else
+                        FileIOStreamer.LogWriter("User id=" + userData[0] + " successful autologin detected.");
+
                     return (ConnectionCodes.LoginSuccess + "id=" + userData[0] + "hash=" + randomHashSeed.ToString());
                     //Passes user ID and persistence cookie key back for session update purposes
                 }
@@ -871,9 +862,9 @@ namespace ChatBubble
                 return (ConnectionCodes.AuthFailure);
             }
 
-            if (clientRequestSubstrings[2] == "self")
+            if (clientRequestSubstrings[2] == "0")
             {
-                //If no ID given, return requesting user data
+                //If ID 0 is given, return requesting user data
                 clientRequestSubstrings[2] = clientRequestSubstrings[0];
             }
 
@@ -957,7 +948,7 @@ namespace ChatBubble
         {
             if (searchParameter == "")
             {
-                return ("=no_match=");
+                return (ConnectionCodes.NotFoundError);
             }
 
             string defaultUsersDirectory = FileIOStreamer.defaultRegisteredUsersDirectory; //TEMPORARY
@@ -991,12 +982,12 @@ namespace ChatBubble
             }
 
             matchingUsersData.Sort(SearchCompareByName);
-
+            
             string matchingUsersDataString = String.Join("user=", matchingUsersData);
 
             if (matchingUsersDataString == "")
             {
-                matchingUsersDataString = "=no_match=";
+                matchingUsersDataString = NetComponents.ConnectionCodes.NotFoundError;
             }
 
             return (matchingUsersDataString);

@@ -240,8 +240,7 @@ namespace ChatBubble.Server
             //Clears the logfile
             public static void ClearLog(out string output)
             {
-                FileIOStreamer fileIO = new FileIOStreamer();
-                fileIO.ClearFile(FileIOStreamer.defaultLogDirectory);
+                FileIOStreamer.ClearFile(FileIOStreamer.defaultLogDirectory);
 
                 output = "Log file '" + FileIOStreamer.defaultLogDirectory + "' cleared.";
             }

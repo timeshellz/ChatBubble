@@ -1,9 +1,10 @@
-﻿<Page x:Class="ChatBubbleClientWPF.UserForms.FriendsTab"
+﻿<Page x:Class="ChatBubbleClientWPF.Tabs.FriendsTab"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:ChatBubbleClientWPF.UserForms"
+      xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="FriendsTab" Name="Friends">
@@ -11,12 +12,25 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="55"/>
+            
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
-            <WrapPanel Orientation="Horizontal">
-                
-            </WrapPanel>
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
+            <ItemsControl ItemsSource="{Binding FriendTileViewModels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <controls:FriendTile/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Name="FriendListPanel" Orientation="Horizontal">
+
+                        </WrapPanel>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            
         </ScrollViewer>
     </Grid>
 </Page>

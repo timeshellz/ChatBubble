@@ -23,7 +23,7 @@ namespace ChatBubbleClientWPF.UserForms
         public event EventHandler<UserFormEventArgs> FormChangePrompted;
         public event EventHandler<UserFormEventArgs> FormRequestPosted;
 
-        private protected ReadOnlyCollection<LoginWindowViewModel.ErrorStatus> errorStatuses;
+        private protected ReadOnlyCollection<ViewModels.LoginWindowViewModel.ErrorStatus> errorStatuses;
 
         protected string defaultStatusPrompt;
 
@@ -45,7 +45,7 @@ namespace ChatBubbleClientWPF.UserForms
 
         protected virtual void ElementGotFocus(object sender, RoutedEventArgs e)
         {
-            if (DataContext is LoginWindowViewModel viewModel)
+            if (DataContext is ViewModels.LoginWindowViewModel viewModel)
             {
                 viewModel.ClearFormStatuses();
             }
@@ -53,7 +53,7 @@ namespace ChatBubbleClientWPF.UserForms
 
         protected virtual void CredentialFormPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (DataContext is LoginWindowViewModel viewModel)
+            if (DataContext is ViewModels.LoginWindowViewModel viewModel)
             {
                 viewModel.PropertyChanged += OnViewModelPropertyChanged;
                 viewModel.ClearFormStatuses();
@@ -62,7 +62,7 @@ namespace ChatBubbleClientWPF.UserForms
 
         public void Unsubscribe()
         {
-            if (DataContext is LoginWindowViewModel viewModel)
+            if (DataContext is ViewModels.LoginWindowViewModel viewModel)
             {
                 viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
