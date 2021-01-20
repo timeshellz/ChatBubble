@@ -8,15 +8,15 @@ namespace ChatBubbleClientWPF.Models
 {
     class Message
     {
-        public enum MessageStatus { ReceivedRead, ReceivedNotRead, SentReceived, SentPending, SentRead }
+        public enum MessageStatus { ReceivedRead, ReceivedNotRead, Sending, SendFailed, SentServerPending, SentReceived, SentRead }
 
         public string MessageContent { get; set; }
         public DateTime MessageDateTime { get; set; }
         public User MessageSender { get; set; }
-        public int MessageID { get; set; }
         public MessageStatus Status { get; set; }
+        public int MessageID { get; set; }
 
-        public Message(User sender, string time, string status, string content)
+        public Message(int messageID, User sender, string time, string status, string content)
         {
             MessageDateTime = DateTime.Parse(time).ToLocalTime();
 
@@ -32,6 +32,17 @@ namespace ChatBubbleClientWPF.Models
 
             MessageContent = content;
             MessageSender = sender;
+            MessageID = messageID;
+        }
+
+        public Message(int messageID, User sender, string content)
+        {
+            MessageSender = sender;
+            MessageContent = content;
+            MessageID = messageID;
+
+            MessageDateTime = DateTime.Now;
+            Status = MessageStatus.Sending;
         }
     }
 }

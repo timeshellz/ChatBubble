@@ -61,6 +61,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\DialogueInputPanel.xaml.cs">
+      <DependentUpon>DialogueInputPanel.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\FriendTile.xaml.cs">
       <DependentUpon>FriendTile.xaml</DependentUpon>
     </Compile>
@@ -150,6 +153,10 @@
     <Compile Include="UserForms\SignUpForm.xaml.cs">
       <DependentUpon>SignUpForm.xaml</DependentUpon>
     </Compile>
+    <Page Include="Controls\DialogueInputPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\FriendTile.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

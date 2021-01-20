@@ -63,7 +63,7 @@ namespace ChatBubbleClientWPF.ViewModels
         {
         }
 
-        public DialoguePreviewViewModel(Models.Dialogue dialogueModel, params ContextMenuActions[] contextMenuActions) : base(dialogueModel.Sender, contextMenuActions)
+        public DialoguePreviewViewModel(Models.Dialogue dialogueModel, params ContextMenuActions[] contextMenuActions) : base(dialogueModel.Recipient, contextMenuActions)
         {
             MessagePreview = dialogueModel.LastMessage.MessageContent;
             DialogueID = dialogueModel.DialogueID;

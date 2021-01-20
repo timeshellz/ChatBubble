@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
-
+using System.Collections.Generic;
 
 namespace ChatBubble
 {
@@ -146,6 +146,11 @@ namespace ChatBubble
 
                 return output;
             }
+        }
+
+        static void ConvertSpecialSymbols(string input)
+        {
+
         }
 
         /// <summary>

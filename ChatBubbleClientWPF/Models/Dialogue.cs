@@ -12,17 +12,27 @@ namespace ChatBubbleClientWPF.Models
 {
     class Dialogue
     {
+        readonly object queueLock = new object();
+
+        public enum DialogueStates { Default, MessageSending, MessageLoading}
+
         public int DialogueID { get; set; }
-        public User Sender { get; set; }
-        public User Receipient { get; set; }
+        public User Recipient { get; set; }
+        public CurrentUser CurrentUser { get; set; }
         public Dictionary<int, Message> Messages { get; set; }
+        public Queue<Message> PendingMessages { get; set; }
         public Message LastMessage;
 
-        public Dialogue(User sender, User receipient)
+        EventHandler<EventArgs> messageQueued;
+        public EventHandler<DialogueMessagesChangedEventArgs> DialogueMessagesChanged;
+
+        public Dialogue(User recipient, CurrentUser currentUser)
         {
-            DialogueID = sender.ID;
-            Sender = sender;
-            Receipient = receipient;
+            DialogueID = recipient.ID;
+            Recipient = recipient;
+            CurrentUser = currentUser;
+
+            PendingMessages = new Queue<Message>();
 
             GetStoredMessages();
         }
@@ -31,21 +41,20 @@ namespace ChatBubbleClientWPF.Models
         {
             string dialogueContent = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + DialogueID + ".txt");
 
-            //if (!String.IsNullOrEmpty(dialogueContent))
+            if (!String.IsNullOrEmpty(dialogueContent))
             {
                 Messages = new Dictionary<int, Message>();
 
-                int messageID = 1;
-                //foreach(string messageData in dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries))
-                //{
-                //    string[] messageSubstrings = messageData.Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
-                //Messages.Add(messageID, new Message(messageSubstrings[0], messageSubstrings[1], messageSubstrings[2]));
+                string[] messages = dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
 
-                //    messageID++;
-                // }
+                int messageID = 0;
+                foreach(string messageData in messages)
+                {
+                    string[] messageSubstrings = messageData.Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
+                Messages.Add(messageID, new Message(messageID, Recipient, messageSubstrings[0], messageSubstrings[1], messageSubstrings[2]));
 
-                Messages.Add(messageID, new Message(Sender, DateTime.Now.ToLongDateString(), "read", "message"));
-                Messages.Add(2, new Message(Receipient, DateTime.Now.ToLongDateString(), "sent", "mymessage"));
+                    messageID++;
+                 }
 
                 LastMessage = Messages.Values.Last();
             }
@@ -55,5 +64,47 @@ namespace ChatBubbleClientWPF.Models
         {
             FileIOStreamer.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + DialogueID + ".txt");
         }
+
+        public void PendMessage(string content)
+        {
+            if (String.IsNullOrEmpty(content))
+                return;
+
+            Message newMessage = new Message(Messages.Keys.Count, CurrentUser, content);
+
+            Messages.Add(newMessage.MessageID, newMessage);
+            PendingMessages.Enqueue(newMessage);
+
+            DialogueMessagesChanged?.Invoke(this, new DialogueMessagesChangedEventArgs()
+            { MessageID = newMessage.MessageID, NewMessageState = newMessage.Status });
+
+            Task.Run(() => SendQueuedMessage());
+        }
+
+        void SendQueuedMessage()
+        {
+            lock(queueLock)
+            {
+                Message pendingMessage = PendingMessages.Dequeue();
+
+                string reply = NetComponents.ClientSendMessage(Recipient.ID.ToString(), pendingMessage.MessageContent);
+
+                if (reply == NetComponents.ConnectionCodes.MsgSendSuccess)
+                {
+                    pendingMessage.Status = Message.MessageStatus.SentRead;
+                }
+                else pendingMessage.Status = Message.MessageStatus.SendFailed;
+
+                DialogueMessagesChanged?.Invoke(this, new DialogueMessagesChangedEventArgs()
+                { MessageID = pendingMessage.MessageID, NewMessageState = pendingMessage.Status});                
+            }
+        }
+    }
+
+    public class DialogueMessagesChangedEventArgs : EventArgs
+    {
+        internal int MessageID { get; set; }
+
+        internal Message.MessageStatus NewMessageState { get; set; }
     }
 }

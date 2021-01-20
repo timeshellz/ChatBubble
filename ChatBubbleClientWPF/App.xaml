@@ -10,7 +10,7 @@
         <FontFamily x:Key="Montserrat">/Fonts/#Montserrat-Light</FontFamily>
         <Color x:Key="PrimaryColor">#5D8FD9</Color>
         <Color x:Key="SecondaryColor">White</Color>
-        <Color x:Key="AuxillaryColor">#E8F1FF</Color>
+        <Color x:Key="AuxillaryColor">#EFEFEF</Color>
         <Color x:Key="SuccessColor">#B6D948</Color>
         <Color x:Key="ErrorColor">#E04834</Color>
         <SolidColorBrush x:Key="PrimaryColorBrush" Color="{StaticResource PrimaryColor}"/>
@@ -107,11 +107,19 @@
         </Style>
 
         <ControlTemplate x:Key="MessageBox">
-            <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" MaxWidth="160"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
-                <Rectangle Name="BackgroundRectangle" Fill="{TemplateBinding Background}"
-                   StrokeThickness="2.5" RadiusX="6" RadiusY="6"/>
-                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                             Margin="4" Content="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:MessageBox}}}"/>
+            <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" MaxWidth="300"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+                <Rectangle Name="BackgroundRectangle" Fill="{TemplateBinding Background}" 
+                           Stroke="{TemplateBinding BorderBrush}"
+                           StrokeThickness="{TemplateBinding BorderThickness}" RadiusX="6" RadiusY="6"/>
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4">
+                    <ContentPresenter.ContentTemplate>
+                        <DataTemplate>
+                            <TextBlock Background="Transparent" Padding="0" Margin="0" TextWrapping="Wrap"
+                                       Text="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:MessageBox}}}"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:MessageBox}}}"/>
+                        </DataTemplate>
+                    </ContentPresenter.ContentTemplate>
+                </ContentPresenter>
             </Grid>
         </ControlTemplate>
 
@@ -317,17 +325,21 @@
         <Style BasedOn="{StaticResource SmallTextStyle}" TargetType="{x:Type controls:MessageLine}"/>
 
         <Style BasedOn="{StaticResource SmallTextStyle}" TargetType="{x:Type controls:MessageBox}">
-            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="BorderThickness" Value="2.5"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryColorBrush}"/>
             <Setter Property="Background" Value="{StaticResource PrimaryColorBrush}"/>
             <Setter Property="Template" Value="{StaticResource MessageBox}"/>
         </Style>
 
         <Style x:Key="ReceivedMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
-            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AuxillaryColorBrush}"/>
+            <Setter Property="BorderThickness" Value="2.5"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="Background" Value="{StaticResource SecondaryColorBrush}"/>
+            <Setter Property="Background" Value="{StaticResource AuxillaryColorBrush}"/>
         </Style>
 
     </Application.Resources>

@@ -210,7 +210,7 @@ namespace ChatBubbleClientWPF.ViewModels
         void OnActiveDialoguePrompted(object dialogue)
         {
             if(dialogue is Models.Dialogue dialogueModel)
-                TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new ActiveDialogueViewModel(this, dialogueModel.Messages), PageFactory = pageFactory, RememberHistory = false });
+                TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new ActiveDialogueViewModel(this, dialogueModel), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnSearchTabPrompted()

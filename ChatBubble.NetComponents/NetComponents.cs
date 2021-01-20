@@ -695,7 +695,7 @@ namespace ChatBubble
                             pendingClientSocket.Close();
                             return;
                         }
-
+                        
                         clientRequestRaw = clientRequestRaw.Substring(ConnectionCodes.DefaultFlagLength);
                         string requestType = clientRequestRaw.Substring(0, ConnectionCodes.DefaultFlagLength);
                         string requestBody = clientRequestRaw.Substring(ConnectionCodes.DefaultFlagLength);
@@ -722,7 +722,9 @@ namespace ChatBubble
                         }
 
                         streamBytes = us_US.GetBytes(serverReply);
-                        pendingClientSocket.Send(streamBytes);                
+
+                        pendingClientSocket.Send(streamBytes);
+                        
                     }
                 }
             }
@@ -1396,6 +1398,7 @@ namespace ChatBubble
 
             try
             {
+                int test = mainSocket.ReceiveBufferSize;
                 mainSocket.Connect(serverIPEndPoint);
                 mainSocket.Send(handshakeBytes);
 
@@ -1565,13 +1568,15 @@ namespace ChatBubble
         /// </summary>
         /// <param name="chatID"></param>
         /// <param name="content"></param>
-        public static void ClientSendMessage(string chatID, string content)
+        public static string ClientSendMessage(string chatID, string content)
         {
-            NetComponents.ClientRequestArbitrary(ConnectionCodes.SendNewMessageRequest, "rcpnt=" + chatID + "content=" + content, true, true);
+            string reply = NetComponents.ClientRequestArbitrary(ConnectionCodes.SendNewMessageRequest, "rcpnt=" + chatID + "content=" + content, true, true);
 
             FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + chatID + ".txt",
                     "message==" + "\ntime=" + DateTime.Now.ToUniversalTime().ToString("dddd, dd MMMM yyyy HH: mm:ss", CultureInfo.InvariantCulture) + "\nstatus=sent" +
                     "\ncontent=" + content + "\n==message\n", false);
+
+            return reply;
         }
 
         /// <summary>

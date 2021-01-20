@@ -7,19 +7,20 @@
              xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"   
              xmlns:util="clr-namespace:ChatBubbleClientWPF.Utility" 
              mc:Ignorable="d" 
-             d:DesignHeight="20" d:DesignWidth="600" VerticalAlignment="Bottom">
+             d:DesignHeight="24" d:DesignWidth="600" MinHeight="24">
     <UserControl.Resources>
         <util:MessageStatusToStyleConverter x:Key="MessageStatusToStyleConverter"/>
     </UserControl.Resources>
     
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="10"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="44"/>
+            <ColumnDefinition Width="50"/>
         </Grid.ColumnDefinitions>
         <Label Grid.Column="2" Foreground="LightGray"
-               FontSize="8" FontStyle="Italic" Content="{Binding MessageShortTime}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <controls:MessageBox Style="{Binding MessageStatus, Converter={StaticResource MessageStatusToStyleConverter}}"
+               FontSize="10" FontStyle="Italic" Content="{Binding MessageShortTime}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <controls:MessageBox Grid.Column="1" Style="{Binding MessageStatus, Converter={StaticResource MessageStatusToStyleConverter}}"
                              Content="{Binding MessageContent}"/>
     </Grid>
 
