@@ -1876,7 +1876,7 @@ namespace ChatBubble.Client
 
                     void GetCurrentDialogues(object sender, EventArgs eventArgs)
                     {
-                        string[] dialogueFilenameArray = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
+                        string[] dialogueFilenameArray = FileManager.GetDirectoryFiles(FileManager.defaultLocalUserDialoguesDirectory, false, false);
 
                         string[] senderDataSplitstrings = new string[] {"id=", "login=", "name=",
                             "status=", "main=", "bubscore=" };
@@ -1885,7 +1885,7 @@ namespace ChatBubble.Client
                         {
                             string senderID = dialogueFilenameArray[i].Substring(dialogueFilenameArray[i].IndexOf('=') + 1);
                             string senderData = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetUserSummaryRequest, "reqid=" + senderID, true, true);
-                            string dialogueContent = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
+                            string dialogueContent = FileManager.ReadFromFile(FileManager.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
 
                             if (!String.IsNullOrEmpty(dialogueContent))
                             {
@@ -2000,13 +2000,13 @@ namespace ChatBubble.Client
 
                         string currentChatID = button.Parent.Name.Substring(button.Parent.Name.IndexOf('_') + 1);
 
-                        string[] dialogueFilenameArray = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultLocalUserDialoguesDirectory, false, false);
+                        string[] dialogueFilenameArray = FileManager.GetDirectoryFiles(FileManager.defaultLocalUserDialoguesDirectory, false, false);
 
                         for (int i = 0; i < dialogueFilenameArray.Length; i++)
                         {
                             if (dialogueFilenameArray[i] == "chatid=" + currentChatID)
                             {
-                                FileIOStreamer.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
+                                FileManager.RemoveFile(FileManager.defaultLocalUserDialoguesDirectory + dialogueFilenameArray[i] + ".txt");
                                 currentDialoguesList.RemoveAt(i);
                             }
                         }
@@ -2197,7 +2197,7 @@ namespace ChatBubble.Client
 
                     public void GetMessages(object sender, EventArgs eventArgs)
                     {
-                        string dialogueData = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt");
+                        string dialogueData = FileManager.ReadFromFile(FileManager.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt");
                         string[] dialogueMessages = dialogueData.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
 
                         string[] messageSplitstrings = new string[] { "time=", "content=", "status=" };
@@ -2491,7 +2491,7 @@ namespace ChatBubble.Client
                             originalTimer.Stop();
                             originalTimer.Dispose();
 
-                            FileIOStreamer.SwapFileEntry(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt",
+                            FileManager.SwapFileEntry(FileManager.defaultLocalUserDialoguesDirectory + "chatid=" + ChatID + ".txt",
                                 UniversalMessageTime.ToString("dddd, dd MMMM yyyy HH: mm:ss") + Environment.NewLine + "status=", "unread", "read", false, true);
 
                             MessageType = MessageType.Read;
@@ -3859,7 +3859,7 @@ namespace ChatBubble.Client
 
                     NetComponents.BreakBind(true);
 
-                    FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_invalid", true);
+                    FileManager.WriteToFile(FileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt", "invalid_invalid", true);
 
                     Form1 currentForm = (Form1)Application.OpenForms[0];
                     MainPage mainPage = currentForm.Controls.OfType<MainPage>().First();
@@ -4260,11 +4260,11 @@ namespace ChatBubble.Client
                 if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.LoginSuccess)
                 {
                     //Set local user directory for logged in user
-                    FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
+                    FileManager.SetLocalUserDirectory(serverReplySubstrings[1]);
 
                     //Create a cookie in local client directory to keep user logged in
-                    FileIOStreamer.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
-                    FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
+                    FileManager.ClearFile(FileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+                    FileManager.WriteToFile(FileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
                         serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], true);
 
                     MainPage mainPage = new MainPage();

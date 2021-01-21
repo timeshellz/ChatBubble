@@ -82,7 +82,6 @@
     <Compile Include="Controls\UserPictureTile.xaml.cs">
       <DependentUpon>UserPictureTile.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\ClientActivities.cs" />
     <Compile Include="Models\CurrentUser.cs" />
     <Compile Include="Models\Dialogue.cs" />
     <Compile Include="Models\Message.cs" />
@@ -302,13 +301,17 @@
     <Resource Include="Images\SignUpTransparent.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj">
+    <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileManager.csproj">
       <Project>{3f6fa5fc-3111-4501-9127-227ca038c26f}</Project>
-      <Name>ChatBubble.FileIOStreamer</Name>
+      <Name>ChatBubble.FileManager</Name>
     </ProjectReference>
     <ProjectReference Include="..\ChatBubble.NetComponents\ChatBubble.NetComponents.csproj">
       <Project>{d0b50736-9975-409a-8663-9d0b425de592}</Project>
       <Name>ChatBubble.NetComponents</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ClientFileManager\ChatBubble.ClientFileManager.csproj">
+      <Project>{ee2424f6-f92e-4348-aa02-8bc3cb33f488}</Project>
+      <Name>ChatBubble.ClientFileManager</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

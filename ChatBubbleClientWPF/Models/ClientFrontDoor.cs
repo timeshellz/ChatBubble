@@ -18,7 +18,7 @@ namespace ChatBubbleClientWPF.Models
     class ClientFrontDoor : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
-
+        ClientFileManager fileManager = new ClientFileManager();
         public enum SuccessStatuses { LoginSuccess, SignupSuccess, GenericFailure, CredentialFailure,
             IncorrectNameFailure, IncorrectUsernameFailure, IncorrectPasswordFailure, PasswordMismatchFailure,
             UsernameExistsFailure }
@@ -127,12 +127,14 @@ namespace ChatBubbleClientWPF.Models
                 LoggedInUserID = serverReplySubstrings[1];
 
                 //Set local user directory for logged in user
-                FileIOStreamer.SetLocalUserDirectory(serverReplySubstrings[1]);
+                ClientFileManager.SetLocalUserDirectory(serverReplySubstrings[1]);
 
                 //Create a cookie in local client directory to keep user logged in
-                FileIOStreamer.ClearFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt");
-                FileIOStreamer.WriteToFile(FileIOStreamer.defaultLocalCookiesDirectory + "persistenceCookie.txt", "id=" +
-                    serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], true);
+                fileManager.ClearFile(ClientFileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt");
+
+                GenericFileContents fileContent
+                    = new GenericFileContents("id=" + serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], new GenericSpecialSymbolConverter());
+                fileManager.WriteToFile(ClientFileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt", fileContent, false);
 
                 NetComponents.ClientPendingMessageManager();
 

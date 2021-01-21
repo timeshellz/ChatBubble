@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 using ChatBubble;
 
 
@@ -12,6 +13,8 @@ namespace ChatBubbleClientWPF.Models
 {
     class Dialogue
     {
+        ISpecialSymbolConverter converter = new GenericSpecialSymbolConverter();
+        ClientFileManager fileManager = new ClientFileManager();
         readonly object queueLock = new object();
 
         public enum DialogueStates { Default, MessageSending, MessageLoading}
@@ -39,30 +42,34 @@ namespace ChatBubbleClientWPF.Models
 
         void GetStoredMessages()
         {
-            string dialogueContent = FileIOStreamer.ReadFromFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + DialogueID + ".txt");
+            IWritableFileContent fileContent = fileManager.ReadFromFile(ClientFileManager.defaultLocalUserDialoguesDirectory + "chatid=" + 
+                DialogueID + FileExtensions.FileExtensionDictionary[FileExtensions.FileType.ClientMessages]);
 
-            if (!String.IsNullOrEmpty(dialogueContent))
+            if (String.IsNullOrEmpty(fileContent.WritableContents))
+                return;
+
+            Messages = new Dictionary<int, Message>();
+
+            if (fileContent is EntrySeparatedFileContents contents)
             {
-                Messages = new Dictionary<int, Message>();
-
-                string[] messages = dialogueContent.Split(new string[] { "message==", "==message" }, StringSplitOptions.RemoveEmptyEntries);
-
-                int messageID = 0;
-                foreach(string messageData in messages)
+                foreach (MessageFileEntry entry in contents.EntryDictionary.Values)
                 {
-                    string[] messageSubstrings = messageData.Split(new string[] { "time=", "status=", "content=" }, StringSplitOptions.RemoveEmptyEntries);
-                Messages.Add(messageID, new Message(messageID, Recipient, messageSubstrings[0], messageSubstrings[1], messageSubstrings[2]));
-
-                    messageID++;
-                 }
+                    if(entry.Content is Dictionary<string, FileEntry> innerEntries)
+                    {
+                        Messages.Add((int)innerEntries["id"].Content,
+                            new Message((int)innerEntries["id"].Content, (string)innerEntries["time"].Content,
+                            (string)innerEntries["status"].Content, (string)innerEntries["content"].Content));
+                    }
+                }
 
                 LastMessage = Messages.Values.Last();
-            }
+            }           
         }
 
         public void DeleteDialogueRecord()
         {
-            FileIOStreamer.RemoveFile(FileIOStreamer.defaultLocalUserDialoguesDirectory + "chatid=" + DialogueID + ".txt");
+            fileManager.RemoveFile(ClientFileManager.defaultLocalUserDialoguesDirectory + "chatid=" +
+                DialogueID + FileExtensions.FileExtensionDictionary[FileExtensions.FileType.ClientMessages]);
         }
 
         public void PendMessage(string content)
@@ -70,7 +77,7 @@ namespace ChatBubbleClientWPF.Models
             if (String.IsNullOrEmpty(content))
                 return;
 
-            Message newMessage = new Message(Messages.Keys.Count, CurrentUser, content);
+            Message newMessage = new Message(LastMessage.MessageID, content);
 
             Messages.Add(newMessage.MessageID, newMessage);
             PendingMessages.Enqueue(newMessage);
@@ -95,9 +102,26 @@ namespace ChatBubbleClientWPF.Models
                 }
                 else pendingMessage.Status = Message.MessageStatus.SendFailed;
 
+                LastMessage = pendingMessage;
+
+                RecordMessageLocally(pendingMessage);
+
                 DialogueMessagesChanged?.Invoke(this, new DialogueMessagesChangedEventArgs()
                 { MessageID = pendingMessage.MessageID, NewMessageState = pendingMessage.Status});                
             }
+        }
+
+        void RecordMessageLocally(Message message)
+        {
+            MessageFileEntry messageEntry =
+                new MessageFileEntry(MessagesFileContent.MessageEntryKeys[MessageFileEntry.MessageEntryType.Message] + message.MessageID.ToString(),
+                message.MessageID, message.GetStatusAsString(),
+                message.MessageDateTime.ToString("dddd, dd MMMM yyyy HH: mm:ss", CultureInfo.InvariantCulture), message.MessageContent, converter);
+
+            MessagesFileContent fileContent = new MessagesFileContent(new Dictionary<string, FileEntry>() { [messageEntry.EntryName] = messageEntry }, converter);
+
+            fileManager.WriteToFile(ClientFileManager.defaultLocalUserDialoguesDirectory + "chatid=" + DialogueID
+                + FileExtensions.FileExtensionDictionary[FileExtensions.FileType.ClientMessages], fileContent, true);
         }
     }
 

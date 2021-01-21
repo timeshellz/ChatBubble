@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>ChatBubble.FileIOStreamer</RootNamespace>
-    <AssemblyName>ChatBubble.FileIOStreamer</AssemblyName>
+    <RootNamespace>ChatBubble.FileManager</RootNamespace>
+    <AssemblyName>ChatBubble.FileManager</AssemblyName>
     <Version>0.3</Version>
     <Copyright>Copyright Timofey Zheludkov aka. Tim Stark © 2019 - All Rights Reserved</Copyright>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>

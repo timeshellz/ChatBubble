@@ -43,7 +43,7 @@ namespace ChatBubble.Client
 
             string mainDirectory = configFile.AppSettings.Settings["executableDirectory"].Value;
 
-            FileIOStreamer.SetClientRootDirectory(mainDirectory);
+            FileManager.SetClientRootDirectory(mainDirectory);
         }
     }
 }

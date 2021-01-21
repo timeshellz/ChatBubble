@@ -82,7 +82,7 @@ namespace ChatBubble.Server
                         Listen(out commandResult);
                         break;
                     case CommandType.shutdown:
-                        FileIOStreamer.LogWriter("Shutting down...");
+                        FileManager.LogWriter("Shutting down...");
                         ConsoleCommands.Shutdown();
                         break;
                     case CommandType.stoplisten:
@@ -134,10 +134,10 @@ namespace ChatBubble.Server
 
                 if (requiresInputLogging)
                 {
-                    FileIOStreamer.LogWriter(logOutput);
+                    FileManager.LogWriter(logOutput);
                 }
 
-                FileIOStreamer.LogWriter(commandResult);
+                FileManager.LogWriter(commandResult);
             }
 
 
@@ -240,9 +240,9 @@ namespace ChatBubble.Server
             //Clears the logfile
             public static void ClearLog(out string output)
             {
-                FileIOStreamer.ClearFile(FileIOStreamer.defaultLogDirectory);
+                FileManager.ClearFile(FileManager.defaultLogDirectory);
 
-                output = "Log file '" + FileIOStreamer.defaultLogDirectory + "' cleared.";
+                output = "Log file '" + FileManager.defaultLogDirectory + "' cleared.";
             }
 
             public static void SetDirectories(out string output, string path = "")
@@ -327,7 +327,7 @@ namespace ChatBubble.Server
                 configFile.Save();
                 ConfigurationManager.RefreshSection("appSettings");
 
-                FileIOStreamer.SetServerDirectories(directoryData);
+                FileManager.SetServerDirectories(directoryData);
 
                 output = "Database directory set to \"" + directoryData[0] + "\"";
             }
@@ -352,7 +352,7 @@ namespace ChatBubble.Server
             //Server Shutdown
             public static void Shutdown()
             {
-                FileIOStreamer.LogWriter("Server session ended.");
+                FileManager.LogWriter("Server session ended.");
                 Environment.Exit(0);
             }
 
@@ -360,7 +360,7 @@ namespace ChatBubble.Server
             public static void ConsoleSessionStart(out string output)
             {
                 SetDirectories(out output);
-                FileIOStreamer.LogWriter(output);
+                FileManager.LogWriter(output);
 
                 NetComponents.serverSessionStartTime = DateTime.Now;
 
@@ -381,7 +381,7 @@ namespace ChatBubble.Server
         {
             InitializeComponent();
 
-            FileIOStreamer.LoggingEnabled = true;
+            FileManager.LoggingEnabled = true;
 
             AutoScaleMode = AutoScaleMode.Font;
             ActiveControl = commandTextbox;
@@ -405,8 +405,8 @@ namespace ChatBubble.Server
 
                 string exceptionDescriptionString = exception.GetType().ToString() + " at " + exception.Source.ToString() + ". " + exception.Message;
 
-                FileIOStreamer.LogWriter("Unhandled exception of type " + exceptionDescriptionString + " occured.");
-                FileIOStreamer.LogWriter("Server shutting down.");
+                FileManager.LogWriter("Unhandled exception of type " + exceptionDescriptionString + " occured.");
+                FileManager.LogWriter("Server shutting down.");
             }
             catch
             {
@@ -517,7 +517,7 @@ namespace ChatBubble.Server
             //Emergency shutdown procedure
 
             //Attempting to stop all threads; logging shutdown
-            FileIOStreamer.LogWriter("Server session ended abruptly.");
+            FileManager.LogWriter("Server session ended abruptly.");
 
             ServerListening = false;
 

@@ -9,9 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatBubble.NetComponents", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatBubbleClient", "ChatBubbleClient\ChatBubbleClient\ChatBubbleClient.csproj", "{C58FFB9D-208F-425A-A68D-79268B3DDFA4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatBubble.FileIOStreamer", "ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj", "{3F6FA5FC-3111-4501-9127-227CA038C26F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatBubble.FileManager", "ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileManager.csproj", "{3F6FA5FC-3111-4501-9127-227CA038C26F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatBubbleClientWPF", "ChatBubbleClientWPF\ChatBubbleClientWPF.csproj", "{8FCA61D5-B4F9-4DEA-92AC-EB6FF84A70E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatBubble.ClientFileManager", "ClientFileManager\ChatBubble.ClientFileManager.csproj", "{EE2424F6-F92E-4348-AA02-8BC3CB33F488}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatBubble.ServerFileManager", "ServerDatabaseManager\ChatBubble.ServerFileManager.csproj", "{202BB2BE-503B-4509-BE03-26F0053B66A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{8FCA61D5-B4F9-4DEA-92AC-EB6FF84A70E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FCA61D5-B4F9-4DEA-92AC-EB6FF84A70E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FCA61D5-B4F9-4DEA-92AC-EB6FF84A70E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE2424F6-F92E-4348-AA02-8BC3CB33F488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE2424F6-F92E-4348-AA02-8BC3CB33F488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE2424F6-F92E-4348-AA02-8BC3CB33F488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE2424F6-F92E-4348-AA02-8BC3CB33F488}.Release|Any CPU.Build.0 = Release|Any CPU
+		{202BB2BE-503B-4509-BE03-26F0053B66A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{202BB2BE-503B-4509-BE03-26F0053B66A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{202BB2BE-503B-4509-BE03-26F0053B66A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{202BB2BE-503B-4509-BE03-26F0053B66A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

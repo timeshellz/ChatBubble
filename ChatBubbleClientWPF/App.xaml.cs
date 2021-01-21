@@ -15,6 +15,8 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class App : Application
     {
+        public ClientFileManager FileManager { get; private set; }
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             MapViews();
@@ -29,7 +31,9 @@ namespace ChatBubbleClientWPF
 
             string mainDirectory = configFile.AppSettings.Settings["executableDirectory"].Value;
 
-            FileIOStreamer.SetClientRootDirectory(mainDirectory);
+            FileManager = new ClientFileManager();
+
+            ClientFileManager.SetClientRootDirectory(mainDirectory);
         }
 
         private void MapViews()

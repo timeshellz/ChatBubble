@@ -16,7 +16,7 @@ namespace ChatBubbleClientWPF.Models
         public MessageStatus Status { get; set; }
         public int MessageID { get; set; }
 
-        public Message(int messageID, User sender, string time, string status, string content)
+        public Message(int messageID, string time, string status, string content)
         {
             MessageDateTime = DateTime.Parse(time).ToLocalTime();
 
@@ -31,18 +31,31 @@ namespace ChatBubbleClientWPF.Models
             else Status = MessageStatus.SentRead;
 
             MessageContent = content;
-            MessageSender = sender;
             MessageID = messageID;
         }
 
-        public Message(int messageID, User sender, string content)
+        public Message(int messageID, string content)
         {
-            MessageSender = sender;
             MessageContent = content;
             MessageID = messageID;
 
             MessageDateTime = DateTime.Now;
             Status = MessageStatus.Sending;
+        }
+
+        public string GetStatusAsString()
+        {
+            switch(Status)
+            {
+                case MessageStatus.ReceivedRead:
+                    return "read";
+                case MessageStatus.SentRead:
+                    return "sent";
+                case MessageStatus.ReceivedNotRead:
+                    return "unread";
+            }
+
+            return "sent";
         }
     }
 }
