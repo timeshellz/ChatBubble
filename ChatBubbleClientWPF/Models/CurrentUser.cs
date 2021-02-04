@@ -5,20 +5,31 @@ using System.Text;
 using System.Threading.Tasks;
 
 using ChatBubble;
+using ChatBubble.ClientAPI;
+using ChatBubble.SharedAPI;
 
 namespace ChatBubbleClientWPF.Models
 {
     class CurrentUser : User
     {
+        public Cookie Cookie { get; private set; }
 
-        public CurrentUser(int userID) : base(userID)
+        public CurrentUser(Cookie currentUserCookie) : base(currentUserCookie.ID)
         {
+            GetUserRequest summaryRequest = new GetUserRequest(currentUserCookie, currentUserCookie.ID);
+            ServerGetUserReply serverReply = (ServerGetUserReply)ClientRequestManager.SendClientRequest(summaryRequest);
 
+            FullName = serverReply.User.FullName;
+            Username = serverReply.User.Username;
+            Status = serverReply.User.Status;
+            Description = serverReply.User.Description;
+            BubScore = serverReply.User.BubScore;
+            Cookie = currentUserCookie;
         }
 
-        public string ChangeFullName(string newName)
+        public GenericServerReply ChangeFullName(string newName)
         {
-            return NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.ChangeNameRequest, "" + ID.ToString(), true, true);
+            return ClientRequestManager.SendClientRequest(new ChangeNameRequest(Cookie, newName));
         }
 
         public string ChangeUsername(string username)
@@ -26,19 +37,19 @@ namespace ChatBubbleClientWPF.Models
             return "";
         }
 
-        public string ChangeDescription(string newStatus, string newDescription)
+        public GenericServerReply ChangeDescription(string newStatus, string newDescription)
         {
             string descriptionChangeRequest = "newsummary=\nstatus=" + newStatus + "\nmain=" + newDescription + "\n";
 
-            string reply = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.EditUserSummaryRequest, descriptionChangeRequest, true, true);
+            GenericServerReply serverReply = ClientRequestManager.SendClientRequest(new EditSummaryRequest(Cookie, newStatus, newDescription));
 
-            if (reply == NetComponents.ConnectionCodes.DescEditSuccess)
+            if (serverReply.NetFlag == ConnectionCodes.DescEditSuccess)
             {
                 Status = newStatus;
                 Description = newDescription;
             }
 
-            return reply;
+            return serverReply;
         }
 
         public string ChangeBubScore(int bubScore)
@@ -46,14 +57,14 @@ namespace ChatBubbleClientWPF.Models
             return "";
         }
 
-        public string RemoveFriend(int friendID)
+        public GenericServerReply RemoveFriend(int friendID)
         {
-            return NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.RemoveFriendRequest, "fid=" + friendID.ToString(), true, true);
+            return ClientRequestManager.SendClientRequest(new RemoveFriendRequest(Cookie, friendID));
         }
 
-        public string AddFriend(int userID)
+        public GenericServerReply AddFriend(int userID)
         {
-            return NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.AddFriendRequest, "addid=" + userID.ToString(), true, true);
+            return ClientRequestManager.SendClientRequest(new AddFriendRequest(Cookie, userID));
         }
     }
 }

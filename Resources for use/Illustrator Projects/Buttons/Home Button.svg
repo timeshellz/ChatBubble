@@ -1,0 +1,58 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="500px" height="500px" viewBox="0 0 500 500">
+<defs>
+<image id="homeButtonIdle_png" x="0" y="0" width="60" height="97" xlink:href="./images/homeButtonIdle_png.png"/>
+
+<g id="Layer0_0_FILL">
+<path fill="#FFFFFF" stroke="none" d="
+M 403.35 273.75
+Q 398.4 245.55 364.8 245.55
+L 132.85 245.55
+Q 99.25 245.55 94.3 273.75
+L 403.35 273.75
+M 408.8 273.75
+L 445.9 273.75 249.55 66.05 56.7 273.75 94.3 273.75
+Q 99.25 245.55 132.85 245.55
+L 364.8 245.55
+Q 398.4 245.55 403.35 273.75
+L 408.8 273.75
+M 409.8 285.1
+Q 409.8 279.2 408.8 273.75
+L 403.35 273.75 94.3 273.75
+Q 93.3 279.2 93.3 285.1
+L 93.3 395.9
+Q 93.3 435.45 132.85 435.45
+L 364.8 435.45
+Q 367.75 435.45 370.25 435.45 409.8 435.45 409.8 395.9
+L 409.8 285.1 Z"/>
+</g>
+
+<path id="Layer0_0_1_STROKES" stroke="#FFFFFF" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" fill="none" d="
+M 364.8 435.45
+L 132.85 435.45
+Q 93.3 435.45 93.3 395.9
+L 93.3 285.1
+Q 93.3 279.2 94.3 273.75
+L 56.7 273.75 249.55 66.05 445.9 273.75 408.8 273.75
+Q 409.8 279.2 409.8 285.1
+L 409.8 395.9
+Q 409.8 435.45 370.25 435.45
+M 94.3 273.75
+Q 99.25 245.55 132.85 245.55
+L 364.8 245.55
+Q 398.4 245.55 403.35 273.75
+L 408.8 273.75
+M 94.3 273.75
+L 403.35 273.75"/>
+</defs>
+
+<g transform="matrix( 1, 0, 0, 1, 221,201) ">
+<use xlink:href="#homeButtonIdle_png"/>
+</g>
+
+<g transform="matrix( 1, 0, 0, 1, 0,0) ">
+<use xlink:href="#Layer0_0_FILL"/>
+
+<use xlink:href="#Layer0_0_1_STROKES"/>
+</g>
+</svg>

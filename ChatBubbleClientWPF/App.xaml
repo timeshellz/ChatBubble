@@ -23,6 +23,7 @@
         <util:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <util:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <util:ReverseBoolToVisibilityConverter x:Key="ReverseBoolToVisibilityConverter"/>
+        <util:NotificationTypeToStyleConverter x:Key="NotificationTypeToStyleConverter"/>
 
         <ControlTemplate x:Key="RoundedRectangleButton" TargetType="Button">
             <Grid>
@@ -334,12 +335,30 @@
         </Style>
 
         <Style x:Key="ReceivedMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
-            <Setter Property="FontSize" Value="14"/>
             <Setter Property="BorderBrush" Value="{StaticResource AuxillaryColorBrush}"/>
-            <Setter Property="BorderThickness" Value="2.5"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="Background" Value="{StaticResource AuxillaryColorBrush}"/>
+        </Style>
+
+        <Style x:Key="FailedMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AuxillaryColorBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Foreground" Value="{StaticResource SecondaryColorBrush}"/>
+            <Setter Property="Background" Value="{StaticResource ErrorColorBrush}"/>
+        </Style>
+
+        <Style BasedOn="{StaticResource SmallTextStyle}" TargetType="{x:Type controls:NotificationTile}">
+            <Setter Property="NotificationFill" Value="{StaticResource PrimaryColorBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryColorBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource SecondaryColorBrush}"/>
+        </Style>
+
+
+        <Style x:Key="ErrorNotificationStyle" BasedOn="{StaticResource  {x:Type controls:NotificationTile}}" TargetType="{x:Type controls:NotificationTile}">
+            <Setter Property="NotificationFill" Value="{StaticResource ErrorColorBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ErrorColorBrush}"/>
         </Style>
 
     </Application.Resources>

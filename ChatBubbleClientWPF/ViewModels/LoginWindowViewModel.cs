@@ -272,7 +272,7 @@ namespace ChatBubbleClientWPF.ViewModels
         {
             windowFactory.WindowRendered += (o, e) => OnViewModelClosing();
 
-            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), clientFrontDoorModel.LoggedInUserID);
+            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), clientFrontDoorModel.LoggedInUserCookie);
         }
 
         protected void OnCredentialsRequested(object sender, UserForms.UserFormEventArgs e)

@@ -7,6 +7,10 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 
+using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
+
 namespace ChatBubbleClientWPF.ViewModels
 {
     class ActiveDialogueViewModel : BaseViewModel, IUserTileContainer
@@ -71,9 +75,9 @@ namespace ChatBubbleClientWPF.ViewModels
 
         void PopulateMessageLineViewModels()
         {
-            foreach(Models.Message message in currentDialogueModel.Messages.Values)
+            foreach(Message message in currentDialogueModel.Messages.Values)
             {
-                MessageLineViewModels.Insert(message.MessageID, new MessageLineViewModel(message));
+                MessageLineViewModels.Insert(message.ID, new MessageLineViewModel(message));
             }
         }
 
@@ -94,8 +98,8 @@ namespace ChatBubbleClientWPF.ViewModels
             {
                 switch (eventArgs.NewMessageState)
                 {
-                    case Models.Message.MessageStatus.SentRead:
-                    case Models.Message.MessageStatus.SentReceived:
+                    case Message.MessageStatus.SentRead:
+                    case Message.MessageStatus.SentReceived:
                         MessageLineViewModels.Insert(eventArgs.MessageID, new MessageLineViewModel(currentDialogueModel.Messages[eventArgs.MessageID]));
                         break;
                 }

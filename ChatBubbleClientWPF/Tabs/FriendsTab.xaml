@@ -24,9 +24,7 @@
                 </ItemsControl.ItemTemplate>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Name="FriendListPanel" Orientation="Horizontal">
-
-                        </WrapPanel>
+                        <WrapPanel Name="FriendListPanel" Orientation="Horizontal"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
             </ItemsControl>

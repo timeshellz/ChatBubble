@@ -15,7 +15,7 @@ namespace ChatBubble
     /// </summary>
     public static class NetComponents
     {
-        public static Encoding us_US = Encoding.Unicode;
+        
 
         static Socket mainSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         static Socket auxilarryUDPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);

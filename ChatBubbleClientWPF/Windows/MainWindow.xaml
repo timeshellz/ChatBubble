@@ -53,6 +53,21 @@
                 <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding NotificationViewModels}"
+                          HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                          Width="180" Height="240" Panel.ZIndex="10000">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel VerticalAlignment="Bottom"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <controls:NotificationTile Style="{Binding NotificationType, Converter={StaticResource NotificationTypeToStyleConverter}}"
+                                                   Height="40"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <Frame x:Name="CurrentTab" Grid.Row="1" Grid.Column="1" NavigationUIVisibility="Hidden" Panel.ZIndex="0" Margin="-1,0,0,0" Navigated="Frame_Navigated"/>
             <StackPanel Grid.Row="1"  Grid.Column="0" Style="{StaticResource PrimaryColorStyle}" Background="{StaticResource PrimaryColorBrush}">
                 <Button Panel.ZIndex="1000" x:Name="MainTabButton" Height="80" BorderThickness="0" Margin="0"

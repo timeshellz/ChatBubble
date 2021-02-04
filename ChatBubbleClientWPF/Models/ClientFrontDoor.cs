@@ -11,19 +11,23 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Security;
 using System.Runtime.InteropServices;
+
 using ChatBubble;
+using ChatBubble.FileManager;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.Models
 {
     class ClientFrontDoor : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
-        ClientFileManager fileManager = new ClientFileManager();
+        FileManager fileManager = new FileManager();
         public enum SuccessStatuses { LoginSuccess, SignupSuccess, GenericFailure, CredentialFailure,
             IncorrectNameFailure, IncorrectUsernameFailure, IncorrectPasswordFailure, PasswordMismatchFailure,
             UsernameExistsFailure }
 
-        string loggedInUserID;
+        Cookie loggedInUserCookie;
         SuccessStatuses successStatus;
 
         public SuccessStatuses SuccessStatus
@@ -36,12 +40,12 @@ namespace ChatBubbleClientWPF.Models
             }
         }      
 
-        public string LoggedInUserID
+        public Cookie LoggedInUserCookie
         {
-            get { return loggedInUserID; }
+            get { return loggedInUserCookie; }
             set
             {
-                loggedInUserID = value;
+                loggedInUserCookie = value;
                 OnPropertyChanged();
             }
         }
@@ -95,63 +99,43 @@ namespace ChatBubbleClientWPF.Models
                 return;
             }
 
-            string serverReply;
-            serverReply = NetComponents.LogPasRequestClientside(username, password);
+            LoginRequest clientRequest = new LoginRequest(username, password);
+            GenericServerReply serverReply = ClientRequestManager.SendClientRequest(clientRequest);
 
-            serverReply = serverReply.Substring(0, serverReply.IndexOf('\0'));
-            serverReply = LoginReplyHandler(serverReply);
-
-            if (serverReply == NetComponents.ConnectionCodes.LoginFailure)
+            if (serverReply is ServerLoginReply loginReply)
             {
-                SuccessStatus = SuccessStatuses.CredentialFailure;
-            }
-            if(serverReply == NetComponents.ConnectionCodes.ConnectionFailure)
-            {
-                SuccessStatus = SuccessStatuses.GenericFailure;
-            }
-            if(serverReply == NetComponents.ConnectionCodes.LoginSuccess)
-            {
-                SuccessStatus = SuccessStatuses.LoginSuccess;
-            }
-        }
-
-        public string LoginReplyHandler(string serverReply)
-        {
-            string[] serverReplySplitStrings = new string[2] { "id=", "hash=" };
-
-            //For serverReplySubstrings, index 0 is server flag, index 1 is ID, index 2 is hash
-            string[] serverReplySubstrings = serverReply.Split(serverReplySplitStrings, 3, StringSplitOptions.RemoveEmptyEntries);
-
-            if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.LoginSuccess)
-            {
-                LoggedInUserID = serverReplySubstrings[1];
-
-                //Set local user directory for logged in user
-                ClientFileManager.SetLocalUserDirectory(serverReplySubstrings[1]);
-
-                //Create a cookie in local client directory to keep user logged in
-                fileManager.ClearFile(ClientFileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt");
-
-                GenericFileContents fileContent
-                    = new GenericFileContents("id=" + serverReplySubstrings[1] + "confirmation=" + serverReplySubstrings[2], new GenericSpecialSymbolConverter());
-                fileManager.WriteToFile(ClientFileManager.defaultLocalCookiesDirectory + "persistenceCookie.txt", fileContent, false);
-
-                NetComponents.ClientPendingMessageManager();
-
-                Thread messageReceiverThread = new Thread(NetComponents.ClientServerFlagListener);
-                messageReceiverThread.Start();
-
-                return (NetComponents.ConnectionCodes.LoginSuccess);
-            }
-            else if (serverReply == NetComponents.ConnectionCodes.LoginFailure)
-            {
-                return (NetComponents.ConnectionCodes.LoginFailure);
+                if (loginReply.NetFlag == ConnectionCodes.LoginFailure)
+                {
+                    SuccessStatus = SuccessStatuses.CredentialFailure;
+                }
+                if (loginReply.NetFlag == ConnectionCodes.ConnectionFailure)
+                {
+                    SuccessStatus = SuccessStatuses.GenericFailure;
+                }
+                if (loginReply.NetFlag == ConnectionCodes.LoginSuccess)
+                {
+                    HandleLoginReply(loginReply);
+                    SuccessStatus = SuccessStatuses.LoginSuccess;
+                }
             }
             else
-            {
-                return (NetComponents.ConnectionCodes.ConnectionFailure);
+                SuccessStatus = SuccessStatuses.GenericFailure;
+        }
 
-            }
+        public void HandleLoginReply(ServerLoginReply serverReply)
+        {
+            LoggedInUserCookie = serverReply.NewCookie;
+
+            string cookiePath = ClientDirectories.DirectoryDictionary[ClientDirectories.DirectoryType.Cookies]
+            + @"\cookie" + FileExtensions.GetExtensionForFileType(FileExtensions.FileType.Cookie);
+
+            fileManager.TryDeleteFile(cookiePath);
+            fileManager.AppendToFile(cookiePath, serverReply.NewCookie, 0);
+
+            //NetComponents.ClientPendingMessageManager();
+
+            //Thread messageReceiverThread = new Thread(NetComponents.ClientServerFlagListener);
+            //messageReceiverThread.Start();
         }
 
 
@@ -186,24 +170,20 @@ namespace ChatBubbleClientWPF.Models
                 return;
             }
 
-            string serverReply = NetComponents.SignUpRequestClientside(name, username, password);
-            string[] serverReplySplitStrings = new string[2] { "id=", "hash=" };
+            SignupRequest clientRequest = new SignupRequest(name, username, password);
+            GenericServerReply serverReply = ClientRequestManager.SendClientRequest(clientRequest);
 
-            serverReply = serverReply.Substring(0, serverReply.IndexOf('\0'));
-            string[] serverReplySubstrings = serverReply.Split(serverReplySplitStrings, 2, StringSplitOptions.RemoveEmptyEntries);
-            //It isn't necessary to split strings at this point of functionality, but it might be needed in the future
-
-            if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.SignUpFailure)
+            if (serverReply.NetFlag == ConnectionCodes.SignUpFailure)
             {
                 SuccessStatus = SuccessStatuses.UsernameExistsFailure;
                 return;
             }
-            if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.DatabaseError)
+            if (serverReply.NetFlag == ConnectionCodes.DatabaseError)
             {
                 SuccessStatus = SuccessStatuses.GenericFailure;
                 return;
             }
-            if (serverReplySubstrings[0] == NetComponents.ConnectionCodes.SignUpSuccess)
+            if (serverReply.NetFlag == ConnectionCodes.SignUpSuccess)
             {
                 SuccessStatus = SuccessStatuses.SignupSuccess;
                 return;

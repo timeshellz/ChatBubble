@@ -9,7 +9,11 @@ using System.Windows;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
+
 using ChatBubble;
+using ChatBubble.FileManager;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.Models
 {
@@ -25,11 +29,13 @@ namespace ChatBubbleClientWPF.Models
         ConnectionTypes connectionType = ConnectionTypes.None;
 
         int attemptNumber = 2;
-        string serverReply = String.Empty;
+        ServerLoginReply serverReply;
+
+        FileManager fileManager;
 
         public ClientStartup()
         {
-            //InitiateStartup();
+            fileManager = new FileManager();
         }
 
         public ConnectionStatuses ConnectionStatus
@@ -62,7 +68,7 @@ namespace ChatBubbleClientWPF.Models
             }
         }
 
-        public string ServerReply
+        public ServerLoginReply ServerReply
         {
             get { return serverReply; }
             private set
@@ -74,42 +80,70 @@ namespace ChatBubbleClientWPF.Models
 
         public void InitiateStartup()
         {
-            string[] serverAddress = configFile.AppSettings.Settings["serverAddress"].Value.Split(':');
+            Dictionary<int, object> fileContents = new Dictionary<int, object>();
+            HandshakeRequest handshakeRequest;
 
-            NetComponents.ClientSetServerEndpoints(serverAddress[0], Convert.ToInt32(serverAddress[1]));
+            string cookiePath = ClientDirectories.DirectoryDictionary[ClientDirectories.DirectoryType.Cookies]
+                    + @"cookie" + FileExtensions.GetExtensionForFileType(FileExtensions.FileType.Cookie);
 
-            while (connectionStatus != ConnectionStatuses.Connected)
+            try
             {
-                string handshakeResult = NetComponents.InitialHandshakeClient();
+                fileContents = fileManager.ReadFromFile(cookiePath);
 
-                if (attemptNumber >= 50 || handshakeResult == NetComponents.ConnectionCodes.ConnectionFailure)
+                handshakeRequest = new HandshakeRequest((Cookie)fileContents.Values.First());
+            }
+            catch
+            {
+                handshakeRequest = new HandshakeRequest();
+            }   
+
+            while (ConnectionStatus != ConnectionStatuses.Connected)
+            {
+                GenericServerReply handshakeResult = null;
+
+                try
                 {
-                    ConnectionStatus = ConnectionStatuses.ConnectionFailed;
+                    handshakeResult = ClientRequestManager.PerformHandshake(handshakeRequest);
+                }
+                catch(RequestException e)
+                {
+                    if (e.ExceptionCode == ConnectionCodes.ConnectionFailure)
+                        ConnectionStatus = ConnectionStatuses.ConnectionFailed;
+                    if (e.ExceptionCode == ConnectionCodes.ConnectionTimeoutStatus)
+                    {
+                        ConnectionStatus = ConnectionStatuses.Connecting;
+                        attemptNumber++;
+                    }
 
+                    if (attemptNumber >= 50)
+                        ConnectionStatus = ConnectionStatuses.ConnectionFailed;
+                }
+
+                if (ConnectionStatus == ConnectionStatuses.ConnectionFailed)
+                {
                     try
                     {
-                        NetComponents.BreakBind(false);
+                        ClientNetworkConfigurator networkConfigurator = new ClientNetworkConfigurator();
+                        networkConfigurator.DisconnectSockets(false);
                     }
                     catch { }
 
                     return;
                 }
 
-                if (handshakeResult == NetComponents.ConnectionCodes.ExpiredSessionStatus)
+                if (handshakeResult != null)
                 {
-                    ConnectionStatus = ConnectionStatuses.Connected;
-                    ConnectionType = ConnectionTypes.Expired;
-                }
-                else if (handshakeResult.Substring(0, NetComponents.ConnectionCodes.DefaultFlagLength) == NetComponents.ConnectionCodes.LoginSuccess)
-                {
-                    ServerReply = handshakeResult;
-                    ConnectionStatus = ConnectionStatuses.Connected;
-                    ConnectionType = ConnectionTypes.Fresh;                 
-                }
-                else
-                {
-                    ConnectionStatus = ConnectionStatuses.Connecting;
-                    attemptNumber++;
+                    if (handshakeResult.NetFlag == ConnectionCodes.ExpiredSessionStatus || handshakeResult.NetFlag == ConnectionCodes.AuthFailure)
+                    {
+                        ConnectionStatus = ConnectionStatuses.Connected;
+                        ConnectionType = ConnectionTypes.Expired;
+                    }
+                    else if (handshakeResult.NetFlag == ConnectionCodes.LoginSuccess && handshakeResult is ServerLoginReply loginReply)
+                    {
+                        ServerReply = loginReply;
+                        ConnectionStatus = ConnectionStatuses.Connected;
+                        ConnectionType = ConnectionTypes.Fresh;
+                    }
                 }
             }
         }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 
 using ChatBubble;
+using ChatBubble.SharedAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -25,12 +26,12 @@ namespace ChatBubbleClientWPF.ViewModels
             }
         }
 
-        public FriendTileViewModel(Models.User userModel) : base(userModel)
+        public FriendTileViewModel(User userModel) : base(userModel)
         {
             ContextMenuItems.Add(new MenuItemViewModel("Remove friend", RemoveFriendCommand));
         }
 
-        public FriendTileViewModel(Models.User userModel, params ContextMenuActions[] contextMenuActions) : base(userModel, contextMenuActions)
+        public FriendTileViewModel(User userModel, params ContextMenuActions[] contextMenuActions) : base(userModel, contextMenuActions)
         {
             ContextMenuItems.Add(new MenuItemViewModel("Remove friend", RemoveFriendCommand));
         }

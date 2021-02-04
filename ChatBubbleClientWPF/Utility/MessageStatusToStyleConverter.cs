@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
+using ChatBubble.SharedAPI;
+
 namespace ChatBubbleClientWPF.Utility
 {
-    [ValueConversion(typeof(Models.Message.MessageStatus), typeof(Style))]
+    [ValueConversion(typeof(Message.MessageStatus), typeof(Style))]
     public class MessageStatusToStyleConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter,
@@ -17,13 +19,15 @@ namespace ChatBubbleClientWPF.Utility
             if (targetType != typeof(Style))
                 throw new InvalidOperationException("The target must be a style");
 
-            switch((Models.Message.MessageStatus)value)
+            switch((Message.MessageStatus)value)
             {
-                case Models.Message.MessageStatus.ReceivedNotRead:
-                case Models.Message.MessageStatus.ReceivedRead:
+                case Message.MessageStatus.ReceivedNotRead:
+                case Message.MessageStatus.ReceivedRead:
                     return Application.Current.Resources["ReceivedMessageBoxStyle"] as Style;
-                case Models.Message.MessageStatus.SentRead:
+                case Message.MessageStatus.SentRead:
                     return Application.Current.FindResource(typeof(Controls.MessageBox)) as Style;
+                case Message.MessageStatus.SendFailed:
+                    return Application.Current.Resources["FailedMessageBoxStyle"] as Style;
             }
 
             return Application.Current.FindResource(typeof(Controls.MessageBox)) as Style;

@@ -5,7 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using System.Collections;
+
 using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -29,26 +32,26 @@ namespace ChatBubbleClientWPF.ViewModels
             }
         }
 
-        public Dictionary<int, Models.User> friendDictionary;
+        public Dictionary<int, User> friendDictionary;
 
         public FriendsTabViewModel(MainWindowViewModel mainViewModel)
         {
             mainWindowViewModel = mainViewModel;
 
-            string friendListResultString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetFriendListRequest, "", true, true);
+            ServerFriendListReply serverReply =
+                (ServerFriendListReply)ClientRequestManager.SendClientRequest(new GetFriendListRequest(mainWindowViewModel.CurrentUser.Cookie));
 
-            if (friendListResultString == NetComponents.ConnectionCodes.DatabaseError)      //TO DO: Output an error message here
+            if (serverReply.NetFlag == ConnectionCodes.DatabaseError)      //TO DO: Output an error message here
             {
                 return;
             }
 
-            friendDictionary = new Dictionary<int, Models.User>();
+            friendDictionary = new Dictionary<int, User>();
             string[] friendListSplitstrings = { "id=", "login=", "name=" };
 
-            foreach (string friend in friendListResultString.Split(new string[] { "user=" }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (User friend in serverReply.FriendList)
             {
-                string[] friendData = friend.Split(friendListSplitstrings, StringSplitOptions.RemoveEmptyEntries);
-                friendDictionary.Add(Convert.ToInt32(friendData[0]), new Models.User(Convert.ToInt32(friendData[0]), friendData[2], friendData[1]));
+                friendDictionary.Add(friend.ID, friend);
             }
 
             CreateFriendViewmodels();

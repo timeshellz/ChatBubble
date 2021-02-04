@@ -11,6 +11,8 @@ using System.Windows.Input;
 using System.ComponentModel;
 
 using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -58,7 +60,9 @@ namespace ChatBubbleClientWPF.ViewModels
                     new Models.Dialogue(new Models.User(senderID), Convert.ToInt32(mainWindowViewModel.CurrentUserID)));               
             }*/
 
-            dialogueDictionary.Add(39, new Models.Dialogue(new Models.User(39), mainWindowViewModel.CurrentUser));
+            User user = ((ServerGetUserReply)ClientRequestManager.SendClientRequest(new GetUserRequest(mainWindowViewModel.CurrentUser.Cookie, 39))).User;
+
+            dialogueDictionary.Add(39, new Models.Dialogue(user, mainWindowViewModel.CurrentUser));
 
             PopulateDialogueViewModelList();
         }

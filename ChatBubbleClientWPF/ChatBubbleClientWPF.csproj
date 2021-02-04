@@ -35,10 +35,32 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="protobuf-net, Version=3.0.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.3.0.73\lib\net461\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="protobuf-net.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.Core.3.0.73\lib\net461\protobuf-net.Core.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable, Version=1.2.5.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.7.1\lib\net461\System.Collections.Immutable.dll</HintPath>
+    </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -76,6 +98,9 @@
     <Compile Include="Controls\MessageLine.xaml.cs">
       <DependentUpon>MessageLine.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\NotificationTile.xaml.cs">
+      <DependentUpon>NotificationTile.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\SearchResultPanel.xaml.cs">
       <DependentUpon>SearchResultPanel.xaml</DependentUpon>
     </Compile>
@@ -84,8 +109,7 @@
     </Compile>
     <Compile Include="Models\CurrentUser.cs" />
     <Compile Include="Models\Dialogue.cs" />
-    <Compile Include="Models\Message.cs" />
-    <Compile Include="Models\User.cs" />
+    <Compile Include="Models\Notification.cs" />
     <Compile Include="Tabs\ActiveDialogueTab.xaml.cs">
       <DependentUpon>ActiveDialogueTab.xaml</DependentUpon>
     </Compile>
@@ -93,6 +117,7 @@
     <Compile Include="Utility\InverseBooleanConverter.cs" />
     <Compile Include="Utility\MessageStatusToStyleConverter.cs" />
     <Compile Include="Utility\MouseOverTransparencyConverter.cs" />
+    <Compile Include="Utility\NotificationTypeToStyleConverter.cs" />
     <Compile Include="Utility\PageFactory.cs" />
     <Compile Include="Utility\ViewModelResolver.cs" />
     <Compile Include="Utility\ReverseBoolToVisibilityConverter.cs" />
@@ -119,6 +144,7 @@
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
     <Compile Include="ViewModels\MenuItemViewModel.cs" />
     <Compile Include="ViewModels\MessageLineViewModel.cs" />
+    <Compile Include="ViewModels\NotificationViewModel.cs" />
     <Compile Include="ViewModels\SearchTabViewModel.cs" />
     <Compile Include="ViewModels\SettingsTabViewModel.cs" />
     <Compile Include="ViewModels\UserTileViewModel.cs" />
@@ -165,6 +191,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\MessageLine.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\NotificationTile.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -301,17 +331,17 @@
     <Resource Include="Images\SignUpTransparent.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileManager.csproj">
-      <Project>{3f6fa5fc-3111-4501-9127-227ca038c26f}</Project>
+    <ProjectReference Include="..\ChatBubble.FileManager\ChatBubble.FileManager.csproj">
+      <Project>{478d41f0-200c-44e9-80c4-3b403eba5524}</Project>
       <Name>ChatBubble.FileManager</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ChatBubble.NetComponents\ChatBubble.NetComponents.csproj">
-      <Project>{d0b50736-9975-409a-8663-9d0b425de592}</Project>
-      <Name>ChatBubble.NetComponents</Name>
+    <ProjectReference Include="..\ChatBubble.SharedAPI\ChatBubble.SharedAPI.csproj">
+      <Project>{ef381f15-cd88-4f7a-8cd9-04fbe8973e2c}</Project>
+      <Name>ChatBubble.SharedAPI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ClientFileManager\ChatBubble.ClientFileManager.csproj">
-      <Project>{ee2424f6-f92e-4348-aa02-8bc3cb33f488}</Project>
-      <Name>ChatBubble.ClientFileManager</Name>
+    <ProjectReference Include="..\ClientAPI\ChatBubble.ClientAPI.csproj">
+      <Project>{9c573bec-26b2-4618-8b0e-b1730957891a}</Project>
+      <Name>ChatBubble.ClientAPI</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -322,9 +352,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\cbLogoTransparent.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="dialoguesButton.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Buttons\friendsButtonIdle.png" />

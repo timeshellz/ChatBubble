@@ -126,12 +126,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileManager.csproj">
-      <Project>{3f6fa5fc-3111-4501-9127-227ca038c26f}</Project>
-      <Name>ChatBubble.FileManager</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\LoadingCog.gif" />
   </ItemGroup>
   <ItemGroup>

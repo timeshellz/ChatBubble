@@ -10,7 +10,9 @@ using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using System.Threading;
 using System.Windows.Input;
+
 using ChatBubble;
+using ChatBubble.SharedAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -18,7 +20,6 @@ namespace ChatBubbleClientWPF.ViewModels
     {
         Models.ClientStartup clientStartupModel;
 
-        public event EventHandler<Utility.ConnectionEventArgs> ConnectionEstablished;
         public event EventHandler<Utility.ConnectionEventArgs> ConnectionFailed;      
 
         string connectionStatusString = String.Empty;
@@ -70,7 +71,7 @@ namespace ChatBubbleClientWPF.ViewModels
             switch(e.PropertyName)
             {
                 case nameof(clientStartupModel.ConnectionStatus):
-                    ModifyConnectionStatus(clientStartupModel.ConnectionStatus);
+                    ModifyConnectionStatus(clientStartupModel.ConnectionStatus);                  
                     break;
                 case nameof(clientStartupModel.ConnectionType):
                     HandleConnectionType(clientStartupModel.ConnectionType);
@@ -103,7 +104,7 @@ namespace ChatBubbleClientWPF.ViewModels
                 ConnectionStatusString = "Connected!";
                 Thread.Sleep(1000);
 
-                CreateLoginViewModel();
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => CreateLoginViewModel()));
 
             }
             if(conType == Models.ClientStartup.ConnectionTypes.Fresh)
@@ -111,19 +112,19 @@ namespace ChatBubbleClientWPF.ViewModels
                 ConnectionStatusString = "Logged in!";
                 Thread.Sleep(1000);
 
-                string userID = "";
+                Cookie newCookie;
 
-                RecordFreshSession(out userID);
-                CreateMainViewModel(userID);
+                RecordFreshSession(out newCookie);
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => CreateMainViewModel(newCookie)));
                 //Go to mainwindow
             }
         }
 
-        void RecordFreshSession(out string loggedInUserID)
+        void RecordFreshSession(out Cookie cookie)
         {
             Models.ClientFrontDoor clientFront = new Models.ClientFrontDoor();
-            clientFront.LoginReplyHandler(clientStartupModel.ServerReply);
-            loggedInUserID = clientFront.LoggedInUserID;
+            clientFront.HandleLoginReply(clientStartupModel.ServerReply);
+            cookie = clientFront.LoggedInUserCookie;
         }
 
         void CreateLoginViewModel()
@@ -133,27 +134,16 @@ namespace ChatBubbleClientWPF.ViewModels
             LoginWindowViewModel loginWindowViewModel = new LoginWindowViewModel(windowFactory);
         }
 
-        void CreateMainViewModel(string userID)
+        void CreateMainViewModel(Cookie userCookie)
         {
             windowFactory.WindowRendered += (o, e) => OnViewModelClosing();
 
-            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), userID);
+            MainWindowViewModel mainWindowViewModel = new MainWindowViewModel(windowFactory, new Utility.PageFactory(), userCookie);
         }
 
         void OnConnectionFailed(object sender, Utility.ConnectionEventArgs e)
         {
-            for (int i = 0; i < 5; i++) //Do 5 attempts at informing view of connection error. This helps currently loading view receive information.
-            {
-                if (ConnectionFailed != null)
-                {
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, ConnectionFailed, sender, e);
-                    break;
-                }
-                else
-                {
-                    Thread.Sleep(200);
-                }
-            }
+            ConnectionFailed?.Invoke(sender, e);
         }
     }
 }

@@ -11,6 +11,8 @@ using System.Windows.Input;
 using System.ComponentModel;
 
 using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -18,7 +20,7 @@ namespace ChatBubbleClientWPF.ViewModels
     {
         readonly MainWindowViewModel mainWindowViewModel;
 
-        public Dictionary<int, Models.User> resultDictionary;
+        public Dictionary<int, User> resultDictionary;
         public ObservableCollection<ViewModels.UserTileViewModel> searchResultViewModelsList;
 
         string searchParameter;
@@ -51,7 +53,7 @@ namespace ChatBubbleClientWPF.ViewModels
         {
             mainWindowViewModel = mainViewModel;
 
-            resultDictionary = new Dictionary<int, Models.User>();
+            resultDictionary = new Dictionary<int, User>();
 
             searchResultViewModelsList = new ObservableCollection<UserTileViewModel>();
 
@@ -66,36 +68,34 @@ namespace ChatBubbleClientWPF.ViewModels
                 {
                     SearchResultViewModels.Clear();
                     return;
-                }                 
+                }
 
-                string searchResultString = "";
+                GenericServerReply serverReply = null;
 
                 await Task.Delay(600); //Slow down requests to ease server and client resource usage
 
                 await Task.Run(() =>
                 {
-                    searchResultString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.SearchRequest, SearchParameter, true, false, true);
+                    serverReply = ClientRequestManager.SendClientRequest(new SearchRequest(mainWindowViewModel.CurrentUser.Cookie, SearchParameter));
                 });
               
-                if (searchResultString != NetComponents.ConnectionCodes.NotFoundError)
+                if (serverReply != null && serverReply.NetFlag != ConnectionCodes.NotFoundError && serverReply is ServerSearchReply searchReply)
                     await Task.Run(() =>
                     {
-                        PopulateSearchList(searchResultString.Split(new string[1] { "user=" }, StringSplitOptions.RemoveEmptyEntries));
+                        PopulateSearchList(searchReply.SearchResults);
                     });
             }
         }
 
-        void PopulateSearchList(string[] userResults)
+        void PopulateSearchList(List<User> results)
         {
             resultDictionary.Clear();
 
-            foreach (string user in userResults)
+            foreach (User user in results)
             {
-                string[] userData = user.Split(new string[3] { "id=", "login=", "name=" }, StringSplitOptions.RemoveEmptyEntries);
-
                 try
                 {
-                    resultDictionary.Add(Convert.ToInt32(userData[0]), new Models.User(Convert.ToInt32(userData[0]), userData[2], userData[1]));
+                    resultDictionary.Add(user.ID, user);
                 }
                 catch { };
             }
@@ -105,7 +105,7 @@ namespace ChatBubbleClientWPF.ViewModels
             {
                 SearchResultViewModels.Clear();
 
-                foreach (Models.User user in resultDictionary.Values)
+                foreach (User user in resultDictionary.Values)
                 {
                     UserTileViewModel userSearchTile = new UserTileViewModel(user);
                     userSearchTile.TileActionTriggered += OnTileAction;

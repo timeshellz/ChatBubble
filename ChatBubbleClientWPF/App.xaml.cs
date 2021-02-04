@@ -8,6 +8,9 @@ using System.Windows;
 using ChatBubble;
 using System.Reflection;
 
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
+
 namespace ChatBubbleClientWPF
 {
     /// <summary>
@@ -15,25 +18,35 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class App : Application
     {
-        public ClientFileManager FileManager { get; private set; }
-
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             MapViews();
-            SetConfiguration();
+            ManageApplicationConfiguration();
 
             ViewModels.LoadingWindowViewModel viewModel = new ViewModels.LoadingWindowViewModel(new Utility.WindowFactory());
         }
 
-        private void SetConfiguration()
+        private void ManageApplicationConfiguration()
         {
             Configuration configFile = ConfigurationManager.OpenExeConfiguration(Assembly.GetExecutingAssembly().Location);
 
+           // SetFilesystemConfiguration(configFile);
+            SetNetworkConfiguration(configFile);
+        }
+
+        private void SetFilesystemConfiguration(Configuration configFile)
+        {
             string mainDirectory = configFile.AppSettings.Settings["executableDirectory"].Value;
+        }
 
-            FileManager = new ClientFileManager();
+        private void SetNetworkConfiguration(Configuration configFile)
+        {
+            string[] serverAddress = configFile.AppSettings.Settings["serverAddress"].Value.Split(':');
 
-            ClientFileManager.SetClientRootDirectory(mainDirectory);
+            ClientNetworkConfigurator configurator = new ClientNetworkConfigurator();
+
+            configurator.InitializeSockets();
+            configurator.SetServerEndPoint(serverAddress[0], Convert.ToInt32(serverAddress[1]));
         }
 
         private void MapViews()

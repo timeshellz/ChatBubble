@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Collections.ObjectModel;
 
 using ChatBubble;
+using ChatBubble.SharedAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -116,12 +117,12 @@ namespace ChatBubbleClientWPF.ViewModels
         }
 
 
-        public UserTileViewModel(Models.User userModel, params ContextMenuActions[] contextMenuActions) : this(userModel)
+        public UserTileViewModel(User userModel, params ContextMenuActions[] contextMenuActions) : this(userModel)
         {
             FillContextMenu(contextMenuActions);
         }
 
-        public  UserTileViewModel(Models.User userModel, bool useDefaultContextMenu = true)
+        public  UserTileViewModel(User userModel, bool useDefaultContextMenu = true)
         {
             UserID = userModel.ID;
             FullName = userModel.FullName;

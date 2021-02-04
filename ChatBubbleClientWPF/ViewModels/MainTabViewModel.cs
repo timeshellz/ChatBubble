@@ -12,7 +12,10 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Input;
 using System.Security;
+
 using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -44,7 +47,7 @@ namespace ChatBubbleClientWPF.ViewModels
         string oldDescription = "";
         string oldStatus = "";
 
-        Models.User displayedUserData;
+        User displayedUser;
 
         ICommand updateDescriptionCommand;
         ICommand goBackCommand;
@@ -177,13 +180,23 @@ namespace ChatBubbleClientWPF.ViewModels
         {
             this.mainWindowViewModel = mainWindowViewModel;
 
-            displayedUserData = new Models.User(userID);
+            if(userID == mainWindowViewModel.CurrentUser.ID || userID == 0)
+                displayedUser = mainWindowViewModel.CurrentUser;
+            else
+            {
+                GenericServerReply serverReply = ClientRequestManager.SendClientRequest(new GetUserRequest(mainWindowViewModel.CurrentUser.Cookie, userID));
 
-            UserFullName = displayedUserData.FullName;
-            Username = displayedUserData.Username;
-            UserStatus = displayedUserData.Status;
-            UserDescription = displayedUserData.Description;
-            UserBubScore = displayedUserData.BubScore.ToString();
+                if (serverReply is ServerGetUserReply getUserReply)
+                    displayedUser = getUserReply.User;
+                else
+                    throw new RequestException(serverReply.NetFlag);
+            }
+
+            UserFullName = displayedUser.FullName;
+            Username = displayedUser.Username;
+            UserStatus = displayedUser.Status;
+            UserDescription = displayedUser.Description;
+            UserBubScore = displayedUser.BubScore.ToString();
 
             OldDescription = UserDescription;
             OldStatus = UserStatus;
@@ -192,21 +205,21 @@ namespace ChatBubbleClientWPF.ViewModels
                 IsSelf = true;
             else
             {
-                IsFriend = CheckIfFriend(userID.ToString());
+                IsFriend = CheckIfFriend(userID);
             }
 
             if(!IsSelf)
                 if (!IsFriend)
-                    PictureTileViewModel = new UserTileViewModel(displayedUserData,
+                    PictureTileViewModel = new UserTileViewModel(displayedUser,
                         new UserTileViewModel.ContextMenuActions[3] { UserTileViewModel.ContextMenuActions.OpenPicture,
                     UserTileViewModel.ContextMenuActions.SendMessage,
                     UserTileViewModel.ContextMenuActions.AddFriend });
                 else
-                    PictureTileViewModel = new FriendTileViewModel(displayedUserData,
+                    PictureTileViewModel = new FriendTileViewModel(displayedUser,
                         new UserTileViewModel.ContextMenuActions[2] { UserTileViewModel.ContextMenuActions.OpenPicture,
                     UserTileViewModel.ContextMenuActions.SendMessage});
             else
-                PictureTileViewModel = new UserTileViewModel(displayedUserData,
+                PictureTileViewModel = new UserTileViewModel(displayedUser,
                         new UserTileViewModel.ContextMenuActions[1] { UserTileViewModel.ContextMenuActions.OpenPicture });
 
             PictureTileViewModel.TileActionTriggered += OnTileAction;
@@ -232,22 +245,19 @@ namespace ChatBubbleClientWPF.ViewModels
             }
         }
 
-        bool CheckIfFriend(string userID)
+        bool CheckIfFriend(int userID)
         {
-            string friendListResultString = NetComponents.ClientRequestArbitrary(NetComponents.ConnectionCodes.GetFriendListRequest, "", true, true);
+            ServerFriendListReply serverReply = 
+                (ServerFriendListReply)ClientRequestManager.SendClientRequest(new GetFriendListRequest(mainWindowViewModel.CurrentUser.Cookie));
 
-            if (friendListResultString == NetComponents.ConnectionCodes.DatabaseError)      //TO DO: Output an error message here
+            if (serverReply.NetFlag == ConnectionCodes.DatabaseError)      //TO DO: Output an error message here
             {
                 return false;
             }
 
-            string[] friendListSplitstrings = { "id=", "login=", "name=" };
-
-            foreach (string friend in friendListResultString.Split(new string[] { "user=" }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (User friend in serverReply.FriendList)
             {
-                string[] friendData = friend.Split(friendListSplitstrings, StringSplitOptions.RemoveEmptyEntries);
-
-                if (friendData[0] == userID) return true;
+                if (friend.ID == userID) return true;
             }
 
             return false;

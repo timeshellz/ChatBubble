@@ -7,12 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Threading;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Input;
 using System.Security;
+
 using ChatBubble;
+using ChatBubble.SharedAPI;
+using ChatBubble.ClientAPI;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
@@ -20,6 +24,20 @@ namespace ChatBubbleClientWPF.ViewModels
     {
         public event EventHandler<TabNavigationEventArgs> TabSwitchPrompted;
         public event EventHandler<EventArgs> TabReturnPrompted;
+        ObservableCollection<NotificationViewModel> notificationViewModels;
+
+        public ObservableCollection<NotificationViewModel> NotificationViewModels
+        {
+            get { return notificationViewModels; }
+            set
+            {
+                if (notificationViewModels != value)
+                {
+                    notificationViewModels = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         Models.CurrentUser currentUser;
 
@@ -157,9 +175,9 @@ namespace ChatBubbleClientWPF.ViewModels
             }
         }
 
-        public MainWindowViewModel(Utility.IWindowFactory windowFactory, Utility.IPageFactory pageFactory, string mainUserID)
+        public MainWindowViewModel(Utility.IWindowFactory windowFactory, Utility.IPageFactory pageFactory, Cookie userCookie)
         {
-            CurrentUser = new Models.CurrentUser(Convert.ToInt32(mainUserID));
+            CurrentUser = new Models.CurrentUser(userCookie);
 
             this.windowFactory = windowFactory;
             this.pageFactory = pageFactory;
@@ -168,6 +186,10 @@ namespace ChatBubbleClientWPF.ViewModels
 
             this.windowFactory.OpenAssociatedWindow(this);
             this.windowFactory.WindowRendered += DoOnMainViewRendered;
+
+            NotificationViewModels = new ObservableCollection<NotificationViewModel>();
+
+            Application.Current.DispatcherUnhandledException += OnUnhandledException;
         }
 
         void ResolveTabViewModels()
@@ -235,7 +257,34 @@ namespace ChatBubbleClientWPF.ViewModels
 
         void OnSessionClosure()
         {
-            NetComponents.BreakBind(false);
+            ClientNetworkConfigurator networkConfigurator = new ClientNetworkConfigurator();
+            networkConfigurator.DisconnectSockets(false);
+        }
+
+        void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Models.Notification notification;
+
+            if (e.Exception is RequestException re)
+            {
+                notification = new Models.Notification(Models.Notification.NotificationType.Error, re.ExceptionCode);
+            }
+            else
+                notification = new Models.Notification(Models.Notification.NotificationType.Error, "An error occured");
+
+            e.Handled = true;
+
+            NotificationViewModels.Add(new NotificationViewModel(notification));
+            notification.NotificationTimedOut += OnNotificationTimeout;
+        }
+
+        void OnNotificationTimeout(object sender, EventArgs e)
+        {
+            foreach(NotificationViewModel viewModel in NotificationViewModels)
+            {
+                if (viewModel.NotificationModel == (Models.Notification)sender)
+                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => NotificationViewModels.Remove(viewModel)));
+            }
         }
 
     }

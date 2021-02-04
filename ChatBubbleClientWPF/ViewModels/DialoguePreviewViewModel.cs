@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
+using ChatBubble.SharedAPI;
+
 namespace ChatBubbleClientWPF.ViewModels
 {
     class DialoguePreviewViewModel : UserTileViewModel
@@ -65,12 +67,17 @@ namespace ChatBubbleClientWPF.ViewModels
 
         public DialoguePreviewViewModel(Models.Dialogue dialogueModel, params ContextMenuActions[] contextMenuActions) : base(dialogueModel.Recipient, contextMenuActions)
         {
-            MessagePreview = dialogueModel.LastMessage.MessageContent;
+            if (dialogueModel.Messages.Count > 0)
+            {
+                MessagePreview = dialogueModel.Messages.Last().Value.MessageContent;
+
+                if (dialogueModel.Messages.Last().Value.Status == Message.MessageStatus.SentRead)
+                    MessagePreview = MessagePreview.Insert(0, "You: ");
+            }
+            else
+                MessagePreview = "";
+
             DialogueID = dialogueModel.DialogueID;
-
-            if (dialogueModel.LastMessage.Status == Models.Message.MessageStatus.SentRead)
-                MessagePreview = MessagePreview.Insert(0, "You: ");
-
             ContextMenuItems.Add(new MenuItemViewModel("Remove dialogue", RemoveDialogueCommand));
         }
 
