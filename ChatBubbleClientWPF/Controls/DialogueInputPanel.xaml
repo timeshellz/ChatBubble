@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="ChatBubbleClientWPF.Controls.DialogueInputPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ChatBubbleClientWPF.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="50" d:DesignWidth="600" FocusManager.FocusedElement="{Binding ElementName=InputBox}">
+    <Grid Background="{StaticResource PrimaryColorBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="60"/>
+        </Grid.ColumnDefinitions>
+        <local:RoundedRectangleTextBox Grid.Column="0" x:Name="InputBox" MaxLines="5" TextWrapping="Wrap"
+                                       Margin="10,10,0,10" MinHeight="24" Text="{Binding MessageInputContent,UpdateSourceTrigger=PropertyChanged}"
+                                       Watermark="Message" KeyDown="RoundedRectangleTextBox_KeyDown"/>
+        <Button Grid.Column="1" MinHeight="46" MinWidth="56" Command="{Binding SendMessageCommand}"
+                VerticalAlignment="Center" HorizontalAlignment="Center" 
+                Margin="2" Background="{StaticResource PrimaryColorBrush}" Content="Send"/>
+    </Grid>
+</UserControl>

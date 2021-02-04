@@ -1,0 +1,36 @@
+﻿<local:CredentialFormPage x:Class="ChatBubbleClientWPF.UserForms.SignUpForm"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ChatBubbleClientWPF.UserForms"
+      xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
+      mc:Ignorable="d" 
+      Title="SignUpForm" Loaded="CredentialFormPage_Loaded">
+
+    <Grid VerticalAlignment="Stretch" HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" Name="StatusLabel" Foreground="{StaticResource SecondaryColorBrush}" Style="{StaticResource MediumTextStyle}"
+               HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="2" Content="{Binding StatusPrompt, Mode=TwoWay}"/>
+        <controls:RoundedRectangleTextBox Grid.Row="1" x:Name="NameBox" Background="{StaticResource SecondaryColorBrush}" Watermark="Full Name" Text="{Binding NameForm}" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <controls:RoundedRectangleTextBox Grid.Row="2" x:Name="UsernameBox" Background="{StaticResource SecondaryColorBrush}" Watermark="Username" Text="{Binding UsernameForm}" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <controls:RoundedRectanglePasswordBox Grid.Row="3" x:Name="PasswordBox" Background="{StaticResource SecondaryColorBrush}" Watermark="Password" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <controls:RoundedRectanglePasswordBox Grid.Row="4" x:Name="RepeatPasswordBox" Background="{StaticResource SecondaryColorBrush}" Watermark="Repeat password" MinWidth="300" GotFocus="ElementGotFocus"/>
+        <Grid Grid.Row="5" Margin="0,6,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ReturnButton" Grid.Column="0" Content="Back to Log in" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}" Click="ReturnButton_Click"/>
+            <Button x:Name="SignupButton" Grid.Column="1" Content="Sign up" Foreground="{StaticResource PrimaryColorBrush}" Background="{StaticResource SecondaryColorBrush}"
+                                    Command="{Binding SignupCommand}"/>
+        </Grid>
+    </Grid>
+</local:CredentialFormPage>

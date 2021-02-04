@@ -11,14 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\LICENSE.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChatBubble.FileIOStreamer\ChatBubble.FileIOStreamer\ChatBubble.FileManager.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,379 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8FCA61D5-B4F9-4DEA-92AC-EB6FF84A70E5}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>ChatBubbleClientWPF</RootNamespace>
+    <AssemblyName>ChatBubbleClientWPF</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="protobuf-net, Version=3.0.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.3.0.73\lib\net461\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="protobuf-net.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.Core.3.0.73\lib\net461\protobuf-net.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable, Version=1.2.5.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.7.1\lib\net461\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WpfAnimatedGif, Version=2.0.0.0, Culture=neutral, PublicKeyToken=9e7cd3b544a090dc, processorArchitecture=MSIL">
+      <HintPath>..\packages\WpfAnimatedGif.2.0.0\lib\net40\WpfAnimatedGif.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="Controls\DialogueInputPanel.xaml.cs">
+      <DependentUpon>DialogueInputPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\FriendTile.xaml.cs">
+      <DependentUpon>FriendTile.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\DialoguePreviewPanel.xaml.cs">
+      <DependentUpon>DialoguePreviewPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\MessageBox.xaml.cs">
+      <DependentUpon>MessageBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\MessageLine.xaml.cs">
+      <DependentUpon>MessageLine.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\NotificationTile.xaml.cs">
+      <DependentUpon>NotificationTile.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\SearchResultPanel.xaml.cs">
+      <DependentUpon>SearchResultPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\UserPictureTile.xaml.cs">
+      <DependentUpon>UserPictureTile.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Models\CurrentUser.cs" />
+    <Compile Include="Models\Dialogue.cs" />
+    <Compile Include="Models\Notification.cs" />
+    <Compile Include="Tabs\ActiveDialogueTab.xaml.cs">
+      <DependentUpon>ActiveDialogueTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utility\ConnectionEventArgs.cs" />
+    <Compile Include="Utility\InverseBooleanConverter.cs" />
+    <Compile Include="Utility\MessageStatusToStyleConverter.cs" />
+    <Compile Include="Utility\MouseOverTransparencyConverter.cs" />
+    <Compile Include="Utility\NotificationTypeToStyleConverter.cs" />
+    <Compile Include="Utility\PageFactory.cs" />
+    <Compile Include="Utility\ViewModelResolver.cs" />
+    <Compile Include="Utility\ReverseBoolToVisibilityConverter.cs" />
+    <Compile Include="Utility\BoolToVisibilityConverter.cs" />
+    <Compile Include="Utility\WindowFactory.cs" />
+    <Compile Include="ViewModels\ActiveDialogueViewModel.cs" />
+    <Compile Include="ViewModels\BaseViewModel.cs" />
+    <Compile Include="Models\ClientFrontDoor.cs" />
+    <Compile Include="Models\ClientStartup.cs" />
+    <Compile Include="Utility\MouseOverBackgroundConverter.cs" />
+    <Compile Include="Controls\PasswordWatermarkManager.cs" />
+    <Compile Include="Controls\RoundedRectanglePasswordBox.xaml.cs">
+      <DependentUpon>RoundedRectanglePasswordBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\RoundedRectangleTextBox.xaml.cs">
+      <DependentUpon>RoundedRectangleTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\WatermarkTextBox.cs" />
+    <Compile Include="ViewModels\DialoguePreviewViewModel.cs" />
+    <Compile Include="ViewModels\DialoguesTabViewModel.cs" />
+    <Compile Include="ViewModels\FriendsTabViewModel.cs" />
+    <Compile Include="ViewModels\FriendTileViewModel.cs" />
+    <Compile Include="ViewModels\MainTabViewModel.cs" />
+    <Compile Include="ViewModels\MainWindowViewModel.cs" />
+    <Compile Include="ViewModels\MenuItemViewModel.cs" />
+    <Compile Include="ViewModels\MessageLineViewModel.cs" />
+    <Compile Include="ViewModels\NotificationViewModel.cs" />
+    <Compile Include="ViewModels\SearchTabViewModel.cs" />
+    <Compile Include="ViewModels\SettingsTabViewModel.cs" />
+    <Compile Include="ViewModels\UserTileViewModel.cs" />
+    <Compile Include="Windows\LoadingWindow.xaml.cs">
+      <DependentUpon>LoadingWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\LoadingWindowViewModel.cs" />
+    <Compile Include="Windows\LoginWindow.xaml.cs">
+      <DependentUpon>LoginWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\LoginWindowViewModel.cs" />
+    <Compile Include="Tabs\DialoguesTab.xaml.cs">
+      <DependentUpon>DialoguesTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tabs\FriendsTab.xaml.cs">
+      <DependentUpon>FriendsTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserForms\CredentialFormPage.cs" />
+    <Compile Include="UserForms\LoginForm.xaml.cs">
+      <DependentUpon>LoginForm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tabs\MainTab.xaml.cs">
+      <DependentUpon>MainTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tabs\SearchTab.xaml.cs">
+      <DependentUpon>SearchTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tabs\SettingsTab.xaml.cs">
+      <DependentUpon>SettingsTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserForms\SignUpForm.xaml.cs">
+      <DependentUpon>SignUpForm.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Controls\DialogueInputPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\FriendTile.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\MessageBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\MessageLine.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\NotificationTile.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\RoundedRectanglePasswordBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\RoundedRectangleTextBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\DialoguePreviewPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\SearchResultPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\UserPictureTile.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\ActiveDialogueTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\LoadingWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\LoginWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Windows\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Tabs\DialoguesTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\FriendsTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserForms\LoginForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\MainTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\SearchTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tabs\SettingsTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserForms\SignUpForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Resource Include="Fonts\Montserrat-Light.ttf" />
+    <Resource Include="Images\chatBubbleLogo.png" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\PlaceholderProfilePictureOld.jpeg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\LogoMinWhiteTransparent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\chatBubbleLogoOld.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\bubblesImage.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\dialoguesButtonIdleOld.png" />
+    <Resource Include="Buttons\friendsButtonIdleOld.png" />
+    <Resource Include="Buttons\homeButtonIdleOld.png" />
+    <Resource Include="Buttons\logOutButtonIdleOld.png" />
+    <Resource Include="Buttons\searchButtonIdleOld.png" />
+    <Resource Include="Buttons\settingsButtonIdleOld.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\searchLogo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\searchPanelBackground.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\LogInTransparent.png" />
+    <Resource Include="Images\SignUpTransparent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ChatBubble.FileManager\ChatBubble.FileManager.csproj">
+      <Project>{478d41f0-200c-44e9-80c4-3b403eba5524}</Project>
+      <Name>ChatBubble.FileManager</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ChatBubble.SharedAPI\ChatBubble.SharedAPI.csproj">
+      <Project>{ef381f15-cd88-4f7a-8cd9-04fbe8973e2c}</Project>
+      <Name>ChatBubble.SharedAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ClientAPI\ChatBubble.ClientAPI.csproj">
+      <Project>{9c573bec-26b2-4618-8b0e-b1730957891a}</Project>
+      <Name>ChatBubble.ClientAPI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Animations\LoadingAnimation.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Animations\ErrorAnimation.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\cbLogoTransparent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\friendsButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\searchButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\dialoguesButtonIdle.png" />
+    <Resource Include="Buttons\homeButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\settingsButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\logOutButtonIdle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Buttons\crossWhite.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\crossBlue.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
