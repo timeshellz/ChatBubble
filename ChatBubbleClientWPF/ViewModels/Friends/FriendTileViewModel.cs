@@ -8,7 +8,10 @@ using System.Windows.Input;
 using ChatBubble;
 using ChatBubble.SharedAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
+namespace ChatBubbleClientWPF.ViewModels.Friends
 {
     class FriendTileViewModel : UserTileViewModel
     {
@@ -31,14 +34,14 @@ namespace ChatBubbleClientWPF.ViewModels
             ContextMenuItems.Add(new MenuItemViewModel("Remove friend", RemoveFriendCommand));
         }
 
-        public FriendTileViewModel(User userModel, params ContextMenuActions[] contextMenuActions) : base(userModel, contextMenuActions)
+        public FriendTileViewModel(User userModel, params UserContextMenuActions[] contextMenuActions) : base(userModel, contextMenuActions)
         {
             ContextMenuItems.Add(new MenuItemViewModel("Remove friend", RemoveFriendCommand));
         }
 
         void OnFriendRemoval()
         {
-            TileActionTriggered?.Invoke(this, new UserTileInteractionEventArgs(UserTileInteractionEventArgs.TileAction.RemoveFriend, UserID));
+            TileActionTriggered?.Invoke(this, new TileInteractionEventArgs(TileInteractionEventArgs.TileAction.RemoveFriend, UserID));
         }
     }
 

@@ -9,6 +9,7 @@ namespace ChatBubble.SharedAPI
     [ProtoContract]
     [ProtoInclude(2, typeof(ClientRequest))]
     [ProtoInclude(3, typeof(GenericServerReply))]
+    [ProtoInclude(4, typeof(ServerUDPRequest))]
     public abstract class NetTransferObject
     {
         [ProtoMember(1)]

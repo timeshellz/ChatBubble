@@ -13,6 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.MainTab;
+
 namespace ChatBubbleClientWPF.Tabs
 {
     /// <summary>
@@ -33,7 +36,7 @@ namespace ChatBubbleClientWPF.Tabs
         private void CancelEditButton_Click(object sender, RoutedEventArgs e)
         {
             ShiftEditingStyle();
-            if (DataContext is ViewModels.MainTabViewModel viewModel)
+            if (DataContext is MainTabViewModel viewModel)
             {
                 viewModel.IsEditing = false;
 
@@ -45,7 +48,7 @@ namespace ChatBubbleClientWPF.Tabs
 
         void ShiftEditingStyle()
         {
-            if (DataContext is ViewModels.MainTabViewModel viewModel)
+            if (DataContext is MainTabViewModel viewModel)
             {
                 if (viewModel.IsEditing)
                 {

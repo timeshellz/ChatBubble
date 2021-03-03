@@ -14,7 +14,7 @@ using System.Windows.Input;
 using ChatBubble;
 using ChatBubble.SharedAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+namespace ChatBubbleClientWPF.ViewModels.Windows
 {
     class LoadingWindowViewModel : BaseViewModel
     {
@@ -114,17 +114,13 @@ namespace ChatBubbleClientWPF.ViewModels
 
                 Cookie newCookie;
 
-                RecordFreshSession(out newCookie);
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => CreateMainViewModel(newCookie)));
+                Models.ClientFrontDoor clientFront = new Models.ClientFrontDoor();
+                clientFront.HandleLoginReply(clientStartupModel.ServerReply);
+                Cookie cookie = clientFront.LoggedInUserCookie;
+
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => CreateMainViewModel(cookie)));
                 //Go to mainwindow
             }
-        }
-
-        void RecordFreshSession(out Cookie cookie)
-        {
-            Models.ClientFrontDoor clientFront = new Models.ClientFrontDoor();
-            clientFront.HandleLoginReply(clientStartupModel.ServerReply);
-            cookie = clientFront.LoggedInUserCookie;
         }
 
         void CreateLoginViewModel()

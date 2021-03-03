@@ -13,6 +13,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using ChatBubbleClientWPF.ViewModels;
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
 namespace ChatBubbleClientWPF
 {
     /// <summary>
@@ -20,7 +24,8 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        ViewModels.MainWindowViewModel viewModel;
+        MainWindowViewModel viewModel;
+        
 
         bool needsLocationRestore = false;
 
@@ -31,7 +36,7 @@ namespace ChatBubbleClientWPF
             MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
             MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
 
-            this.viewModel = (ViewModels.MainWindowViewModel)viewModel;
+            this.viewModel = (MainWindowViewModel)viewModel;
             this.DataContext = this.viewModel;
 
             this.viewModel.TabSwitchPrompted += OnTabSwitchPrompted;
@@ -46,26 +51,27 @@ namespace ChatBubbleClientWPF
             HeaderLabel.Visibility = visibility;
         }
 
-        private void SetHeaderTitle(String title="")
-        {
-            HeaderLabel.Content = title;
-        }
-
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             var page = ((Frame)sender).Content as Page;
 
             if (((Frame)sender).Content.GetType() == typeof(Tabs.MainTab)) SetHeaderVisibility(Visibility.Hidden);
             else SetHeaderVisibility(Visibility.Visible);
-                      
-            SetHeaderTitle(page.Name);
+
+            viewModel.CurrentTabViewModel = (BaseViewModel)page.DataContext;
+
+            Binding titleBinding = new Binding("Title");
+            titleBinding.Source = page;
+            titleBinding.Mode = BindingMode.OneWay;
+            HeaderLabel.SetBinding(Label.ContentProperty, titleBinding);
         }
 
-        void OnTabSwitchPrompted(object sender, ViewModels.TabNavigationEventArgs e)
+        void OnTabSwitchPrompted(object sender, TabNavigationEventArgs e)
         {
-
-            if (DataContext is ViewModels.MainWindowViewModel viewModel)
+            if (DataContext is MainWindowViewModel viewModel)
             {
+                CurrentTab.Content = null;
+
                 Page promptedTab;
                 promptedTab = e.PageFactory.GetAssociatedPage(e.PageViewModel);
 
@@ -76,8 +82,9 @@ namespace ChatBubbleClientWPF
 
         void OnTabReturnPrompted(object sender, EventArgs e)
         {
-            if(DataContext is ViewModels.MainWindowViewModel viewModel)
+            if(DataContext is MainWindowViewModel viewModel)
             {
+                CurrentTab.Content = null;
                 CurrentTab.GoBack();
             }
         }

@@ -120,7 +120,42 @@ namespace ChatBubble.ClientAPI
             return serverReply;
         }
 
-        
+        public static ServerUDPRequest ReceiveServerFlags()
+        {
+
+            byte[] receiveBuffer = new byte[512];
+            byte[] serverDatagram = new byte[receiveBuffer.Length];
+
+            try
+            {
+                if (SharedNetworkConfiguration.AuxilarryUDPSocket.Poll(-1, SelectMode.SelectRead))
+                {
+                    if (SharedNetworkConfiguration.AuxilarryUDPSocket.Available == 0)
+                    {
+                        throw new SocketException(Convert.ToInt32(SocketError.HostDown));
+                    }
+
+                    EndPoint remoteEndPoint = ClientNetworkConfiguration.ServerIPEndPoint;
+
+                    int bytesRead = SharedNetworkConfiguration.AuxilarryUDPSocket.ReceiveFrom(receiveBuffer, ref remoteEndPoint);
+
+                    if (remoteEndPoint.ToString() != ClientNetworkConfiguration.ServerIPEndPoint.ToString())
+                        return new ServerUDPRequest(ConnectionCodes.InvalidRequest);
+
+                    Array.Resize(ref serverDatagram, bytesRead);
+                    Array.Copy(receiveBuffer, 0, serverDatagram, 0, serverDatagram.Length);
+                }
+            }
+            catch
+            {
+                throw new RequestException(ConnectionCodes.ConnectionFailure);
+            }
+
+            ServerUDPRequest serverReply = (ServerUDPRequest)NetTransferObject.DeserializeNetObject(serverDatagram);
+
+            return serverReply;
+        }
+
 
         /*
 

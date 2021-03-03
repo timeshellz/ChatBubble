@@ -18,7 +18,7 @@ namespace ChatBubbleClientWPF.Controls
     /// <summary>
     /// Interaction logic for MessageBox.xaml
     /// </summary>
-    public partial class MessageBox : ContentControl
+    public partial class MessageBox : UserControl
     {
         public MessageBox()
         {

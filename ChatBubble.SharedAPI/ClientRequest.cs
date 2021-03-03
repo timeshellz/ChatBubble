@@ -19,6 +19,8 @@ namespace ChatBubble.SharedAPI
     [ProtoInclude(12, typeof(GetPendingMessagesRequest))]
     [ProtoInclude(13, typeof(ChangeNameRequest))]
     [ProtoInclude(14, typeof(ChangePasswordRequest))]
+    [ProtoInclude(15, typeof(ChangeDialogueStatusRequest))]
+    [ProtoInclude(16, typeof(GetDialogueStatusRequest))]
     public abstract class ClientRequest : NetTransferObject
     {
         [ProtoMember(1)]
@@ -217,6 +219,37 @@ namespace ChatBubble.SharedAPI
         public GetPendingMessagesRequest(Cookie cookie) : base(cookie, ConnectionCodes.GetPendingMessageRequest)
         {
 
+        }
+    }
+
+    [ProtoContract]
+    public sealed class ChangeDialogueStatusRequest : ClientRequest
+    {
+        [ProtoMember(1)]
+        public int MessageSenderID { get; private set; }
+        [ProtoMember(2)]
+        public string NewDialogueStatus { get; private set; }
+
+        private ChangeDialogueStatusRequest() { }
+
+        public ChangeDialogueStatusRequest(Cookie cookie, int messageSenderID, string dialogueStatus) : base(cookie, ConnectionCodes.ChangeDialogueStatusRequest) 
+        {
+            MessageSenderID = messageSenderID;
+            NewDialogueStatus = dialogueStatus;
+        }
+    }
+
+    [ProtoContract]
+    public sealed class GetDialogueStatusRequest : ClientRequest
+    {
+        [ProtoMember(1)]
+        public int MessageSenderID { get; private set; }
+
+        private GetDialogueStatusRequest() { }
+
+        public GetDialogueStatusRequest(Cookie cookie, int messageSenderID) : base(cookie, ConnectionCodes.GetDialogueStatusRequest)
+        {
+            MessageSenderID = messageSenderID;
         }
     }
 

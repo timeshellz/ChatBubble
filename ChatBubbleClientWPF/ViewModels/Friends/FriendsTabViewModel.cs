@@ -10,15 +10,18 @@ using ChatBubble;
 using ChatBubble.SharedAPI;
 using ChatBubble.ClientAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
+namespace ChatBubbleClientWPF.ViewModels.Friends
 {
-    class FriendsTabViewModel : BaseViewModel, IUserTileContainer
+    class FriendsTabViewModel : BaseViewModel, IContextMenuTileContainer
     {
         readonly MainWindowViewModel mainWindowViewModel;
 
-        public ObservableCollection<ViewModels.FriendTileViewModel> friendTileViewModelsList;
+        public ObservableCollection<FriendTileViewModel> friendTileViewModelsList;
 
-        public ObservableCollection<ViewModels.FriendTileViewModel> FriendTileViewModels
+        public ObservableCollection<FriendTileViewModel> FriendTileViewModels
         {
             get { return friendTileViewModelsList; }
             set
@@ -63,36 +66,37 @@ namespace ChatBubbleClientWPF.ViewModels
 
             foreach (int id in friendDictionary.Keys)
             {
-                ViewModels.FriendTileViewModel friendTile =  new ViewModels.FriendTileViewModel(friendDictionary[id], 
-                    UserTileViewModel.ContextMenuActions.OpenProfile,
-                    UserTileViewModel.ContextMenuActions.OpenPicture,
-                    UserTileViewModel.ContextMenuActions.SendMessage);
+                FriendTileViewModel friendTile =  new FriendTileViewModel(friendDictionary[id], 
+                    UserTileViewModel.UserContextMenuActions.OpenProfile,
+                    UserTileViewModel.UserContextMenuActions.OpenPicture,
+                    UserTileViewModel.UserContextMenuActions.SendMessage);
                 friendTileViewModelsList.Add(friendTile);
 
                 friendTile.TileActionTriggered += OnTileAction;
             }
         }
 
-        public void OnTileAction(object sender, UserTileInteractionEventArgs e)
+        public void OnTileAction(object sender, TileInteractionEventArgs e)
         {
-            if(sender is ViewModels.FriendTileViewModel friendTileViewModel)
+            if(sender is FriendTileViewModel friendTileViewModel)
             {
                 switch(e.Action)
                 {
-                    case UserTileInteractionEventArgs.TileAction.OpenPicture:
+                    case TileInteractionEventArgs.TileAction.OpenPicture:
                         break;
-                    case UserTileInteractionEventArgs.TileAction.OpenProfile:
+                    case TileInteractionEventArgs.TileAction.OpenProfile:
 
                         if (mainWindowViewModel.OpenMainTabCommand.CanExecute(e.InteractionID))
                             mainWindowViewModel.OpenMainTabCommand.Execute(e.InteractionID);
 
                         break;
-                    case UserTileInteractionEventArgs.TileAction.SendMessage:
+                    case TileInteractionEventArgs.TileAction.OpenDialogue:
 
-
+                        if (mainWindowViewModel.OpenActiveDialogueCommand.CanExecute(e.InteractionID))
+                            mainWindowViewModel.OpenActiveDialogueCommand.Execute(e.InteractionID);
 
                         break;
-                    case UserTileInteractionEventArgs.TileAction.RemoveFriend:
+                    case TileInteractionEventArgs.TileAction.RemoveFriend:
 
                         mainWindowViewModel.CurrentUser.RemoveFriend(e.InteractionID);
                         FriendTileViewModels.Remove(friendTileViewModel);

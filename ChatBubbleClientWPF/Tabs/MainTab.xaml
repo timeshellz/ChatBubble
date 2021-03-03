@@ -9,7 +9,7 @@
       xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="MainTab">
+      Title="Main" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}">
     <Page.Resources>
         <Style x:Key="DelimiterStyle" BasedOn="{StaticResource PrimaryColorStyle}">
             <Setter Property="Control.VerticalAlignment" Value="Top"/>

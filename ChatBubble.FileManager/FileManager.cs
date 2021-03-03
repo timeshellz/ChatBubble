@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
@@ -20,6 +21,15 @@ namespace ChatBubble.FileManager
             }
         }
 
+        public string[] GetDirectoryFiles(string directoryPath)
+        {
+            TryCreateDirectory(directoryPath);
+
+            string[] output = Directory.GetFiles(directoryPath);
+
+            return (output);
+        }
+
         public void AppendToFile(string filePath, object newObject, int objectKey)
         {
             Dictionary<int, object> inputDictionary = new Dictionary<int, object>();
@@ -32,12 +42,17 @@ namespace ChatBubble.FileManager
         {
             FileExtensionSpecifications specifications = GetFileSpecifications(filePath);
 
-            lock(threadLock)
+            if (!File.Exists(filePath))
+                CreateFile(filePath);
+
+            lock (threadLock)
             {
                 FileStream fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write);
-                              
+
+                Dictionary<int, object> collidingObjects = new Dictionary<int, object>();
+ 
                 if (specifications.RequiresMetadata)
-                {
+                {                   
                     Dictionary<int, long> metadataDictionary = GetFileMetadata(filePath);
 
                     foreach (KeyValuePair<int, object> pair in input)
@@ -46,6 +61,10 @@ namespace ChatBubble.FileManager
                         {
                             metadataDictionary.Add(pair.Key, fileStream.Position);
                             formatter.Serialize(fileStream, pair.Value);
+                        }
+                        catch (ArgumentException)
+                        {
+                            collidingObjects.Add(pair.Key, pair.Value);
                         }
                         catch { }
                     }
@@ -65,10 +84,18 @@ namespace ChatBubble.FileManager
                 }
 
                 fileStream.Close();
+
+                if (collidingObjects.Count > 0)
+                {
+                    foreach (KeyValuePair<int, object> collidingPair in collidingObjects)
+                    {
+                        ReplaceObjectInFile(filePath, collidingPair.Value, collidingPair.Key);
+                    }
+                }
             }
         }
 
-        public Dictionary<int, object> ReadFromFile(string filePath)
+        public Dictionary<int, object> ReadFromFile(string filePath, int firstObjectIndex)
         {
             FileExtensionSpecifications specifications = GetFileSpecifications(filePath);
             Dictionary<int, object> outputDictionary = new Dictionary<int, object>();
@@ -88,8 +115,11 @@ namespace ChatBubble.FileManager
 
                     foreach(KeyValuePair<int, long> pair in metadataDictionary)
                     {
-                        fileStream.Seek(pair.Value, SeekOrigin.Begin);
-                        outputDictionary.Add(pair.Key, formatter.Deserialize(fileStream));
+                        if (pair.Key >= firstObjectIndex)
+                        {
+                            fileStream.Seek(pair.Value, SeekOrigin.Begin);
+                            outputDictionary.Add(pair.Key, formatter.Deserialize(fileStream));
+                        }
                     }
                 }
                 else
@@ -104,6 +134,11 @@ namespace ChatBubble.FileManager
 
                 return outputDictionary;
             }
+        }
+
+        public Dictionary<int, object> ReadFromFile(string filePath)
+        {
+            return ReadFromFile(filePath, 0);
         }
 
         public object ReadObjectFromFile(string filePath, int objectKey)
@@ -179,7 +214,7 @@ namespace ChatBubble.FileManager
                 byte[] secondFileHalf = new byte[fileStream.Length - metadataDictionary[objectKey] + oldObjectLength];
                 fileStream.Read(secondFileHalf, 0, secondFileHalf.Length);
 
-                fileStream.Seek(metadataDictionary[objectKey] + oldObjectLength, SeekOrigin.Begin);
+                fileStream.Seek(metadataDictionary[objectKey], SeekOrigin.Begin);
                 fileStream.Write(secondFileHalf, 0, secondFileHalf.Length);
 
                 fileStream.SetLength(fileStream.Length - oldObjectLength);
@@ -188,13 +223,14 @@ namespace ChatBubble.FileManager
 
                 metadataDictionary.Remove(objectKey);
 
-                foreach (KeyValuePair<int, long> pair in metadataDictionary)
+                Dictionary<int, long> metaDataCopy = new Dictionary<int, long>(metadataDictionary);
+
+                foreach (KeyValuePair<int, long> pair in metaDataCopy)
                 {
                     if (pair.Key > objectKey)
                     {
                         long oldLocation = pair.Value;
-                        metadataDictionary.Remove(pair.Key);
-                        metadataDictionary.Add(pair.Key, pair.Value - oldObjectLength);
+                        metadataDictionary[pair.Key] = pair.Value - oldObjectLength;
                     }
                 }
 
@@ -250,17 +286,34 @@ namespace ChatBubble.FileManager
 
                 fileStream.Close();
 
-                foreach(KeyValuePair<int, long> pair in metadataDictionary)
+                Dictionary<int, long> metaDataCopy = new Dictionary<int, long>(metadataDictionary);
+
+                foreach (KeyValuePair<int, long> pair in metaDataCopy)
                 {
                     if (pair.Key > objectKey)
                     {
                         long oldLocation = pair.Value;
-                        metadataDictionary.Remove(pair.Key);
-                        metadataDictionary.Add(pair.Key, pair.Value + objectReplacementOffset);
+                        metadataDictionary[pair.Key] = pair.Value + objectReplacementOffset;
                     }
                 }
 
                 SetFileMetadata(filePath, metadataDictionary);
+            }
+        }
+
+        public bool FileContainsObjectKey(string filePath, int key)
+        {
+            FileExtensionSpecifications specifications = GetFileSpecifications(filePath);
+
+            if (!specifications.RequiresMetadata)
+                throw new FileManagerException(FileManagerException.ExceptionType.MetadataRequired, "Metadata support required.");
+
+            lock(threadLock)
+            {
+                if (GetFileMetadata(filePath).ContainsKey(key))
+                    return true;
+                else
+                    return false;
             }
         }
 
@@ -387,6 +440,21 @@ namespace ChatBubble.FileManager
             metadataFileStream.Close();
         }
 
+        public int GetLastMetadataKey(string filePath)
+        {
+            FileExtensionSpecifications specifications = GetFileSpecifications(filePath);
+
+            if (!specifications.RequiresMetadata)
+                throw new FileManagerException(FileManagerException.ExceptionType.MetadataRequired, "Metadata support required.");
+
+            lock (threadLock)
+            {
+                Dictionary<int, long> metadata = GetFileMetadata(filePath);
+                if (metadata.Count == 0) return 0;
+                return metadata.Keys.Max();
+            }
+        }
+
         private FileExtensionSpecifications GetFileSpecifications(string filePath)
         {
             //if (!Uri.IsWellFormedUriString(filePath, UriKind.Absolute))
@@ -404,13 +472,27 @@ namespace ChatBubble.FileManager
                 throw new FileManagerException(FileManagerException.ExceptionType.UnknownFileExtension, "Unknown file extension specified.");
             }        
         }
+
+        public bool FileExists(string filePath)
+        {
+            FileExtensionSpecifications specifications = GetFileSpecifications(filePath);
+
+            if (!File.Exists(filePath))
+            {
+                return false;
+            }
+
+            if (specifications.RequiresMetadata && !File.Exists(Path.ChangeExtension(filePath, FileExtensions.GetExtensionForFileType(FileExtensions.FileType.FileMetadata))))
+                return false;
+
+            return true;
+        }
     }
 
     class FileExtensionSpecifications
     {
         public FileExtensions.FileType Type { get; private set; }
         public bool RequiresMetadata { get; private set; }
-        public string MetadataPath { get; private set; }
 
         public FileExtensionSpecifications(FileExtensions.FileType type, bool requiresMetadata)
         {

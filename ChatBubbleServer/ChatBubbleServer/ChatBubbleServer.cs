@@ -536,8 +536,8 @@ namespace ChatBubble.Server
                 currentPlatform = " - Linux";
             }
 
-            Server.NetworkConfigurator.SetPorts(8000);
-            Server.NetworkConfigurator.SetLocalEndpoints("127.0.0.1");
+            Server.NetworkConfigurator.SetPorts(9000);
+            Server.NetworkConfigurator.SetLocalEndpoints("25.100.142.27");
             Server.NetworkConfigurator.InitializeSockets();
             Server.NetworkConfigurator.BindSockets();
 

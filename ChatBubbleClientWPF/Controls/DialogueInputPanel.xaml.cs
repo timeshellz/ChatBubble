@@ -13,6 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using ChatBubbleClientWPF.ViewModels.ActiveDialogue;
+
 namespace ChatBubbleClientWPF.Controls
 {
     /// <summary>
@@ -27,7 +29,7 @@ namespace ChatBubbleClientWPF.Controls
 
         private void RoundedRectangleTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if(this.DataContext is ViewModels.ActiveDialogueViewModel viewModel && e.Key == Key.Enter)
+            if(this.DataContext is ActiveDialogueViewModel viewModel && e.Key == Key.Enter)
             {
                 if (viewModel.SendMessageCommand.CanExecute(null))
                     viewModel.SendMessageCommand.Execute(null);

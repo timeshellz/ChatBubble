@@ -48,6 +48,8 @@ namespace ChatBubble.ServerAPI
             [ConnectionCodes.GetPendingMessageRequest] = new Func<GetPendingMessagesRequest, GenericServerReply>(ServerGetPendingMessagesService),
             [ConnectionCodes.ChangePasswdRequest] = new Func<ChangePasswordRequest, GenericServerReply>(ServerChangePasswordService),
             [ConnectionCodes.ChangeNameRequest] = new Func<ChangeNameRequest, GenericServerReply>(ServerChangeNameService),
+            [ConnectionCodes.ChangeDialogueStatusRequest] = new Func<ChangeDialogueStatusRequest, GenericServerReply>(ServerSetDialogueStatusService),
+            [ConnectionCodes.GetDialogueStatusRequest] = new Func<GetDialogueStatusRequest, GenericServerReply>(ServerGetDialogueStatusService),
             [ConnectionCodes.LogOutCall] = new Action<EndPoint>(UpdateConnectionDictionary),
         };
 
@@ -904,9 +906,9 @@ namespace ChatBubble.ServerAPI
         static GenericServerReply ServerGetPendingMessagesService(GetPendingMessagesRequest messagesRequest)
         {
             string[] allPendingMessages = FileIOStreamer.GetDirectoryFiles(FileIOStreamer.defaultPendingMessagesDirectory, false, false);
-            string[] messageHandleSplitstrings = new string[3] { "msgid=", "sender=", "rcpnt=" };
+            string[] messageHandleSplitstrings = new string[3] { "chatid=", "sender=", "rcpnt=" };
 
-            List<Message> messages = new List<Message>();
+            Dictionary<int, List<Message>> dialogues = new Dictionary<int, List<Message>>();
 
             foreach (string pendingMessage in allPendingMessages)
             {
@@ -920,21 +922,25 @@ namespace ChatBubble.ServerAPI
                     //[0] - message time, [1] - message content
 
                     Message message
-                        = new Message(Convert.ToInt32(pendingMessageSubstrings[0]), messageContentSubstrings[0], "unread", messageContentSubstrings[1]);
+                        = new Message(Convert.ToInt32(pendingMessageSubstrings[0]),
+                        messageContentSubstrings[0],Message.MessageStatus.Pending, messageContentSubstrings[1]);
 
-                    messages.Add(message);
+                    if (!dialogues.ContainsKey(Convert.ToInt32(pendingMessageSubstrings[1])))
+                        dialogues.Add(Convert.ToInt32(pendingMessageSubstrings[1]), new List<Message>());
+
+                    dialogues[Convert.ToInt32(pendingMessageSubstrings[1])].Add(message);
 
                     FileIOStreamer.RemoveFile(FileIOStreamer.defaultPendingMessagesDirectory + pendingMessage + ".txt");
                 }
             }
 
-            if (messages.Count == 0)
+            if (dialogues.Count == 0)
             {
                 return new GenericServerReply(ConnectionCodes.NoPendingMessagesStatus);
             }
             else
             {
-                return new ServerPendingMessagesReply(ConnectionCodes.AvailablePendingMessagesStatus, messages);
+                return new ServerPendingMessagesReply(ConnectionCodes.MessagesPendingStatus, dialogues);
             }
         }
 
@@ -948,10 +954,58 @@ namespace ChatBubble.ServerAPI
         {
             string defaultPendingMessagesDirectory = FileIOStreamer.defaultPendingMessagesDirectory;
 
-            int chatID = FileIOStreamer.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false).Length + 1;
+            try
+            {
+                int chatID = FileIOStreamer.GetDirectoryFiles(defaultPendingMessagesDirectory, false, false).Length + 1;
 
-            FileIOStreamer.WriteToFile(defaultPendingMessagesDirectory + "chatid=" + chatID + "sender=" + senderID.ToString() + "rcpnt=" + recepientID.ToString() + ".txt",
-                "time=" + message.MessageDateTime.ToUniversalTime() + "\ncontent=" + message.MessageContent);
+                FileIOStreamer.WriteToFile(defaultPendingMessagesDirectory + "chatid=" + chatID + "sender=" + senderID.ToString() + "rcpnt=" + recepientID.ToString() + ".txt",
+                    "time=" + DateTime.UtcNow + "\ncontent=" + message.Content);
+            }
+            catch
+            {
+                throw new RequestException(ConnectionCodes.MessageSendFailure);
+            }
+        }
+
+        static void SetDialogueStatus(string newStatus, int senderID, int recipientID)
+        {
+            string defaultMessageStatusDirectory = FileIOStreamer.defaultMessageStatusDirectory;
+
+            if (newStatus != ConnectionCodes.MessagesReadStatus &&
+                newStatus != ConnectionCodes.MessagesReceivedStatus &&
+                newStatus != ConnectionCodes.MessagesPendingStatus)
+                throw new RequestException(ConnectionCodes.InvalidRequest);
+
+            try
+            {                
+                FileIOStreamer.WriteToFile(defaultMessageStatusDirectory + "sender=" + senderID.ToString() + "rcpnt=" + recipientID.ToString() + ".txt",
+                    "status=" + newStatus.ToString());
+            }
+            catch
+            {
+                throw new RequestException(ConnectionCodes.DatabaseError);
+            }
+        }
+
+        static string GetDialogueStatus(int senderID, int recipientID)
+        {
+            string defaultMessageStatusDirectory = FileIOStreamer.defaultMessageStatusDirectory;
+
+            try
+            {
+                string status = FileIOStreamer.ReadFromFile(defaultMessageStatusDirectory + "sender=" + senderID.ToString() + "rcpnt=" + recipientID.ToString() + ".txt");
+
+                if (status.Contains("status="))
+                    status = status.Replace("status=", "");
+
+                //if (status == ConnectionCodes.MessagesReadStatus)
+                  //  FileIOStreamer.RemoveFile(defaultMessageStatusDirectory + "sender=" + senderID.ToString() + "rcpnt=" + recipientID.ToString() + ".txt");
+                return status;
+            }
+            catch
+            {
+                throw new RequestException(ConnectionCodes.DatabaseError);
+            }
         }
 
         /// <summary>
@@ -970,12 +1024,20 @@ namespace ChatBubble.ServerAPI
             }
 
             //Record message into pending messages
-            ServerMakeMessagePending(messageRequest.Message, messageRequest.MessageSenderID, messageRequest.MessageRecipientID);
+            try
+            {
+                ServerMakeMessagePending(messageRequest.Message, messageRequest.MessageSenderID, messageRequest.MessageRecipientID);
+                SetDialogueStatus(ConnectionCodes.MessagesPendingStatus, messageRequest.MessageSenderID, messageRequest.MessageRecipientID);
+            }
+            catch(RequestException e)
+            {
+                return new GenericServerReply(e.ExceptionCode);
+            }
 
             //Tries finding user in logged in list of logged in users to attempt sending pending message call
             if(loggedInUserEndpoints.ContainsKey(messageRequest.MessageRecipientID))
             {
-                ServerUDPRequest serverRequest = new ServerUDPRequest(ConnectionCodes.AvailablePendingMessagesStatus);
+                ServerUDPRequest serverRequest = new ServerUDPRequest(ConnectionCodes.MessagesPendingStatus, messageRequest.MessageSenderID);
                 byte[] serializedRequest = NetTransferObject.SerializeNetObject(serverRequest);
 
                 EndPoint recepientEndPoint = loggedInUserEndpoints[messageRequest.MessageRecipientID];
@@ -984,6 +1046,42 @@ namespace ChatBubble.ServerAPI
             }
 
             return new GenericServerReply(ConnectionCodes.MsgSendSuccess);
+        }
+
+        static GenericServerReply ServerSetDialogueStatusService(ChangeDialogueStatusRequest request)
+        {
+            SetDialogueStatus(request.NewDialogueStatus, request.MessageSenderID, request.Cookie.ID);
+
+            try
+            {
+                if (loggedInUserEndpoints.ContainsKey(request.MessageSenderID))
+                {
+                    ServerUDPRequest serverRequest = new ServerUDPRequest(request.NewDialogueStatus, request.Cookie.ID);
+                    byte[] serializedRequest = NetTransferObject.SerializeNetObject(serverRequest);
+
+                    EndPoint recepientEndPoint = loggedInUserEndpoints[request.MessageSenderID];
+
+                    SharedNetworkConfiguration.AuxilarryUDPSocket.SendTo(serializedRequest, recepientEndPoint);
+                }                
+            }
+            catch
+            {
+                return new GenericServerReply(ConnectionCodes.DatabaseError);
+            }
+
+            return new GenericServerReply(ConnectionCodes.DataRequestSuccess);
+        }
+
+        static GenericServerReply ServerGetDialogueStatusService(GetDialogueStatusRequest request)
+        {
+            try
+            {
+                return new GenericServerReply(GetDialogueStatus(request.Cookie.ID, request.MessageSenderID));
+            }
+            catch(RequestException e)
+            {
+                return new GenericServerReply(e.ExceptionCode);
+            }
         }
 
         /// <summary>

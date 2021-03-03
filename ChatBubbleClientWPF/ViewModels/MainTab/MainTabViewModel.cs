@@ -17,9 +17,13 @@ using ChatBubble;
 using ChatBubble.SharedAPI;
 using ChatBubble.ClientAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+using ChatBubbleClientWPF.ViewModels.Friends;
+
+namespace ChatBubbleClientWPF.ViewModels.MainTab
 {
-    class MainTabViewModel : BaseViewModel, IUserTileContainer
+    class MainTabViewModel : BaseViewModel, IContextMenuTileContainer
     {
         readonly MainWindowViewModel mainWindowViewModel;
         private UserTileViewModel pictureTileViewModel;
@@ -211,16 +215,16 @@ namespace ChatBubbleClientWPF.ViewModels
             if(!IsSelf)
                 if (!IsFriend)
                     PictureTileViewModel = new UserTileViewModel(displayedUser,
-                        new UserTileViewModel.ContextMenuActions[3] { UserTileViewModel.ContextMenuActions.OpenPicture,
-                    UserTileViewModel.ContextMenuActions.SendMessage,
-                    UserTileViewModel.ContextMenuActions.AddFriend });
+                        new UserTileViewModel.UserContextMenuActions[3] { UserTileViewModel.UserContextMenuActions.OpenPicture,
+                    UserTileViewModel.UserContextMenuActions.SendMessage,
+                    UserTileViewModel.UserContextMenuActions.AddFriend });
                 else
                     PictureTileViewModel = new FriendTileViewModel(displayedUser,
-                        new UserTileViewModel.ContextMenuActions[2] { UserTileViewModel.ContextMenuActions.OpenPicture,
-                    UserTileViewModel.ContextMenuActions.SendMessage});
+                        new UserTileViewModel.UserContextMenuActions[2] { UserTileViewModel.UserContextMenuActions.OpenPicture,
+                    UserTileViewModel.UserContextMenuActions.SendMessage});
             else
                 PictureTileViewModel = new UserTileViewModel(displayedUser,
-                        new UserTileViewModel.ContextMenuActions[1] { UserTileViewModel.ContextMenuActions.OpenPicture });
+                        new UserTileViewModel.UserContextMenuActions[1] { UserTileViewModel.UserContextMenuActions.OpenPicture });
 
             PictureTileViewModel.TileActionTriggered += OnTileAction;
         }
@@ -263,20 +267,20 @@ namespace ChatBubbleClientWPF.ViewModels
             return false;
         }
 
-        public void OnTileAction(object sender, UserTileInteractionEventArgs e)
+        public void OnTileAction(object sender, TileInteractionEventArgs e)
         {
             if (sender is UserTileViewModel)
             {
                 switch (e.Action)
                 {
-                    case UserTileInteractionEventArgs.TileAction.OpenPicture:
+                    case TileInteractionEventArgs.TileAction.OpenPicture:
                         break;
-                    case UserTileInteractionEventArgs.TileAction.SendMessage:
+                    case TileInteractionEventArgs.TileAction.OpenDialogue:
+                        if (mainWindowViewModel.OpenActiveDialogueCommand.CanExecute(e.InteractionID))
+                            mainWindowViewModel.OpenActiveDialogueCommand.Execute(e.InteractionID);
                         break;
-                    case UserTileInteractionEventArgs.TileAction.AddFriend:
-
-                        mainWindowViewModel.CurrentUser.AddFriend(e.InteractionID);
-                        
+                    case TileInteractionEventArgs.TileAction.AddFriend:
+                        mainWindowViewModel.CurrentUser.AddFriend(e.InteractionID);                       
                         break;
                 }
 
@@ -286,7 +290,7 @@ namespace ChatBubbleClientWPF.ViewModels
             {
                 switch (e.Action)
                 {
-                    case UserTileInteractionEventArgs.TileAction.RemoveFriend:
+                    case TileInteractionEventArgs.TileAction.RemoveFriend:
 
                         mainWindowViewModel.CurrentUser.RemoveFriend(e.InteractionID);
                  

@@ -11,11 +11,14 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using ChatBubble;
 
+using ChatBubbleClientWPF.ViewModels.Basic;
 
 namespace ChatBubbleClientWPF.ViewModels
 {
-    public class BaseViewModel : INotifyPropertyChanged
+    public class BaseViewModel : INotifyPropertyChanged, IDisposable
     {
+        private bool isDisposed = false;
+
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler ViewModelClosing;
 
@@ -36,6 +39,28 @@ namespace ChatBubbleClientWPF.ViewModels
             ViewModelClosing?.Invoke(this, new EventArgs());
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                ViewModelClosing = null;
+                PropertyChanged = null;
+                windowFactory = null;
+            }
+
+            isDisposed = true;
+        }
     }
 
     class Command : ICommand
@@ -69,8 +94,40 @@ namespace ChatBubbleClientWPF.ViewModels
         }
     }
 
-    interface IUserTileContainer
+    interface IContextMenuTileContainer
     {
-        void OnTileAction(object sender, UserTileInteractionEventArgs e);
+        void OnTileAction(object sender, TileInteractionEventArgs e);
+    }
+
+    interface IContextMenuTile
+    {
+        EventHandler<TileInteractionEventArgs> TileActionTriggered { get; set; }
+        List<MenuItemViewModel> ContextMenuItems { get; set; }
+    }
+
+    class TileInteractionEventArgs : EventArgs
+    {
+        public enum TileAction 
+        { OpenProfile, OpenPicture, 
+            RemoveMessage, CopyMessage, SendMessage,
+            RemoveFriend, AddFriend, 
+            RemoveDialogue, OpenDialogue, 
+            Select, ReadMessage}
+
+        public TileAction Action { get; private set; }
+        public int InteractionID { get; private set; }
+
+        public object InteractionParameters { get; private set; }
+
+        public TileInteractionEventArgs(TileAction action, int interactionID)
+        {
+            Action = action;
+            InteractionID = interactionID;
+        }
+
+        public TileInteractionEventArgs(TileAction action, int interactionID, params object[] parameters) : this(action, interactionID)
+        {
+            InteractionParameters = parameters;
+        }
     }
 }

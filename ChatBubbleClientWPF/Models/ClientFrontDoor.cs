@@ -130,14 +130,8 @@ namespace ChatBubbleClientWPF.Models
             + @"\cookie" + FileExtensions.GetExtensionForFileType(FileExtensions.FileType.Cookie);
 
             fileManager.TryDeleteFile(cookiePath);
-            fileManager.AppendToFile(cookiePath, serverReply.NewCookie, 0);
-
-            //NetComponents.ClientPendingMessageManager();
-
-            //Thread messageReceiverThread = new Thread(NetComponents.ClientServerFlagListener);
-            //messageReceiverThread.Start();
+            fileManager.AppendToFile(cookiePath, serverReply.NewCookie, 0);           
         }
-
 
         public void AttemptSignup(string name, string username, SecureString securePassword, SecureString secureRepeatPassword)
         {
