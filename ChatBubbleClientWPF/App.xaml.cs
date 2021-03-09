@@ -11,6 +11,8 @@ using System.Reflection;
 using ChatBubble.SharedAPI;
 using ChatBubble.ClientAPI;
 
+using ChatBubbleClientWPF.ViewModels.Windows;
+
 namespace ChatBubbleClientWPF
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace ChatBubbleClientWPF
             MapViews();
             ManageApplicationConfiguration();
 
-            ViewModels.LoadingWindowViewModel viewModel = new ViewModels.LoadingWindowViewModel(new Utility.WindowFactory());
+            LoadingWindowViewModel viewModel = new LoadingWindowViewModel(new Utility.WindowFactory());
         }
 
         private void ManageApplicationConfiguration()
@@ -53,9 +55,9 @@ namespace ChatBubbleClientWPF
         {
             Utility.ViewModelResolver resolver = new Utility.ViewModelResolver();
 
-            resolver.MapNewView(typeof(ViewModels.LoadingWindowViewModel), typeof(LoadingWindow));
-            resolver.MapNewView(typeof(ViewModels.LoginWindowViewModel), typeof(LoginWindow));
-            resolver.MapNewView(typeof(ViewModels.MainWindowViewModel), typeof(MainWindow));
+            resolver.MapNewView(typeof(LoadingWindowViewModel), typeof(LoadingWindow));
+            resolver.MapNewView(typeof(LoginWindowViewModel), typeof(LoginWindow));
+            resolver.MapNewView(typeof(MainWindowViewModel), typeof(MainWindow));
         }
     }
 }

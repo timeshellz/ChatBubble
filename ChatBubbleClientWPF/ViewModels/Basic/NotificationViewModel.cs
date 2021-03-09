@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using ChatBubble;
 
-namespace ChatBubbleClientWPF.ViewModels
+namespace ChatBubbleClientWPF.ViewModels.Basic
 {
     class NotificationViewModel : BaseViewModel
     {
@@ -54,10 +54,10 @@ namespace ChatBubbleClientWPF.ViewModels
             switch(notification.Type)
             {
                 case Models.Notification.NotificationType.Error:
-                    Header = "An error occured.";
+                    Header = "Error";
                     break;
                 case Models.Notification.NotificationType.NewMessage:
-                    Header = "New Message.";
+                    Header = "New Message";
                     break;
             }
 

@@ -110,12 +110,17 @@
     <Compile Include="Models\CurrentUser.cs" />
     <Compile Include="Models\Dialogue.cs" />
     <Compile Include="Models\Notification.cs" />
+    <Compile Include="Models\ServerFlagReceiver.cs" />
     <Compile Include="Tabs\ActiveDialogueTab.xaml.cs">
       <DependentUpon>ActiveDialogueTab.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utility\BoolToCollapsedConverter.cs" />
     <Compile Include="Utility\ConnectionEventArgs.cs" />
     <Compile Include="Utility\InverseBooleanConverter.cs" />
+    <Compile Include="Utility\MessageLineTemplateSelector.cs" />
+    <Compile Include="Utility\MessageStatusToPreviewStyleConverter.cs" />
     <Compile Include="Utility\MessageStatusToStyleConverter.cs" />
+    <Compile Include="Utility\MessageStatusToVisibilityConverter.cs" />
     <Compile Include="Utility\MouseOverTransparencyConverter.cs" />
     <Compile Include="Utility\NotificationTypeToStyleConverter.cs" />
     <Compile Include="Utility\PageFactory.cs" />
@@ -123,7 +128,8 @@
     <Compile Include="Utility\ReverseBoolToVisibilityConverter.cs" />
     <Compile Include="Utility\BoolToVisibilityConverter.cs" />
     <Compile Include="Utility\WindowFactory.cs" />
-    <Compile Include="ViewModels\ActiveDialogueViewModel.cs" />
+    <Compile Include="ViewModels\ActiveDialogue\ActiveDialogueViewModel.cs" />
+    <Compile Include="ViewModels\ActiveDialogue\DateDisplayMessageLineViewModel.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="Models\ClientFrontDoor.cs" />
     <Compile Include="Models\ClientStartup.cs" />
@@ -136,26 +142,26 @@
       <DependentUpon>RoundedRectangleTextBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\WatermarkTextBox.cs" />
-    <Compile Include="ViewModels\DialoguePreviewViewModel.cs" />
-    <Compile Include="ViewModels\DialoguesTabViewModel.cs" />
-    <Compile Include="ViewModels\FriendsTabViewModel.cs" />
-    <Compile Include="ViewModels\FriendTileViewModel.cs" />
-    <Compile Include="ViewModels\MainTabViewModel.cs" />
-    <Compile Include="ViewModels\MainWindowViewModel.cs" />
-    <Compile Include="ViewModels\MenuItemViewModel.cs" />
-    <Compile Include="ViewModels\MessageLineViewModel.cs" />
-    <Compile Include="ViewModels\NotificationViewModel.cs" />
-    <Compile Include="ViewModels\SearchTabViewModel.cs" />
-    <Compile Include="ViewModels\SettingsTabViewModel.cs" />
-    <Compile Include="ViewModels\UserTileViewModel.cs" />
+    <Compile Include="ViewModels\Dialogue\DialoguePreviewViewModel.cs" />
+    <Compile Include="ViewModels\Dialogue\DialoguesTabViewModel.cs" />
+    <Compile Include="ViewModels\Friends\FriendsTabViewModel.cs" />
+    <Compile Include="ViewModels\Friends\FriendTileViewModel.cs" />
+    <Compile Include="ViewModels\MainTab\MainTabViewModel.cs" />
+    <Compile Include="ViewModels\Windows\MainWindowViewModel.cs" />
+    <Compile Include="ViewModels\Basic\MenuItemViewModel.cs" />
+    <Compile Include="ViewModels\ActiveDialogue\MessageLineViewModel.cs" />
+    <Compile Include="ViewModels\Basic\NotificationViewModel.cs" />
+    <Compile Include="ViewModels\Search\SearchTabViewModel.cs" />
+    <Compile Include="ViewModels\Settings\SettingsTabViewModel.cs" />
+    <Compile Include="ViewModels\Basic\UserTileViewModel.cs" />
     <Compile Include="Windows\LoadingWindow.xaml.cs">
       <DependentUpon>LoadingWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ViewModels\LoadingWindowViewModel.cs" />
+    <Compile Include="ViewModels\Windows\LoadingWindowViewModel.cs" />
     <Compile Include="Windows\LoginWindow.xaml.cs">
       <DependentUpon>LoginWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ViewModels\LoginWindowViewModel.cs" />
+    <Compile Include="ViewModels\Windows\LoginWindowViewModel.cs" />
     <Compile Include="Tabs\DialoguesTab.xaml.cs">
       <DependentUpon>DialoguesTab.xaml</DependentUpon>
     </Compile>
@@ -374,6 +380,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\crossBlue.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Animations\LoadingAnimationSmall.gif" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

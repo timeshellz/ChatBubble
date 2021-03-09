@@ -94,13 +94,13 @@ namespace ChatBubble.SharedAPI
     public sealed class ServerPendingMessagesReply : GenericServerReply
     {
         [ProtoMember(1)]
-        public List<Message> PendingMessages { get; private set; }
+        public Dictionary<int, List<Message>> PendingMessages { get; private set; }
 
         private ServerPendingMessagesReply() { }
 
-        public ServerPendingMessagesReply(string flag, List<Message> pendingMessagesList) : base(flag)
+        public ServerPendingMessagesReply(string flag, Dictionary<int, List<Message>> pendingMessagesDictionary) : base(flag)
         {
-            PendingMessages = pendingMessagesList;
+            PendingMessages = pendingMessagesDictionary;
         }
     }
 }

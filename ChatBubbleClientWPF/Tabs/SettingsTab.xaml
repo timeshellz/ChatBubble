@@ -6,7 +6,7 @@
       xmlns:local="clr-namespace:ChatBubbleClientWPF.UserForms"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="SettingsTab" Name="Settings">
+      Title="Settings">
     <Page.Resources>
         <Style x:Key="SettingsButtonStyle" BasedOn="{StaticResource SecondaryRoundedButtonStyle}" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource SecondaryColorBrush}"/>

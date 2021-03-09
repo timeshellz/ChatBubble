@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBubbleClientWPF.ViewModels
+namespace ChatBubbleClientWPF.ViewModels.Settings
 {
     class SettingsTabViewModel : BaseViewModel
     {

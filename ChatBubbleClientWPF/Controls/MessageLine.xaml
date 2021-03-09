@@ -21,7 +21,11 @@
         <Label Grid.Column="2" Foreground="LightGray"
                FontSize="10" FontStyle="Italic" Content="{Binding MessageShortTime}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <controls:MessageBox Grid.Column="1" Style="{Binding MessageStatus, Converter={StaticResource MessageStatusToStyleConverter}}"
-                             Content="{Binding MessageContent}"/>
+                             Content="{Binding MessageContent}">
+            <controls:MessageBox.ContextMenu>
+                <ContextMenu Padding="9" Width="120" ItemsSource="{Binding ContextMenuItems}"/>
+            </controls:MessageBox.ContextMenu>
+        </controls:MessageBox>
     </Grid>
 
 </UserControl>

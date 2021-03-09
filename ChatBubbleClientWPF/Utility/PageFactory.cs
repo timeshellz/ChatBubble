@@ -36,15 +36,7 @@ namespace ChatBubbleClientWPF.Utility
 
                     {
                         newPage = new object();
-
-                        try
-                        {
-                            newPage = Activator.CreateInstance(elementType, associatedViewModel);
-                        }
-                        catch (MissingMethodException)
-                        {
-                            newPage = Activator.CreateInstance(elementType);
-                        }
+                        newPage = Activator.CreateInstance(elementType);
 
                         try
                         {

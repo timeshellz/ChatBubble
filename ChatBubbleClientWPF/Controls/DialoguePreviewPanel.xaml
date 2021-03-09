@@ -7,7 +7,7 @@
              xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Button Padding="0" Height="70" Width="auto" Style="{StaticResource SecondaryRoundedButtonStyle}" 
+    <Button Padding="0" Height="70" Width="auto" Style="{Binding LastMessageStatus, Converter={StaticResource MessageStatusToPreviewStyleConverter}}" 
             HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
             Command="{Binding OpenDialogueCommand}">
         <Button.ContextMenu>
@@ -17,6 +17,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="35"/>
             </Grid.ColumnDefinitions>
             <Ellipse Grid.Column="0" Width="60" Height="60">
                 <Ellipse.Fill>
@@ -26,8 +27,12 @@
             <StackPanel Grid.Column="1" Margin="9,5">
                 <Label Grid.Column="1" Name="FullName" Style="{StaticResource MediumTextStyle}" FontSize="18" Padding="0,2,0,0"
                Content="{Binding FullName}" Foreground="Black"/>
-                <Label Grid.Column="1" Name="MessagePreview" Style="{StaticResource MediumTextStyle}" FontSize="16" Padding="0,2,0,0" 
-               Content="{Binding MessagePreview}" Foreground="Gray"/>
+                <StackPanel Orientation="Horizontal">
+                    <Label Grid.Column="1" Name="MessagePreview" Style="{StaticResource MediumTextStyle}" FontSize="16" Padding="0,2,0,0" 
+                           Content="{Binding MessagePreview}" Foreground="Gray"/>
+                    <Ellipse Height="8" Width="8" Fill="{StaticResource PrimaryColorBrush}" Margin="10,3,0,0" VerticalAlignment="Center"
+                             Visibility="{Binding LastMessageStatus, Converter={StaticResource MessageStatusToVisibilityConverter}}"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Button>

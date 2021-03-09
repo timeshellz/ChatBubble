@@ -13,17 +13,22 @@
         <Color x:Key="AuxillaryColor">#EFEFEF</Color>
         <Color x:Key="SuccessColor">#B6D948</Color>
         <Color x:Key="ErrorColor">#E04834</Color>
+        <Color x:Key="IdleColor">#E0EDFF</Color>
         <SolidColorBrush x:Key="PrimaryColorBrush" Color="{StaticResource PrimaryColor}"/>
         <SolidColorBrush x:Key="SecondaryColorBrush" Color="{StaticResource SecondaryColor}"/>
         <SolidColorBrush x:Key="AuxillaryColorBrush" Color="{StaticResource AuxillaryColor}"/>
         <SolidColorBrush x:Key="SuccessColorBrush" Color="{StaticResource SuccessColor}"/>
         <SolidColorBrush x:Key="ErrorColorBrush" Color="{StaticResource ErrorColor}"/>
+        <SolidColorBrush x:Key="IdleColorBrush" Color="{StaticResource IdleColor}"/>
         <util:MouseOverBackgroundConverter x:Key="MouseOverBackgroundConverter"/>
         <util:MouseOverTransparencyConverter x:Key="MouseOverTransparencyConverter"/>
         <util:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <util:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <util:BoolToCollapsedConverter x:Key="BoolToCollapsedConverter"/>
         <util:ReverseBoolToVisibilityConverter x:Key="ReverseBoolToVisibilityConverter"/>
         <util:NotificationTypeToStyleConverter x:Key="NotificationTypeToStyleConverter"/>
+        <util:MessageStatusToPreviewStyleConverter x:Key="MessageStatusToPreviewStyleConverter"/>
+        <util:MessageStatusToVisibilityConverter x:Key="MessageStatusToVisibilityConverter"/>
 
         <ControlTemplate x:Key="RoundedRectangleButton" TargetType="Button">
             <Grid>
@@ -68,7 +73,8 @@
                          AcceptsReturn="{Binding AcceptsReturn, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
                          MinLines="{Binding MinLines, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
                          MaxLines="{Binding MaxLines, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-                         FontStyle="{Binding FontStyle, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"/>
+                         FontStyle="{Binding FontStyle, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                         FocusManager.FocusedElement="{Binding ElementName=TextBox}"/>
                 <TextBlock Name="WatermarkBlock" IsHitTestVisible="false"  Margin="3" Padding="3.5,2,2,0"  VerticalAlignment="Top"
                        Text="{Binding Watermark, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:RoundedRectangleTextBox}}}"
                        Foreground="{Binding WatermarkColor, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:RoundedRectangleTextBox}}}"
@@ -107,21 +113,71 @@
             <Setter Property="controls:PasswordWatermarkManager.WatermarkEnabled" Value="true"/>
         </Style>
 
-        <ControlTemplate x:Key="MessageBox">
-            <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" MaxWidth="300"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+        <ControlTemplate x:Key="DefaultMessageBoxTemplate" TargetType="{x:Type controls:MessageBox}">
+            <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" 
+          MaxWidth="300"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
                 <Rectangle Name="BackgroundRectangle" Fill="{TemplateBinding Background}" 
                            Stroke="{TemplateBinding BorderBrush}"
-                           StrokeThickness="{TemplateBinding BorderThickness}" RadiusX="6" RadiusY="6"/>
+                           StrokeThickness="{TemplateBinding BorderThickness}" 
+                           RadiusX="6" RadiusY="6"/>
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4">
                     <ContentPresenter.ContentTemplate>
                         <DataTemplate>
                             <TextBlock Background="Transparent" Padding="0" Margin="0" TextWrapping="Wrap"
-                                       Text="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:MessageBox}}}"
-                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type controls:MessageBox}}}"/>
+                                       Text="{Binding Content, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"/>
                         </DataTemplate>
                     </ContentPresenter.ContentTemplate>
                 </ContentPresenter>
             </Grid>
+        </ControlTemplate>
+        
+        <ControlTemplate x:Key="UnreadMessageBoxTemplate" TargetType="{x:Type controls:MessageBox}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" 
+          MaxWidth="300"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+                    <Rectangle Name="BackgroundRectangle" Fill="{TemplateBinding Background}" 
+                           Stroke="{TemplateBinding BorderBrush}"
+                           StrokeThickness="{TemplateBinding BorderThickness}" 
+                           RadiusX="6" RadiusY="6"/>
+                    <Ellipse Width="8" Height="8" 
+                             Fill="{StaticResource PrimaryColorBrush}" Margin="-3,0,0,-2"
+                             Stroke="{StaticResource SecondaryColorBrush}" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4">
+                        <ContentPresenter.ContentTemplate>
+                            <DataTemplate>
+                                <TextBlock Background="Transparent" Padding="0" Margin="0" TextWrapping="Wrap"
+                                       Text="{Binding Content, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"/>
+                            </DataTemplate>
+                        </ContentPresenter.ContentTemplate>
+                    </ContentPresenter>
+                </Grid>
+            </StackPanel>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="UnreadSentMessageBoxTemplate" TargetType="{x:Type controls:MessageBox}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid Name="MessageGrid" Grid.Column="0" Width="auto" Height="auto" MinWidth="26" 
+          MaxWidth="300"  MinHeight="20" HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+                    <Rectangle Name="BackgroundRectangle" Fill="{TemplateBinding Background}" 
+                           Stroke="{TemplateBinding BorderBrush}"
+                           StrokeThickness="{TemplateBinding BorderThickness}" 
+                           RadiusX="6" RadiusY="6"/>
+                    <Ellipse Width="8" Height="8" 
+                             Fill="{StaticResource PrimaryColorBrush}" Margin="0,0,-3,-2"
+                             Stroke="{StaticResource SecondaryColorBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4">
+                        <ContentPresenter.ContentTemplate>
+                            <DataTemplate>
+                                <TextBlock Background="Transparent" Padding="0" Margin="0" TextWrapping="Wrap"
+                                       Text="{Binding Content, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type controls:MessageBox}}}"/>
+                            </DataTemplate>
+                        </ContentPresenter.ContentTemplate>
+                    </ContentPresenter>
+                </Grid>
+            </StackPanel>
         </ControlTemplate>
 
         <Style x:Key="LargeTextStyle">
@@ -171,7 +227,7 @@
             <Setter Property="Path.Fill" Value="{StaticResource AuxillaryColorBrush}"/>
             <Setter Property="Control.Foreground" Value="{StaticResource PrimaryColorBrush}"/>
             <Setter Property="Shape.Stroke" Value="{StaticResource AuxillaryColorBrush}"/>
-            <Setter Property="Control.BorderBrush" Value="{StaticResource PrimaryColorBrush}"/>
+            <Setter Property="Control.BorderBrush" Value="{StaticResource AuxillaryColorBrush}"/>
         </Style>
         <Style x:Key="SuccessColorStyle" BasedOn="{StaticResource SmallTextStyle}">
             <Setter Property="Control.Background" Value="{StaticResource SecondaryColorBrush}"/>
@@ -189,6 +245,14 @@
             <Setter Property="Control.BorderBrush" Value="{StaticResource ErrorColorBrush}"/>
             <Setter Property="Control.Foreground" Value="{StaticResource ErrorColorBrush}"/>
         </Style>
+        <Style x:Key="IdleColorStyle" BasedOn="{StaticResource SmallTextStyle}">
+            <Setter Property="Control.Background" Value="{StaticResource IdleColorBrush}"/>
+            <Setter Property="Shape.Fill" Value="{StaticResource IdleColorBrush}"/>
+            <Setter Property="Path.Fill" Value="{StaticResource IdleColorBrush}"/>
+            <Setter Property="Shape.Stroke" Value="{StaticResource IdleColorBrush}"/>
+            <Setter Property="Control.BorderBrush" Value="{StaticResource IdleColorBrush}"/>
+            <Setter Property="Control.Foreground" Value="{StaticResource IdleColorBrush}"/>
+        </Style>
         
         <Style BasedOn="{StaticResource PrimaryColorStyle}" TargetType="{x:Type Button}">
             <Setter Property="Template" Value="{StaticResource RoundedRectangleButton}"/>
@@ -203,7 +267,10 @@
         <Style BasedOn="{StaticResource AuxillaryColorStyle}" x:Key="AuxillaryRoundedButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Template" Value="{StaticResource RoundedRectangleButton}"/>
         </Style>
-        
+        <Style BasedOn="{StaticResource IdleColorStyle}" x:Key="IdleRoundedButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Template" Value="{StaticResource RoundedRectangleButton}"/>
+        </Style>
+
         <Style BasedOn="{StaticResource PrimaryColorStyle}" TargetType="{x:Type controls:RoundedRectangleTextBox}">
             <Setter Property="Template" Value="{StaticResource RoundedRectangleTextBox}"/>
             <Setter Property="Foreground" Value="Black"/>
@@ -331,10 +398,22 @@
             <Setter Property="BorderThickness" Value="2.5"/>
             <Setter Property="BorderBrush" Value="{StaticResource PrimaryColorBrush}"/>
             <Setter Property="Background" Value="{StaticResource PrimaryColorBrush}"/>
-            <Setter Property="Template" Value="{StaticResource MessageBox}"/>
+            <Setter Property="Template" Value="{StaticResource DefaultMessageBoxTemplate}"/>
         </Style>
 
-        <Style x:Key="ReceivedMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
+        <Style x:Key="SentUnreadMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
+            <Setter Property="Template" Value="{StaticResource UnreadSentMessageBoxTemplate}"/>
+        </Style>
+
+        <Style x:Key="ReceivedUnreadMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryColorBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{StaticResource SecondaryColorBrush}"/>
+            <Setter Property="Template" Value="{StaticResource UnreadMessageBoxTemplate}"/>
+        </Style>
+
+        <Style x:Key="ReceivedReadMessageBoxStyle" BasedOn="{StaticResource {x:Type controls:MessageBox}}" TargetType="{x:Type controls:MessageBox}">
             <Setter Property="BorderBrush" Value="{StaticResource AuxillaryColorBrush}"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="Foreground" Value="Black"/>

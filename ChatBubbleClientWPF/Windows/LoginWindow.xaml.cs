@@ -14,6 +14,9 @@ using System.Windows.Shapes;
 using System.ComponentModel;
 using System.Threading;
 
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
 namespace ChatBubbleClientWPF
 {
     /// <summary>
@@ -21,12 +24,12 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class LoginWindow : Window
     {
-        ViewModels.LoginWindowViewModel viewModel;
+        LoginWindowViewModel viewModel;
 
         public LoginWindow(ViewModels.BaseViewModel viewModel)
         {
             InitializeComponent();
-            this.viewModel = (ViewModels.LoginWindowViewModel)viewModel;
+            this.viewModel = (LoginWindowViewModel)viewModel;
             this.DataContext = this.viewModel;
 
             LoadingWindow ancestorWindow = GetLastLoadingWindow();
@@ -67,9 +70,9 @@ namespace ChatBubbleClientWPF
 
         private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (DataContext is ViewModels.LoginWindowViewModel viewModel)
+            if (DataContext is LoginWindowViewModel viewModel)
             {
-                if (e.PropertyName == nameof(viewModel.SignUpStatus) && viewModel.SignUpStatus == ViewModels.LoginWindowViewModel.ErrorStatus.Success)
+                if (e.PropertyName == nameof(viewModel.SignUpStatus) && viewModel.SignUpStatus == LoginWindowViewModel.ErrorStatus.Success)
                 {
                     ((UserForms.CredentialFormPage)CurrentUserForm.Content).OnFormChangePrompted(new UserForms.UserFormEventArgs()
                     { CurrentFormType = typeof(UserForms.SignUpForm), PromptedFormType = typeof(UserForms.LoginForm) });

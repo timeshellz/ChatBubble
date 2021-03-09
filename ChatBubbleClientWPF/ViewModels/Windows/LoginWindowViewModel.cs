@@ -14,7 +14,8 @@ using System.Windows.Input;
 using System.Security;
 using ChatBubble;
 
-namespace ChatBubbleClientWPF.ViewModels
+
+namespace ChatBubbleClientWPF.ViewModels.Windows
 {
     class LoginWindowViewModel : BaseViewModel
     {

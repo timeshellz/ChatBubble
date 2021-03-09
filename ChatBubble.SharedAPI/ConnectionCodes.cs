@@ -8,10 +8,14 @@ namespace ChatBubble.SharedAPI
     public static class ConnectionCodes
     {
         public static readonly string HandshakeRequest, LoginRequest, CookieLoginRequest, SignUpRequest, SearchRequest, AddFriendRequest, GetFriendListRequest, RemoveFriendRequest,
-        GetUserSummaryRequest, EditUserSummaryRequest, GetPendingMessageRequest, SendNewMessageRequest, ChangeNameRequest, ChangePasswdRequest,
-        FreshSessionStatus, ExpiredSessionStatus, MsgToSelfStatus, AvailablePendingMessagesStatus, NoPendingMessagesStatus, ConnectionTimeoutStatus,
-        DataRequestSuccess, LoginSuccess, SignUpSuccess, FriendAddSuccess, FriendRemSuccess, DescEditSuccess, MsgSendSuccess, PswdChgSuccess, NmChgSuccess, LoginFailure,
-        SignUpFailure, FriendAddFailure, MessageSendFailure, AuthFailure, ConnectionFailure, PswdChgFailure, NmChgFailure, NotFoundError, DatabaseError,
+        GetUserSummaryRequest, EditUserSummaryRequest, GetPendingMessageRequest, SendNewMessageRequest, GetDialogueStatusRequest, ChangeDialogueStatusRequest,       
+        ChangeNameRequest, ChangePasswdRequest, FreshSessionStatus, ExpiredSessionStatus, 
+        MsgToSelfStatus, MessagesPendingStatus, NoPendingMessagesStatus, MessagesReceivedStatus, MessagesReadStatus, 
+        RecipientFormingReplyStatus, RecipientStoppedFormingReplyStatus,
+        ConnectionTimeoutStatus,
+        DataRequestSuccess, LoginSuccess, SignUpSuccess, FriendAddSuccess, FriendRemSuccess, DescEditSuccess, 
+        MsgSendSuccess, PswdChgSuccess, NmChgSuccess, LoginFailure, SignUpFailure, FriendAddFailure, 
+        MessageSendFailure, AuthFailure, ConnectionFailure, PswdChgFailure, NmChgFailure, NotFoundError, DatabaseError,
         RestrictedError, LogOutCall, ConnectionSignature, InvalidSignature, InvalidRequest;
 
         public static int DefaultFlagLength { get; private set; }

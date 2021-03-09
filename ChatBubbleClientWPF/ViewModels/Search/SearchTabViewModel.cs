@@ -14,14 +14,17 @@ using ChatBubble;
 using ChatBubble.SharedAPI;
 using ChatBubble.ClientAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
+namespace ChatBubbleClientWPF.ViewModels.Search
 {
-    class SearchTabViewModel : BaseViewModel, IUserTileContainer
+    class SearchTabViewModel : BaseViewModel, IContextMenuTileContainer
     {
         readonly MainWindowViewModel mainWindowViewModel;
 
         public Dictionary<int, User> resultDictionary;
-        public ObservableCollection<ViewModels.UserTileViewModel> searchResultViewModelsList;
+        public ObservableCollection<UserTileViewModel> searchResultViewModelsList;
 
         string searchParameter;
 
@@ -35,7 +38,7 @@ namespace ChatBubbleClientWPF.ViewModels
             }
         }
 
-        public ObservableCollection<ViewModels.UserTileViewModel> SearchResultViewModels
+        public ObservableCollection<UserTileViewModel> SearchResultViewModels
         {
             get { return searchResultViewModelsList; }
             set
@@ -115,21 +118,21 @@ namespace ChatBubbleClientWPF.ViewModels
             }));
         }
 
-        public void OnTileAction(object sender, UserTileInteractionEventArgs e)
+        public void OnTileAction(object sender, TileInteractionEventArgs e)
         {
-            if (sender is ViewModels.UserTileViewModel userSearchTileViewModel)
+            if (sender is UserTileViewModel userSearchTileViewModel)
             {
                 switch (e.Action)
                 {
-                    case UserTileInteractionEventArgs.TileAction.OpenPicture:
+                    case TileInteractionEventArgs.TileAction.OpenPicture:
                         break;
-                    case UserTileInteractionEventArgs.TileAction.OpenProfile:
+                    case TileInteractionEventArgs.TileAction.OpenProfile:
 
                         if (mainWindowViewModel.OpenMainTabCommand.CanExecute(e.InteractionID))
                             mainWindowViewModel.OpenMainTabCommand.Execute(e.InteractionID);
 
                         break;
-                    case UserTileInteractionEventArgs.TileAction.SendMessage:
+                    case TileInteractionEventArgs.TileAction.OpenDialogue:
                         break;
                 }
 

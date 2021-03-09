@@ -15,6 +15,9 @@ using System.Windows.Threading;
 using ChatBubble;
 using WpfAnimatedGif;
 
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
 namespace ChatBubbleClientWPF
 {
     /// <summary>
@@ -22,7 +25,7 @@ namespace ChatBubbleClientWPF
     /// </summary>
     public partial class LoadingWindow : Window
     {
-        ViewModels.LoadingWindowViewModel viewModel;
+        LoadingWindowViewModel viewModel;
         Image animationBox;
         ImageAnimationController animationBoxController;
 
@@ -30,7 +33,7 @@ namespace ChatBubbleClientWPF
         {
             InitializeComponent();
 
-            this.viewModel = (ViewModels.LoadingWindowViewModel)viewModel;
+            this.viewModel = (LoadingWindowViewModel)viewModel;
             this.DataContext = this.viewModel;
         }
 

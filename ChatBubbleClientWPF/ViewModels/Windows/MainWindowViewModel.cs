@@ -18,15 +18,24 @@ using ChatBubble;
 using ChatBubble.SharedAPI;
 using ChatBubble.ClientAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
+using ChatBubbleClientWPF.Models;
+using ChatBubbleClientWPF.ViewModels.Basic;
+
+namespace ChatBubbleClientWPF.ViewModels.Windows
 {
     class MainWindowViewModel : BaseViewModel
     {
         public event EventHandler<TabNavigationEventArgs> TabSwitchPrompted;
         public event EventHandler<EventArgs> TabReturnPrompted;
-        ObservableCollection<NotificationViewModel> notificationViewModels;
 
-        public ObservableCollection<NotificationViewModel> NotificationViewModels
+        ObservableCollection<Basic.NotificationViewModel> notificationViewModels;
+        BaseViewModel currentTabViewModel;
+
+
+        public ServerFlagReceiver FlagReceiver { get; private set; }
+        public event EventHandler<ServerFlagEventArgs> MessageFlagReceived;
+
+        public ObservableCollection<Basic.NotificationViewModel> NotificationViewModels
         {
             get { return notificationViewModels; }
             set
@@ -36,6 +45,16 @@ namespace ChatBubbleClientWPF.ViewModels
                     notificationViewModels = value;
                     OnPropertyChanged();
                 }
+            }
+        }
+
+        public BaseViewModel CurrentTabViewModel
+        {
+            get { return currentTabViewModel; }
+            set
+            {
+                currentTabViewModel = value;
+                OnPropertyChanged();
             }
         }
 
@@ -178,6 +197,7 @@ namespace ChatBubbleClientWPF.ViewModels
         public MainWindowViewModel(Utility.IWindowFactory windowFactory, Utility.IPageFactory pageFactory, Cookie userCookie)
         {
             CurrentUser = new Models.CurrentUser(userCookie);
+            CurrentTabViewModel = new MainTab.MainTabViewModel(this, 0);
 
             this.windowFactory = windowFactory;
             this.pageFactory = pageFactory;
@@ -187,21 +207,26 @@ namespace ChatBubbleClientWPF.ViewModels
             this.windowFactory.OpenAssociatedWindow(this);
             this.windowFactory.WindowRendered += DoOnMainViewRendered;
 
-            NotificationViewModels = new ObservableCollection<NotificationViewModel>();
+            NotificationViewModels = new ObservableCollection<Basic.NotificationViewModel>();
 
             Application.Current.DispatcherUnhandledException += OnUnhandledException;
+
+            FlagReceiver = new ServerFlagReceiver();
+            FlagReceiver.ServerFlagReceived += OnFlagReceived;
+
+            ManagePendingMessages();            
         }
 
         void ResolveTabViewModels()
         {
             Utility.ViewModelResolver resolver = new Utility.ViewModelResolver();
 
-            resolver.MapNewView(typeof(MainTabViewModel), typeof(Tabs.MainTab));
-            resolver.MapNewView(typeof(FriendsTabViewModel), typeof(Tabs.FriendsTab));
-            resolver.MapNewView(typeof(DialoguesTabViewModel), typeof(Tabs.DialoguesTab));
-            resolver.MapNewView(typeof(SearchTabViewModel), typeof(Tabs.SearchTab));
-            resolver.MapNewView(typeof(SettingsTabViewModel), typeof(Tabs.SettingsTab));
-            resolver.MapNewView(typeof(ActiveDialogueViewModel), typeof(Tabs.ActiveDialogueTab));
+            resolver.MapNewView(typeof(MainTab.MainTabViewModel), typeof(Tabs.MainTab));
+            resolver.MapNewView(typeof(Friends.FriendsTabViewModel), typeof(Tabs.FriendsTab));
+            resolver.MapNewView(typeof(Dialogue.DialoguesTabViewModel), typeof(Tabs.DialoguesTab));
+            resolver.MapNewView(typeof(Search.SearchTabViewModel), typeof(Tabs.SearchTab));
+            resolver.MapNewView(typeof(Settings.SettingsTabViewModel), typeof(Tabs.SettingsTab));
+            resolver.MapNewView(typeof(ActiveDialogue.ActiveDialogueViewModel), typeof(Tabs.ActiveDialogueTab));
         }
 
         void DoOnMainViewRendered(object sender, EventArgs e)
@@ -211,47 +236,61 @@ namespace ChatBubbleClientWPF.ViewModels
 
         void OnMainTabPrompted(object userID)
         {
+            currentTabViewModel.Dispose();
             bool rememberHistory = false;
 
             if ((int)userID != CurrentUser.ID && (int)userID != 0) rememberHistory = true;
 
-            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new MainTabViewModel(this, (int)userID),
+            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new MainTab.MainTabViewModel(this, (int)userID),
                 PageFactory = pageFactory, RememberHistory = rememberHistory});
         }
 
         void OnFriendsTabPrompted()
         {
-            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new FriendsTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new Friends.FriendsTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnDialoguesTabPrompted()
         {
-            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new DialoguesTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new Dialogue.DialoguesTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnActiveDialoguePrompted(object dialogue)
         {
-            if(dialogue is Models.Dialogue dialogueModel)
-                TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new ActiveDialogueViewModel(this, dialogueModel), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            if (dialogue is Models.Dialogue dialogueModel)
+                TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new ActiveDialogue.ActiveDialogueViewModel(this, dialogueModel), PageFactory = pageFactory, RememberHistory = false });
+            else if (dialogue is int userID)
+            {
+                User recipient = ((ServerGetUserReply)ClientRequestManager.SendClientRequest(new GetUserRequest(currentUser.Cookie, userID))).User;
+                TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs()
+                { PageViewModel = new ActiveDialogue.ActiveDialogueViewModel(this, new Models.Dialogue(recipient, CurrentUser)), PageFactory = pageFactory, RememberHistory = false });
+            }
         }
 
         void OnSearchTabPrompted()
         {
-            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new SearchTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new Search.SearchTabViewModel(this), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnSettingsTabPrompted()
         {
-            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new SettingsTabViewModel(), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            TabSwitchPrompted?.Invoke(this, new TabNavigationEventArgs() { PageViewModel = new Settings.SettingsTabViewModel(), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnLogOutTabPrompted()
         {
-           // TabSwitched?.Invoke(this, new TabNavigationEventArgs() { NewTabType = typeof(MainTabViewModel), PageFactory = pageFactory, RememberHistory = false });
+            currentTabViewModel.Dispose();
+            // TabSwitched?.Invoke(this, new TabNavigationEventArgs() { NewTabType = typeof(MainTabViewModel), PageFactory = pageFactory, RememberHistory = false });
         }
 
         void OnTabReturnPrompted()
         {
+            currentTabViewModel.Dispose();
             TabReturnPrompted?.Invoke(this, new EventArgs());
         }
 
@@ -267,23 +306,100 @@ namespace ChatBubbleClientWPF.ViewModels
 
             if (e.Exception is RequestException re)
             {
-                notification = new Models.Notification(Models.Notification.NotificationType.Error, re.ExceptionCode);
+                SpawnNotification(new Notification(Models.Notification.NotificationType.Error, re.ExceptionCode));
             }
             else
-                notification = new Models.Notification(Models.Notification.NotificationType.Error, "An error occured");
+                SpawnNotification(new Notification(Models.Notification.NotificationType.Error, e.Exception.Message));
 
             e.Handled = true;
+        }
 
-            NotificationViewModels.Add(new NotificationViewModel(notification));
+        void SpawnNotification(Notification notification)
+        {
+            NotificationViewModels.Add(new Basic.NotificationViewModel(notification));
             notification.NotificationTimedOut += OnNotificationTimeout;
         }
 
         void OnNotificationTimeout(object sender, EventArgs e)
         {
-            foreach(NotificationViewModel viewModel in NotificationViewModels)
+            foreach(Basic.NotificationViewModel viewModel in NotificationViewModels)
             {
                 if (viewModel.NotificationModel == (Models.Notification)sender)
                     Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => NotificationViewModels.Remove(viewModel)));
+            }
+        }
+
+        void OnFlagReceived(object sender, ServerFlagEventArgs e)
+        {
+            switch (e.FlagType)
+            {
+                case ServerFlagEventArgs.FlagTypes.MessagesPending:
+                    ManagePendingMessages();
+                    MessageFlagReceived?.Invoke(sender, e);
+                    break;
+                case ServerFlagEventArgs.FlagTypes.MessageStatusRead:
+                case ServerFlagEventArgs.FlagTypes.MessageStatusReceived:
+                    MessageFlagReceived?.Invoke(sender, e);
+                    break;
+            }    
+        }
+
+        void ManagePendingMessages()
+        {
+            Dictionary<int, List<Message>> newMessages = GetPendingMessages();
+
+            if(newMessages.Count > 0)
+            {
+                RecordPendingMessages(newMessages);      
+                
+                foreach(int key in newMessages.Keys)
+                {
+                    ClientRequestManager.SendClientRequest(new ChangeDialogueStatusRequest(currentUser.Cookie, key, ConnectionCodes.MessagesReceivedStatus));
+                }
+
+                if (CurrentTabViewModel.GetType() != typeof(ActiveDialogue.ActiveDialogueViewModel))
+                {
+                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                    {
+                        foreach (KeyValuePair<int, List<Message>> pair in newMessages)
+                        {
+                            SpawnNotification(new Notification(Notification.NotificationType.NewMessage, pair.Value.Last().Content));
+                        }
+                    }));                   
+                }
+            }           
+        }
+
+
+        Dictionary<int, List<Message>> GetPendingMessages()
+        {
+            GenericServerReply serverReply = ClientRequestManager.SendClientRequest(new GetPendingMessagesRequest(CurrentUser.Cookie));
+
+            if (serverReply is ServerPendingMessagesReply messagesReply)
+            {
+                foreach(List<Message> dialogue in messagesReply.PendingMessages.Values)
+                {
+                    dialogue.Sort((Message a, Message b) =>
+                    {
+                        if (a.ID < b.ID) return -1;
+                        if (a.ID > b.ID) return 1;
+                        return 0;
+                    });
+                }
+
+                return messagesReply.PendingMessages;
+            }
+            else
+            {
+                return new Dictionary<int, List<Message>>();
+            }
+        }
+
+        void RecordPendingMessages(Dictionary<int, List<Message>> newMessages)
+        {
+            foreach (KeyValuePair<int, List<Message>> pair in newMessages)
+            {
+                Models.Dialogue.RecordMessagesLocally(pair.Value, pair.Key, CurrentUser.Cookie);
             }
         }
 
@@ -295,5 +411,10 @@ namespace ChatBubbleClientWPF.ViewModels
         public Utility.IPageFactory PageFactory { get; set; }
         public bool RememberHistory { get; set; }
         public object[] Arguments { get; set; }
+    }
+
+    class TabProcessingEventArgs : EventArgs
+    {
+
     }
 }

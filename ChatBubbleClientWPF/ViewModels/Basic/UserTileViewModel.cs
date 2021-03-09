@@ -9,13 +9,16 @@ using System.Collections.ObjectModel;
 using ChatBubble;
 using ChatBubble.SharedAPI;
 
-namespace ChatBubbleClientWPF.ViewModels
-{
-    class UserTileViewModel : BaseViewModel
-    {
-        public enum ContextMenuActions { OpenProfile, OpenPicture, SendMessage, AddFriend, None}
+using ChatBubbleClientWPF.ViewModels.Windows;
+using ChatBubbleClientWPF.ViewModels.Basic;
 
-        List<ViewModels.MenuItemViewModel> contextMenuItems = new List<MenuItemViewModel>();
+namespace ChatBubbleClientWPF.ViewModels.Basic
+{
+    class UserTileViewModel : BaseViewModel, IContextMenuTile
+    {
+        public enum UserContextMenuActions { OpenProfile, OpenPicture, SendMessage, AddFriend, None}
+
+        List<MenuItemViewModel> contextMenuItems = new List<MenuItemViewModel>();
 
         public List<MenuItemViewModel> ContextMenuItems
         {
@@ -36,7 +39,7 @@ namespace ChatBubbleClientWPF.ViewModels
         internal ICommand sendMessageCommand;
         internal ICommand addUserAsFriendCommand;
 
-        public EventHandler<UserTileInteractionEventArgs> TileActionTriggered;
+        public EventHandler<TileInteractionEventArgs> TileActionTriggered { get; set; }
 
         public int UserID
         {
@@ -117,7 +120,7 @@ namespace ChatBubbleClientWPF.ViewModels
         }
 
 
-        public UserTileViewModel(User userModel, params ContextMenuActions[] contextMenuActions) : this(userModel)
+        public UserTileViewModel(User userModel, params UserContextMenuActions[] contextMenuActions) : this(userModel)
         {
             FillContextMenu(contextMenuActions);
         }
@@ -128,27 +131,27 @@ namespace ChatBubbleClientWPF.ViewModels
             FullName = userModel.FullName;
             Username = userModel.Username;
 
-            if(useDefaultContextMenu) FillContextMenu(new ContextMenuActions[0]);
+            if(useDefaultContextMenu) FillContextMenu(new UserContextMenuActions[0]);
         }      
 
-        void FillContextMenu(ContextMenuActions[] contextMenuActions)
+        void FillContextMenu(UserContextMenuActions[] contextMenuActions)
         {
             ContextMenuItems = new List<MenuItemViewModel>();
 
             if(contextMenuActions.Length == 0)
             {
-                contextMenuActions = new ContextMenuActions[2] { ContextMenuActions.OpenProfile, ContextMenuActions.OpenPicture };
+                contextMenuActions = new UserContextMenuActions[2] { UserContextMenuActions.OpenProfile, UserContextMenuActions.OpenPicture };
             }
 
-            foreach (ContextMenuActions action in contextMenuActions)
+            foreach (UserContextMenuActions action in contextMenuActions)
             {
-                if (action == ContextMenuActions.AddFriend)
+                if (action == UserContextMenuActions.AddFriend)
                     ContextMenuItems.Add(new MenuItemViewModel("Send friend request", AddUserAsFriendCommand));
-                if (action == ContextMenuActions.OpenPicture)
+                if (action == UserContextMenuActions.OpenPicture)
                     ContextMenuItems.Add(new MenuItemViewModel("Open picture", OpenUserPictureCommand));
-                if (action == ContextMenuActions.OpenProfile)
+                if (action == UserContextMenuActions.OpenProfile)
                     ContextMenuItems.Add(new MenuItemViewModel("Open profile", OpenUserProfileCommand));
-                if (action == ContextMenuActions.SendMessage)
+                if (action == UserContextMenuActions.SendMessage)
                     ContextMenuItems.Add(new MenuItemViewModel("Send message", SendMessageCommand));
             }
 
@@ -156,43 +159,22 @@ namespace ChatBubbleClientWPF.ViewModels
 
         void OnOpenProfile()
         {
-            TileActionTriggered?.Invoke(this, new UserTileInteractionEventArgs(UserTileInteractionEventArgs.TileAction.OpenProfile, UserID));
+            TileActionTriggered?.Invoke(this, new TileInteractionEventArgs(TileInteractionEventArgs.TileAction.OpenProfile, UserID));
         }
 
         void OnAddUserAsFriend()
         {
-            TileActionTriggered?.Invoke(this, new UserTileInteractionEventArgs(UserTileInteractionEventArgs.TileAction.AddFriend, UserID));
+            TileActionTriggered?.Invoke(this, new TileInteractionEventArgs(TileInteractionEventArgs.TileAction.AddFriend, UserID));
         }
 
         void OnOpenUserPicture()
         {
-            TileActionTriggered?.Invoke(this, new UserTileInteractionEventArgs(UserTileInteractionEventArgs.TileAction.OpenPicture, UserID));
+            TileActionTriggered?.Invoke(this, new TileInteractionEventArgs(TileInteractionEventArgs.TileAction.OpenPicture, UserID));
         }
 
         void OnSendMessage()
         {
-            TileActionTriggered?.Invoke(this, new UserTileInteractionEventArgs(UserTileInteractionEventArgs.TileAction.SendMessage, UserID));
-        }
-    }
-
-    class UserTileInteractionEventArgs : EventArgs
-    {
-        public enum TileAction { OpenProfile, OpenPicture, SendMessage, RemoveFriend, AddFriend, RemoveDialogue, OpenDialogue, Select }
-
-        public TileAction Action { get; private set; }
-        public int InteractionID { get; private set; }
-
-        public object InteractionParameters { get; private set; }
-
-        public UserTileInteractionEventArgs(TileAction action, int interactionID)
-        {
-            Action = action;
-            InteractionID = interactionID;
-        }
-
-        public UserTileInteractionEventArgs(TileAction action, int interactionID, params object[] parameters) : this(action, interactionID)
-        {
-            InteractionParameters = parameters;
-        }
+            TileActionTriggered?.Invoke(this, new TileInteractionEventArgs(TileInteractionEventArgs.TileAction.OpenDialogue, UserID));
+        }       
     }
 }

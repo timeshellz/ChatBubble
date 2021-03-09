@@ -22,12 +22,15 @@ namespace ChatBubbleClientWPF.Utility
             switch((Message.MessageStatus)value)
             {
                 case Message.MessageStatus.ReceivedNotRead:
+                    return Application.Current.Resources["ReceivedUnreadMessageBoxStyle"] as Style;
                 case Message.MessageStatus.ReceivedRead:
-                    return Application.Current.Resources["ReceivedMessageBoxStyle"] as Style;
+                    return Application.Current.Resources["ReceivedReadMessageBoxStyle"] as Style;
                 case Message.MessageStatus.SentRead:
                     return Application.Current.FindResource(typeof(Controls.MessageBox)) as Style;
                 case Message.MessageStatus.SendFailed:
                     return Application.Current.Resources["FailedMessageBoxStyle"] as Style;
+                case Message.MessageStatus.SentReceived:
+                    return Application.Current.Resources["SentUnreadMessageBoxStyle"] as Style;
             }
 
             return Application.Current.FindResource(typeof(Controls.MessageBox)) as Style;

@@ -11,7 +11,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="60"/>
         </Grid.ColumnDefinitions>
-        <local:RoundedRectangleTextBox Grid.Column="0" x:Name="InputBox" MaxLines="5" TextWrapping="Wrap"
+        <local:RoundedRectangleTextBox Grid.Column="0" x:Name="InputBox" MaxLines="5" TextWrapping="Wrap" FocusManager.FocusedElement="{Binding ElementName=InputBox}"
                                        Margin="10,10,0,10" MinHeight="24" Text="{Binding MessageInputContent,UpdateSourceTrigger=PropertyChanged}"
                                        Watermark="Message" KeyDown="RoundedRectangleTextBox_KeyDown"/>
         <Button Grid.Column="1" MinHeight="46" MinWidth="56" Command="{Binding SendMessageCommand}"

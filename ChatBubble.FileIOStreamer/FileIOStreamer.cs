@@ -18,6 +18,7 @@ namespace ChatBubble
         public static string defaultRegisteredUsersDirectory { get; private set; }
         public static string defaultActiveUsersDirectory { get; private set; }
         public static string defaultPendingMessagesDirectory { get; private set; }
+        public static string defaultMessageStatusDirectory { get; private set; }
 
         public static string defaultLocalCookiesDirectory { get; private set; }
         public static string defaultLocalUserDataDirectory { get; private set; }
@@ -139,6 +140,7 @@ namespace ChatBubble
                 }
                 if (beginFromString != "")
                 {
+                    if (output.Contains(beginFromString))
                     output = output.Substring(output.IndexOf(beginFromString));
                 }
 
@@ -378,6 +380,7 @@ namespace ChatBubble
             defaultRegisteredUsersDirectory = directoryData[0] + directoryData[1];
             defaultActiveUsersDirectory = directoryData[0] + directoryData[2];
             defaultPendingMessagesDirectory = directoryData[0] + directoryData[3];
+            defaultMessageStatusDirectory = directoryData[0] + @"\Message Statuses\";
             defaultLogDirectory = directoryData[0] + directoryData[4];
         }
 

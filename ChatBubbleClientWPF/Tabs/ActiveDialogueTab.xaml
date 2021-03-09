@@ -5,30 +5,44 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:ChatBubbleClientWPF.Tabs"
       xmlns:controls="clr-namespace:ChatBubbleClientWPF.Controls"
+      xmlns:util="clr-namespace:ChatBubbleClientWPF.Utility"
+      xmlns:gif="http://wpfanimatedgif.codeplex.com"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="ActiveDialogueTab" FocusManager.FocusedElement="{Binding ElementName=InputPanel}">
+      Title="{Binding RecipientName}">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="45"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Background="Transparent" Margin="6,0,6,0">
-            <ItemsControl ItemsSource="{Binding MessageLineViewModels}">
+            <ItemsControl ItemsSource="{Binding MessageLineViewModels}" ItemTemplateSelector="{DynamicResource MessageLineTemplateSelector}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,7"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
+                <ItemsControl.Resources>
+                    <DataTemplate x:Key="DateDisplayMessageLine">
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,6,58,4">
+                            <Label Content="{Binding MessageShortTime}" Style="{StaticResource SmallTextStyle}"
+                                   Background="Transparent" Foreground="LightGray" FontStyle="Italic"/>
+                        </Grid>
+                    </DataTemplate>
+                    <DataTemplate x:Key="GenericMessageLine">
                         <controls:MessageLine Margin="0,4,0,0"/>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
+                    <util:MessageLineTemplateSelector x:Key="MessageLineTemplateSelector"/>
+                </ItemsControl.Resources>
             </ItemsControl>
         </ScrollViewer>
-        <controls:DialogueInputPanel x:Name="InputPanel" Grid.Row="2"/>
+        <Image Name="StatusImage" 
+               gif:ImageBehavior.AnimatedSource="../Animations/LoadingAnimationSmall.gif" 
+               Height="30" Grid.Row="2" HorizontalAlignment="Left" 
+               Visibility="{Binding IsRecipientWriting, Converter={StaticResource BoolToCollapsedConverter}}"/>
+        <controls:DialogueInputPanel x:Name="InputPanel" Grid.Row="3" FocusManager.FocusedElement="{Binding ElementName=InputPanel}"/>
     </Grid>
 </Page>
