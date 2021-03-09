@@ -1050,7 +1050,9 @@ namespace ChatBubble.ServerAPI
 
         static GenericServerReply ServerSetDialogueStatusService(ChangeDialogueStatusRequest request)
         {
-            SetDialogueStatus(request.NewDialogueStatus, request.MessageSenderID, request.Cookie.ID);
+            if(request.NewDialogueStatus != ConnectionCodes.RecipientFormingReplyStatus &&
+                request.NewDialogueStatus != ConnectionCodes.RecipientStoppedFormingReplyStatus)
+                SetDialogueStatus(request.NewDialogueStatus, request.MessageSenderID, request.Cookie.ID);
 
             try
             {

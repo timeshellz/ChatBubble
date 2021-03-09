@@ -13,14 +13,14 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
             DateTime currentTime = DateTime.UtcNow;
             MessageDateTime = date;
 
-            if (date.Day == currentTime.Day)
+            if (currentTime - date < TimeSpan.FromHours(currentTime.Hour))
                 MessageShortTime = "Today";
-            else if (currentTime.Day - date.Day == 1)
+            else if (currentTime - date < TimeSpan.FromHours(24 + currentTime.Hour))
                 MessageShortTime = "Yesterday";
-            else if (currentTime.Day - date.Day < 7)
-                MessageShortTime = (currentTime.Day - date.Day).ToString() + " days ago";
-            else if (currentTime.Month == date.Month)
-                MessageShortTime = (currentTime.Day - date.Day / 7).ToString() + " weeks ago";
+            else if (currentTime - date < TimeSpan.FromDays(14))
+                MessageShortTime = (currentTime - date).Days.ToString() + " days ago";
+            else if (currentTime - date < TimeSpan.FromDays(30))
+                MessageShortTime = ((currentTime - date).Days / 7).ToString() + " weeks ago";
             else MessageShortTime = date.ToShortDateString();
         }
     }

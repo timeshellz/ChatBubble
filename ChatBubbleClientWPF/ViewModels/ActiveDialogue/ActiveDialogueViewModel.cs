@@ -30,6 +30,10 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
         public ObservableCollection<MessageLineViewModel> messageLineViewModels;
         public Dictionary<string, DateDisplayMessageLineViewModel> dateSeparators;
 
+        bool isRecipientWriting;
+
+        Timer replyTimer;
+
         string recipientName;
 
         public string RecipientName
@@ -38,6 +42,16 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
             set
             {
                 recipientName = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsRecipientWriting
+        {
+            get { return isRecipientWriting; }
+            set
+            {
+                isRecipientWriting = value;
                 OnPropertyChanged();
             }
         }
@@ -76,6 +90,9 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
             get { return messageInputContent; }
             set
             {
+                if (!replyTimer.Enabled)
+                    StartReply();
+
                 messageInputContent = value;
                 OnPropertyChanged();
             }
@@ -129,6 +146,7 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
                 CreateReadTimer();
             }
 
+            CreateReplyTimer();
         }
 
         void CreateReadTimer()
@@ -136,6 +154,21 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
             Timer readTimer = new Timer(1000);
             readTimer.Elapsed += OnReadTimerElapsed;
             readTimer.Start();
+        }
+
+        void CreateReplyTimer()
+        {
+            replyTimer = new Timer(500);
+            replyTimer.AutoReset = false;
+            replyTimer.Elapsed += OnReplyTimerElapsed;            
+        }
+
+        void StartReply()
+        {
+            ClientRequestManager.SendClientRequest(new ChangeDialogueStatusRequest(currentDialogueModel.CurrentUser.Cookie,
+                currentDialogueModel.DialogueID, ConnectionCodes.RecipientFormingReplyStatus));
+
+            replyTimer.Start();
         }
 
         void TryCreateDateSeparator(Message message)
@@ -202,6 +235,11 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
                     {
                         currentDialogueModel.MakeSentMessagesRead();
                     }
+
+                    if (e.FlagType == Models.ServerFlagEventArgs.FlagTypes.RecipientWritingReply)
+                        isRecipientWriting = true;
+                    if (e.FlagType == Models.ServerFlagEventArgs.FlagTypes.RecipientStoppedWritingReply)
+                        isRecipientWriting = false;
                 }
             }));            
         }
@@ -236,6 +274,15 @@ namespace ChatBubbleClientWPF.ViewModels.ActiveDialogue
             timer.Elapsed -= OnReadTimerElapsed;
 
             currentDialogueModel.MakeReceivedMessagesRead();           
+        }
+
+        void OnReplyTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            ClientRequestManager.SendClientRequest(new ChangeDialogueStatusRequest(currentDialogueModel.CurrentUser.Cookie, 
+                currentDialogueModel.DialogueID, ConnectionCodes.RecipientStoppedFormingReplyStatus));
+
+            Timer timer = (Timer)sender;
+            timer.Stop();
         }
 
         protected override void Dispose(bool disposing)

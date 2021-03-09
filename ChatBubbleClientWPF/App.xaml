@@ -24,6 +24,7 @@
         <util:MouseOverTransparencyConverter x:Key="MouseOverTransparencyConverter"/>
         <util:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <util:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <util:BoolToCollapsedConverter x:Key="BoolToCollapsedConverter"/>
         <util:ReverseBoolToVisibilityConverter x:Key="ReverseBoolToVisibilityConverter"/>
         <util:NotificationTypeToStyleConverter x:Key="NotificationTypeToStyleConverter"/>
         <util:MessageStatusToPreviewStyleConverter x:Key="MessageStatusToPreviewStyleConverter"/>

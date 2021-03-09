@@ -114,6 +114,7 @@
     <Compile Include="Tabs\ActiveDialogueTab.xaml.cs">
       <DependentUpon>ActiveDialogueTab.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utility\BoolToCollapsedConverter.cs" />
     <Compile Include="Utility\ConnectionEventArgs.cs" />
     <Compile Include="Utility\InverseBooleanConverter.cs" />
     <Compile Include="Utility\MessageLineTemplateSelector.cs" />
@@ -379,6 +380,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\crossBlue.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Animations\LoadingAnimationSmall.gif" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
